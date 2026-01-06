@@ -91,3 +91,4 @@ sandbox/
 # yarn.lock
 # package-lock.json
 .claude/
+.pnpm-store

@@ -16,7 +16,8 @@
     "test:integration": "vitest run --project integration",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "version": "node scripts/sync-version.js && git add manifest.json"
+    "version": "node scripts/sync-version.js && git add manifest.json",
+    "deploy": "source .env && ./scripts/deploy.sh"
   },
   "keywords": [
     "obsidian",
