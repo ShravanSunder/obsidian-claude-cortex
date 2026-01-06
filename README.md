@@ -1,8 +1,8 @@
-# Cortex
+# Obsidian Claude Cortex
 
-![Preview](Preview.png)
+An Obsidian plugin that embeds Claude Agent (using Claude Agent SDK) as a sidebar chat interface. Your vault becomes Claude's working directory, giving it full agentic capabilities: file read/write, bash commands, and multi-step workflows. **macOS only** (Linux and Windows support may be added in future releases).
 
-An Obsidian plugin that embeds Claude Agent (using Claude Agent SDK) as a sidebar chat interface. Your vault becomes Claude's working directory, giving it full agentic capabilities: file read/write, bash commands, and multi-step workflows.
+> **Forked from [Claudian](https://github.com/YishenTu/claudian)** by YishenTu. This project continues development with additional features and improvements.
 
 ## Features
 
@@ -29,7 +29,7 @@ An Obsidian plugin that embeds Claude Agent (using Claude Agent SDK) as a sideba
 
 ### From GitHub Release (recommended)
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ShravanSunder/obsidian-cortex/releases/latest)
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ShravanSunder/obsidian-claude-cortex/releases/latest)
 2. Create a folder called `cortex` in your vault's plugins folder:
    ```
    /path/to/vault/.obsidian/plugins/cortex/
@@ -43,8 +43,8 @@ An Obsidian plugin that embeds Claude Agent (using Claude Agent SDK) as a sideba
 1. Clone this repository into your vault's plugins folder:
    ```bash
    cd /path/to/vault/.obsidian/plugins
-   git clone https://github.com/ShravanSunder/obsidian-cortex.git
-   cd obsidian-cortex
+   git clone https://github.com/ShravanSunder/obsidian-claude-cortex.git
+   cd obsidian-claude-cortex
    ```
 
 2. Install dependencies and build:
@@ -185,7 +185,7 @@ Copy the path and paste it into **Settings → Advanced → Claude CLI path**.
 PATH=/Users/you/.volta/bin
 ```
 
-**Still having issues?** Please [open a GitHub issue](https://github.com/ShravanSunder/obsidian-cortex/issues) with your platform, Claude CLI path (from `which`/`where` output), and the error message.
+**Still having issues?** Please [open a GitHub issue](https://github.com/ShravanSunder/obsidian-claude-cortex/issues) with your platform, Claude CLI path (from `which`/`where` output), and the error message.
 
 ## Privacy & Data Use
 
