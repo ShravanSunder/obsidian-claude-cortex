@@ -594,6 +594,9 @@ export class CortexService {
     this.currentThinkingTokens = null;
     this.currentPermissionMode = null;
     this.currentMcpServersKey = null;
+
+    // Reset preWarm state so new preWarm calls don't wait for the old one
+    this.preWarmPromise = null;
   }
 
   /** Returns true if persistent query is running. */
@@ -890,11 +893,18 @@ export class CortexService {
   }
 
   /**
-   * Switches to a different session by restarting the persistent query.
+   * Switches to a different session by closing the persistent query.
    * The SDK binds sessions at query creation time via the `resume` option,
    * so we must restart the query to actually switch sessions.
+   *
+   * The restart is done lazily - the query will be restarted when the user
+   * sends their next message (in query()). This makes conversation switching
+   * instant and avoids blocking on cold start.
+   *
+   * @param newSessionId The session ID to switch to (null for new session)
+   * @param preWarmInBackground If true, start warming the new session in the background
    */
-  async switchSession(newSessionId: string | null): Promise<void> {
+  async switchSession(newSessionId: string | null, preWarmInBackground = true): Promise<void> {
     const currentSessionId = this.sessionManager.getSessionId();
 
     // Skip if already on the target session
@@ -902,7 +912,7 @@ export class CortexService {
       return;
     }
 
-    // Clear session-related state
+    // Update session state
     this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
     this.approvalManager.clearSessionApprovals();
     this.diffStore.clear();
@@ -910,23 +920,16 @@ export class CortexService {
     this.currentPlanFilePath = null;
     this.activeResponseResolvers = [];
 
-    // Restart the persistent query with the new session ID
-    // This is necessary because the SDK binds sessions at query creation time
+    // Close the persistent query - it will be lazily restarted with the new
+    // session ID when the user sends their next message (in query())
     if (this.persistentQuery) {
       this.closePersistentQuery();
+    }
 
-      // Re-warm with the new session
-      const vaultPath = this.vaultPath || getVaultPath(this.plugin.app);
-      const cliPath = this.plugin.getResolvedClaudeCliPath();
-
-      if (vaultPath && cliPath) {
-        try {
-          await this.startPersistentQuery(vaultPath, cliPath, newSessionId ?? undefined);
-        } catch (error) {
-          console.error('[Cortex] Failed to restart query for session switch:', error);
-          // Query will be restarted on next query() call
-        }
-      }
+    // Optionally start pre-warming in the background so the query might be
+    // ready by the time the user types their message
+    if (preWarmInBackground) {
+      void this.preWarm(newSessionId ?? undefined);
     }
   }
 
