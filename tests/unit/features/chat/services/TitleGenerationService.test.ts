@@ -9,7 +9,10 @@ import {
   setMockMessages,
 } from '@test/__mocks__/claude-agent-sdk';
 
-import { type TitleGenerationResult, TitleGenerationService } from '@/features/chat/services/TitleGenerationService';
+import {
+  type TitleGenerationResult,
+  TitleGenerationService,
+} from '@/features/chat/services/TitleGenerationService';
 function createMockPlugin(settings = {}) {
   return {
     settings: {
@@ -25,8 +28,8 @@ function createMockPlugin(settings = {}) {
         },
       },
     },
-    getActiveEnvironmentVariables: jest.fn().mockReturnValue(''),
-    getResolvedClaudeCliPath: jest.fn().mockReturnValue('/fake/claude'),
+    getActiveEnvironmentVariables: vi.fn().mockReturnValue(''),
+    getResolvedClaudeCliPath: vi.fn().mockReturnValue('/fake/claude'),
   } as any;
 }
 
@@ -35,7 +38,7 @@ describe('TitleGenerationService', () => {
   let mockPlugin: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     resetMockMessages();
     mockPlugin = createMockPlugin();
     service = new TitleGenerationService(mockPlugin);
@@ -54,12 +57,12 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle(
         'conv-123',
         'How do I set up a React project?',
         'You can use create-react-app...',
-        callback
+        callback,
       );
 
       expect(callback).toHaveBeenCalledWith('conv-123', {
@@ -80,7 +83,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       const options = getLastOptions();
@@ -102,7 +105,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       const options = getLastOptions();
@@ -112,7 +115,7 @@ describe('TitleGenerationService', () => {
     it('should prioritize setting over env var', async () => {
       mockPlugin.settings.titleGenerationModel = 'sonnet';
       mockPlugin.getActiveEnvironmentVariables.mockReturnValue(
-        'ANTHROPIC_DEFAULT_HAIKU_MODEL=custom-haiku'
+        'ANTHROPIC_DEFAULT_HAIKU_MODEL=custom-haiku',
       );
 
       setMockMessages([
@@ -126,7 +129,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       const options = getLastOptions();
@@ -136,7 +139,7 @@ describe('TitleGenerationService', () => {
     it('should use ANTHROPIC_DEFAULT_HAIKU_MODEL when setting is empty', async () => {
       mockPlugin.settings.titleGenerationModel = '';
       mockPlugin.getActiveEnvironmentVariables.mockReturnValue(
-        'ANTHROPIC_DEFAULT_HAIKU_MODEL=custom-haiku'
+        'ANTHROPIC_DEFAULT_HAIKU_MODEL=custom-haiku',
       );
 
       setMockMessages([
@@ -150,7 +153,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       const options = getLastOptions();
@@ -169,7 +172,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       const options = getLastOptions();
@@ -188,7 +191,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       expect(callback).toHaveBeenCalledWith('conv-123', {
@@ -209,7 +212,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       expect(callback).toHaveBeenCalledWith('conv-123', {
@@ -231,7 +234,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', 'test', 'response', callback);
 
       expect(callback).toHaveBeenCalledWith('conv-123', {
@@ -251,17 +254,19 @@ describe('TitleGenerationService', () => {
         },
         { type: 'result' },
       ]);
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       try {
-        const callback = jest.fn();
+        const callback = vi.fn();
         await service.generateTitle('conv-123', 'test', 'response', callback);
 
         expect(callback).toHaveBeenCalledWith('conv-123', {
           success: false,
           error: 'Failed to parse title from response',
         });
-        expect(warnSpy).toHaveBeenCalledWith('[TitleGeneration] Failed to parse title from response');
+        expect(warnSpy).toHaveBeenCalledWith(
+          '[TitleGeneration] Failed to parse title from response',
+        );
       } finally {
         warnSpy.mockRestore();
       }
@@ -269,10 +274,10 @@ describe('TitleGenerationService', () => {
 
     it('should fail when vault path cannot be determined', async () => {
       mockPlugin.app.vault.adapter.basePath = undefined;
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       try {
-        const callback = jest.fn();
+        const callback = vi.fn();
         await service.generateTitle('conv-123', 'test', 'response', callback);
 
         expect(callback).toHaveBeenCalledWith('conv-123', {
@@ -287,10 +292,10 @@ describe('TitleGenerationService', () => {
 
     it('should fail when Claude CLI is not found', async () => {
       mockPlugin.getResolvedClaudeCliPath.mockReturnValue(null);
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       try {
-        const callback = jest.fn();
+        const callback = vi.fn();
         await service.generateTitle('conv-123', 'test', 'response', callback);
 
         expect(callback).toHaveBeenCalledWith('conv-123', {
@@ -316,7 +321,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
       await service.generateTitle('conv-123', longMessage, 'response', callback);
 
       // Service should still complete successfully with truncated message
@@ -340,8 +345,8 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       // Start two generations concurrently
       const promise1 = service.generateTitle('conv-1', 'msg1', 'resp1', callback1);
@@ -355,8 +360,8 @@ describe('TitleGenerationService', () => {
 
     it('should cancel previous generation for same conversation', async () => {
       // First call will be aborted when second call starts
-      const callback1 = jest.fn();
-      const callback2 = jest.fn();
+      const callback1 = vi.fn();
+      const callback2 = vi.fn();
 
       // Mock a slow first generation
       setMockMessages([
@@ -406,7 +411,7 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const callback = jest.fn();
+      const callback = vi.fn();
 
       // Start generation then cancel immediately
       const promise = service.generateTitle('conv-1', 'msg', 'resp', callback);
@@ -421,7 +426,7 @@ describe('TitleGenerationService', () => {
 
   describe('safeCallback', () => {
     it('should catch errors thrown by callback', async () => {
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
@@ -434,16 +439,16 @@ describe('TitleGenerationService', () => {
         { type: 'result' },
       ]);
 
-      const throwingCallback = jest.fn().mockRejectedValue(new Error('Callback error'));
+      const throwingCallback = vi.fn().mockRejectedValue(new Error('Callback error'));
 
       // Should not throw
       await expect(
-        service.generateTitle('conv-123', 'test', 'response', throwingCallback)
+        service.generateTitle('conv-123', 'test', 'response', throwingCallback),
       ).resolves.not.toThrow();
 
       expect(consoleSpy).toHaveBeenCalledWith(
         '[TitleGeneration] Error in callback:',
-        'Callback error'
+        'Callback error',
       );
 
       consoleSpy.mockRestore();

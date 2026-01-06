@@ -1,5 +1,5 @@
 /**
- * Claudian - Inline edit service
+ * Cortex - Inline edit service
  *
  * Lightweight Claude query service for inline text editing.
  * Uses read-only tools only and supports multi-turn clarification.
@@ -11,17 +11,17 @@ import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
 import { getInlineEditSystemPrompt } from '../../core/prompts/inlineEdit';
 import { getPathFromToolInput } from '../../core/tools/toolInput';
 import {
-  isReadOnlyTool,
   READ_ONLY_TOOLS,
   TOOL_GLOB,
   TOOL_GREP,
   TOOL_LS,
   TOOL_READ,
+  isReadOnlyTool,
 } from '../../core/tools/toolNames';
 import { THINKING_BUDGETS } from '../../core/types';
-import type ClaudianPlugin from '../../main';
+import type CortexPlugin from '../../main';
 import { prependContextFiles } from '../../utils/context';
-import { type CursorContext } from '../../utils/editor';
+import type { CursorContext } from '../../utils/editor';
 import { getEnhancedPath, parseEnvironmentVariables } from '../../utils/env';
 import { getVaultPath, isPathWithinVault as isPathWithinVaultUtil } from '../../utils/path';
 
@@ -32,7 +32,7 @@ export interface InlineEditSelectionRequest {
   instruction: string;
   notePath: string;
   selectedText: string;
-  startLine?: number;  // 1-indexed
+  startLine?: number; // 1-indexed
   lineCount?: number;
   contextFiles?: string[];
 }
@@ -49,19 +49,19 @@ export type InlineEditRequest = InlineEditSelectionRequest | InlineEditCursorReq
 
 export interface InlineEditResult {
   success: boolean;
-  editedText?: string;      // replacement (selection mode)
-  insertedText?: string;    // insertion (cursor mode)
+  editedText?: string; // replacement (selection mode)
+  insertedText?: string; // insertion (cursor mode)
   clarification?: string;
   error?: string;
 }
 
 /** Service for inline text editing with Claude using read-only tools. */
 export class InlineEditService {
-  private plugin: ClaudianPlugin;
+  private plugin: CortexPlugin;
   private abortController: AbortController | null = null;
   private sessionId: string | null = null;
 
-  constructor(plugin: ClaudianPlugin) {
+  constructor(plugin: CortexPlugin) {
     this.plugin = plugin;
   }
 
@@ -121,10 +121,7 @@ export class InlineEditService {
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       hooks: {
-        PreToolUse: [
-          this.createReadOnlyHook(),
-          this.createVaultRestrictionHook(vaultPath),
-        ],
+        PreToolUse: [this.createReadOnlyHook(), this.createVaultRestrictionHook(vaultPath)],
       },
     };
 
@@ -133,7 +130,7 @@ export class InlineEditService {
     }
 
     const budgetSetting = this.plugin.settings.thinkingBudget;
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === budgetSetting);
+    const budgetConfig = THINKING_BUDGETS.find((b) => b.value === budgetSetting);
     if (budgetConfig && budgetConfig.tokens > 0) {
       options.maxThinkingTokens = budgetConfig.tokens;
     }
@@ -195,9 +192,10 @@ export class InlineEditService {
       prompt = this.buildCursorPrompt(request);
     } else {
       // Selection mode - XML format with line numbers
-      const lineAttr = request.startLine && request.lineCount
-        ? ` lines="${request.startLine}-${request.startLine + request.lineCount - 1}"`
-        : '';
+      const lineAttr =
+        request.startLine && request.lineCount
+          ? ` lines="${request.startLine}-${request.startLine + request.lineCount - 1}"`
+          : '';
       prompt = [
         `<editor_selection path="${request.notePath}"${lineAttr}>`,
         request.selectedText,

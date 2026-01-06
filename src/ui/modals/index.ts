@@ -1,4 +1,4 @@
-/** Claudian UI modals - barrel export. */
+/** Cortex UI modals - barrel export. */
 
 export { type ApprovalDecision, ApprovalModal } from './ApprovalModal';
 export {

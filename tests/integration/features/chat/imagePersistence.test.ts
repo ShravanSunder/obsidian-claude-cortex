@@ -1,7 +1,7 @@
 import { WorkspaceLeaf } from 'obsidian';
 
 import type { ChatMessage, ImageAttachment } from '@/core/types';
-import { ClaudianView } from '@/features/chat/ClaudianView';
+import { CortexView } from '@/features/chat/CortexView';
 
 function createMockPlugin() {
   return {
@@ -22,26 +22,26 @@ function createMockPlugin() {
         },
       },
       workspace: {
-        getLeavesOfType: jest.fn().mockReturnValue([]),
-        getRightLeaf: jest.fn().mockReturnValue(null),
-        revealLeaf: jest.fn(),
-        on: jest.fn(),
+        getLeavesOfType: vi.fn().mockReturnValue([]),
+        getRightLeaf: vi.fn().mockReturnValue(null),
+        revealLeaf: vi.fn(),
+        on: vi.fn(),
       },
       metadataCache: {
-        on: jest.fn(),
-        getFileCache: jest.fn().mockReturnValue(null),
+        on: vi.fn(),
+        getFileCache: vi.fn().mockReturnValue(null),
       },
     },
     agentService: {
-      query: jest.fn(),
-      cancel: jest.fn(),
-      resetSession: jest.fn(),
-      setApprovalCallback: jest.fn(),
-      setSessionId: jest.fn(),
-      getSessionId: jest.fn().mockReturnValue(null),
+      query: vi.fn(),
+      cancel: vi.fn(),
+      resetSession: vi.fn(),
+      setApprovalCallback: vi.fn(),
+      setSessionId: vi.fn(),
+      getSessionId: vi.fn().mockReturnValue(null),
     },
-    saveSettings: jest.fn().mockResolvedValue(undefined),
-    createConversation: jest.fn().mockResolvedValue({
+    saveSettings: vi.fn().mockResolvedValue(undefined),
+    createConversation: vi.fn().mockResolvedValue({
       id: 'conv-1',
       title: 'Test',
       createdAt: Date.now(),
@@ -49,16 +49,16 @@ function createMockPlugin() {
       sessionId: null,
       messages: [],
     }),
-    switchConversation: jest.fn().mockResolvedValue(null),
-    updateConversation: jest.fn().mockResolvedValue(undefined),
-    getActiveEnvironmentVariables: jest.fn().mockReturnValue(''),
+    switchConversation: vi.fn().mockResolvedValue(null),
+    updateConversation: vi.fn().mockResolvedValue(undefined),
+    getActiveEnvironmentVariables: vi.fn().mockReturnValue(''),
   } as any;
 }
 
-describe('ClaudianView persistence', () => {
+describe('CortexView persistence', () => {
   it('strips base64 data when persisting messages but keeps references', () => {
     const plugin = createMockPlugin();
-    const view = new ClaudianView(new WorkspaceLeaf(), plugin);
+    const view = new CortexView(new WorkspaceLeaf(), plugin);
 
     const images: ImageAttachment[] = [
       {
@@ -66,7 +66,7 @@ describe('ClaudianView persistence', () => {
         name: 'cached.png',
         mediaType: 'image/png',
         size: 10,
-        cachePath: '.claudian-cache/images/cached.png',
+        cachePath: '.cortex-cache/images/cached.png',
         filePath: 'images/cached.png',
         data: 'YmFzZTY0',
         source: 'paste',
@@ -88,7 +88,7 @@ describe('ClaudianView persistence', () => {
     const persisted = view.state.getPersistedMessages();
 
     expect(persisted[0].images?.[0].data).toBeUndefined();
-    expect(persisted[0].images?.[0].cachePath).toBe('.claudian-cache/images/cached.png');
+    expect(persisted[0].images?.[0].cachePath).toBe('.cortex-cache/images/cached.png');
     expect(persisted[0].images?.[0].filePath).toBe('images/cached.png');
   });
 });

@@ -202,10 +202,13 @@ describe('wikilink pattern matching', () => {
 
   describe('real-world examples', () => {
     it('matches typical vault path from screenshot', () => {
-      const text = 'Found in [[30.areas/a.finance/Investment lessons/2024.Current trading lessons.md]]';
+      const text =
+        'Found in [[30.areas/a.finance/Investment lessons/2024.Current trading lessons.md]]';
       const matches = findWikilinks(text);
       expect(matches).toHaveLength(1);
-      expect(matches[0].linkPath).toBe('30.areas/a.finance/Investment lessons/2024.Current trading lessons.md');
+      expect(matches[0].linkPath).toBe(
+        '30.areas/a.finance/Investment lessons/2024.Current trading lessons.md',
+      );
     });
 
     it('matches multiple paths in a list', () => {

@@ -4,17 +4,40 @@
  * Tests for MCP types, storage parsing, service logic, and utilities.
  */
 
-import * as childProcess from 'child_process';
 import { EventEmitter } from 'events';
-import * as http from 'http';
 import { ReadableStream } from 'stream/web';
+import { vi } from 'vitest';
+
+// Use vi.hoisted to define mocks before vi.mock is hoisted
+const { mockSpawn, mockHttpRequest } = vi.hoisted(() => ({
+  mockSpawn: vi.fn(),
+  mockHttpRequest: vi.fn(),
+}));
+
+// Mock child_process at module level for ESM compatibility
+vi.mock('child_process', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('child_process')>();
+  return {
+    ...actual,
+    spawn: mockSpawn,
+  };
+});
+
+// Mock http at module level for ESM compatibility
+vi.mock('http', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('http')>();
+  return {
+    ...actual,
+    request: mockHttpRequest,
+  };
+});
 
 import { MCP_CONFIG_PATH, McpStorage } from '@/core/storage/McpStorage';
 import type {
-  ClaudianMcpServer,
+  CortexMcpServer,
   McpHttpServerConfig,
-  McpServerConfig,
   McpSSEServerConfig,
+  McpServerConfig,
   McpStdioServerConfig,
 } from '@/core/types/mcp';
 import {
@@ -350,7 +373,7 @@ describe('McpStorage', () => {
       };
       const { storage, files } = createMemoryStorage(initial);
 
-      const servers: ClaudianMcpServer[] = [
+      const servers: CortexMcpServer[] = [
         {
           name: 'new-server',
           config: {
@@ -398,7 +421,7 @@ describe('McpStorage', () => {
       };
       const { storage, files } = createMemoryStorage(initial);
 
-      const servers: ClaudianMcpServer[] = [
+      const servers: CortexMcpServer[] = [
         {
           name: 'default-meta',
           config: { command: 'npx' },
@@ -443,7 +466,7 @@ describe('McpStorage', () => {
     });
 
     it('should skip invalid server configs on load', async () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const initial = {
         mcpServers: {
           valid: { command: 'npx' },
@@ -457,11 +480,11 @@ describe('McpStorage', () => {
       };
       const { storage } = createMemoryStorage(initial);
 
-      let servers: ClaudianMcpServer[] = [];
+      let servers: CortexMcpServer[] = [];
       try {
         servers = await storage.load();
         expect(warnSpy).toHaveBeenCalledWith(
-          expect.stringContaining('Invalid MCP server config for "invalid"')
+          expect.stringContaining('Invalid MCP server config for "invalid"'),
         );
       } finally {
         warnSpy.mockRestore();
@@ -486,7 +509,7 @@ describe('McpStorage', () => {
       };
       const { storage, files } = createMemoryStorage(initial);
 
-      const servers: ClaudianMcpServer[] = [
+      const servers: CortexMcpServer[] = [
         {
           name: 'legacy',
           config: { command: 'node' },
@@ -658,8 +681,8 @@ describe('MCP Utils', () => {
       expect(parseRpcId(undefined)).toBeNull();
       expect(parseRpcId('abc')).toBeNull();
       expect(parseRpcId('')).toBeNull();
-      expect(parseRpcId(NaN)).toBeNull();
-      expect(parseRpcId(Infinity)).toBeNull();
+      expect(parseRpcId(Number.NaN)).toBeNull();
+      expect(parseRpcId(Number.POSITIVE_INFINITY)).toBeNull();
     });
   });
 
@@ -755,10 +778,7 @@ describe('MCP Utils', () => {
 
       await consumeSseStream(stream as any, (event) => events.push(event));
 
-      expect(events).toEqual([
-        { event: 'message', data: 'hello' },
-        { data: 'world' },
-      ]);
+      expect(events).toEqual([{ event: 'message', data: 'hello' }, { data: 'world' }]);
     });
   });
 
@@ -776,17 +796,17 @@ describe('MCP Utils', () => {
     });
 
     it('should reject on timeout', async () => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       try {
         const pending = new Map<number, (msg: Record<string, unknown>) => void>();
         const promise = waitForRpcResponse(pending, 1, 50);
 
-        jest.advanceTimersByTime(50);
+        vi.advanceTimersByTime(50);
 
         await expect(promise).rejects.toThrow('Response timeout (50ms)');
         expect(pending.has(1)).toBe(false);
       } finally {
-        jest.useRealTimers();
+        vi.useRealTimers();
       }
     });
   });
@@ -799,10 +819,14 @@ describe('MCP Utils', () => {
     });
 
     it('should set Content-Type header when missing', async () => {
-      const fetchMock = jest.fn().mockResolvedValue(new Response('', { status: 200 }));
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
       globalThis.fetch = fetchMock as any;
 
-      await postJsonRpc(new URL('http://localhost:3000/mcp'), { Authorization: 'token' }, { id: 1 });
+      await postJsonRpc(
+        new URL('http://localhost:3000/mcp'),
+        { Authorization: 'token' },
+        { id: 1 },
+      );
 
       expect(fetchMock).toHaveBeenCalledWith(
         'http://localhost:3000/mcp',
@@ -812,18 +836,18 @@ describe('MCP Utils', () => {
             Authorization: 'token',
             'Content-Type': 'application/json',
           }),
-        })
+        }),
       );
     });
 
     it('should preserve existing Content-Type header', async () => {
-      const fetchMock = jest.fn().mockResolvedValue(new Response('', { status: 200 }));
+      const fetchMock = vi.fn().mockResolvedValue(new Response('', { status: 200 }));
       globalThis.fetch = fetchMock as any;
 
       await postJsonRpc(
         new URL('http://localhost:3000/mcp'),
         { 'Content-Type': 'application/custom' },
-        { id: 1 }
+        { id: 1 },
       );
 
       const options = fetchMock.mock.calls[0][1] as RequestInit;
@@ -838,40 +862,41 @@ describe('MCP Utils', () => {
 // ============================================================================
 
 describe('McpTester', () => {
+  type MockFn = ReturnType<typeof vi.fn>;
   type MockChildProcess = EventEmitter & {
     stdout: EventEmitter;
     stderr: EventEmitter;
-    stdin: { write: jest.Mock };
+    stdin: { write: MockFn };
     killed: boolean;
-    kill: jest.Mock;
+    kill: MockFn;
   };
 
   const createMockChildProcess = (): MockChildProcess => {
     const child = new EventEmitter() as MockChildProcess;
     child.stdout = new EventEmitter();
     child.stderr = new EventEmitter();
-    child.stdin = { write: jest.fn() };
+    child.stdin = { write: vi.fn() };
     child.killed = false;
-    child.kill = jest.fn(() => {
+    child.kill = vi.fn(() => {
       child.killed = true;
     });
     return child;
   };
 
   const mockHttpRequests = (
-    responses: Array<{ statusCode?: number; body: string }>
-  ): jest.SpyInstance => {
-    return jest.spyOn(http, 'request').mockImplementation(((_options: http.RequestOptions, callback: (res: any) => void) => {
+    responses: Array<{ statusCode?: number; body: string }>,
+  ): typeof mockHttpRequest => {
+    return mockHttpRequest.mockImplementation((_options: unknown, callback: (res: any) => void) => {
       const response = responses.shift() ?? { statusCode: 200, body: '' };
       const res = new EventEmitter() as EventEmitter & { statusCode?: number };
       res.statusCode = response.statusCode ?? 200;
       callback(res);
 
       const req = new EventEmitter() as EventEmitter & {
-        write: jest.Mock;
+        write: MockFn;
         end: () => void;
       };
-      req.write = jest.fn();
+      req.write = vi.fn();
       req.end = () => {
         if (response.body) {
           res.emit('data', response.body);
@@ -879,17 +904,22 @@ describe('McpTester', () => {
         res.emit('end');
       };
       return req as any;
-    }) as any);
+    });
   };
 
+  beforeEach(() => {
+    mockSpawn.mockReset();
+    mockHttpRequest.mockReset();
+  });
+
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   it('should test stdio server and return tools', async () => {
     const child = createMockChildProcess();
-    const spawnSpy = jest.spyOn(childProcess, 'spawn').mockReturnValue(child as any);
-    const server: ClaudianMcpServer = {
+    mockSpawn.mockReturnValue(child as any);
+    const server: CortexMcpServer = {
       name: 'local',
       config: { command: 'node', args: ['server'] },
       enabled: true,
@@ -904,8 +934,8 @@ describe('McpTester', () => {
         JSON.stringify({
           id: 1,
           result: { serverInfo: { name: 'local-srv', version: '1.0.0' } },
-        }) + '\n'
-      )
+        }) + '\n',
+      ),
     );
     child.stdout.emit(
       'data',
@@ -913,20 +943,26 @@ describe('McpTester', () => {
         JSON.stringify({
           id: 2,
           result: { tools: [{ name: 'tool-a', description: 'Tool A' }] },
-        }) + '\n'
-      )
+        }) + '\n',
+      ),
     );
 
     const result = await resultPromise;
 
-    expect(spawnSpy).toHaveBeenCalledWith('node', ['server'], expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }));
+    expect(mockSpawn).toHaveBeenCalledWith(
+      'node',
+      ['server'],
+      expect.objectContaining({ stdio: ['pipe', 'pipe', 'pipe'] }),
+    );
     expect(result.success).toBe(true);
     expect(result.serverName).toBe('local-srv');
     expect(result.serverVersion).toBe('1.0.0');
     expect(result.tools).toMatchObject([{ name: 'tool-a', description: 'Tool A' }]);
     expect(child.stdin.write).toHaveBeenCalledTimes(3);
 
-    const writes = child.stdin.write.mock.calls.map((call) => JSON.parse(String(call[0]).trim()));
+    const writes = child.stdin.write.mock.calls.map((call: unknown[]) =>
+      JSON.parse(String(call[0]).trim()),
+    );
     expect(writes[0].method).toBe('initialize');
     expect(writes[1].method).toBe('notifications/initialized');
     expect(writes[2].method).toBe('tools/list');
@@ -934,10 +970,10 @@ describe('McpTester', () => {
   });
 
   it('should fail when stdio command is missing', async () => {
-    const spawnSpy = jest.spyOn(childProcess, 'spawn').mockImplementation(() => {
+    mockSpawn.mockImplementation(() => {
       throw new Error('spawn should not be called');
     });
-    const server: ClaudianMcpServer = {
+    const server: CortexMcpServer = {
       name: 'missing',
       config: { command: '' },
       enabled: true,
@@ -948,11 +984,11 @@ describe('McpTester', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('Missing command');
-    expect(spawnSpy).not.toHaveBeenCalled();
+    expect(mockSpawn).not.toHaveBeenCalled();
   });
 
   it('should test http server and return tools', async () => {
-    const requestSpy = mockHttpRequests([
+    mockHttpRequests([
       {
         statusCode: 200,
         body: JSON.stringify({ result: { serverInfo: { name: 'http-srv', version: '2.0.0' } } }),
@@ -963,9 +999,13 @@ describe('McpTester', () => {
         body: JSON.stringify({ result: { tools: [{ name: 'tool-b' }] } }),
       },
     ]);
-    const server: ClaudianMcpServer = {
+    const server: CortexMcpServer = {
       name: 'http',
-      config: { type: 'http', url: 'http://localhost:3000/mcp', headers: { Authorization: 'token' } },
+      config: {
+        type: 'http',
+        url: 'http://localhost:3000/mcp',
+        headers: { Authorization: 'token' },
+      },
       enabled: true,
       contextSaving: false,
     };
@@ -976,20 +1016,20 @@ describe('McpTester', () => {
     expect(result.serverName).toBe('http-srv');
     expect(result.serverVersion).toBe('2.0.0');
     expect(result.tools).toMatchObject([{ name: 'tool-b' }]);
-    expect(requestSpy).toHaveBeenCalledTimes(3);
+    expect(mockHttpRequest).toHaveBeenCalledTimes(3);
 
-    const firstOptions = requestSpy.mock.calls[0][0] as { headers?: Record<string, string> };
+    const firstOptions = mockHttpRequest.mock.calls[0][0] as { headers?: Record<string, string> };
     expect(firstOptions.headers?.Accept).toContain('text/event-stream');
   });
 
   it('should surface initialize errors for http servers', async () => {
-    const requestSpy = mockHttpRequests([
+    mockHttpRequests([
       {
         statusCode: 200,
         body: JSON.stringify({ error: { message: 'init failed' } }),
       },
     ]);
-    const server: ClaudianMcpServer = {
+    const server: CortexMcpServer = {
       name: 'http',
       config: { type: 'http', url: 'http://localhost:3000/mcp' },
       enabled: true,
@@ -1000,7 +1040,7 @@ describe('McpTester', () => {
 
     expect(result.success).toBe(false);
     expect(result.error).toBe('init failed');
-    expect(requestSpy).toHaveBeenCalledTimes(1);
+    expect(mockHttpRequest).toHaveBeenCalledTimes(1);
   });
 
   it('should test sse server and return tools', async () => {
@@ -1009,7 +1049,7 @@ describe('McpTester', () => {
     const { stream, push, close } = createControlledStream();
     let endpointSent = false;
 
-    const fetchMock = jest.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = typeof input === 'string' ? input : input.toString();
       if (!init || init.method === 'GET') {
         if (!endpointSent) {
@@ -1030,8 +1070,8 @@ describe('McpTester', () => {
               JSON.stringify({
                 id: 1,
                 result: { serverInfo: { name: 'sse-srv', version: '3.0.0' } },
-              })
-            )
+              }),
+            ),
           );
         }
         if (payload.method === 'tools/list') {
@@ -1046,7 +1086,7 @@ describe('McpTester', () => {
     globalThis.fetch = fetchMock as any;
 
     try {
-      const server: ClaudianMcpServer = {
+      const server: CortexMcpServer = {
         name: 'sse',
         config: { type: 'sse', url: 'http://localhost:3000/sse' },
         enabled: true,
@@ -1075,11 +1115,11 @@ describe('McpTester', () => {
 // ============================================================================
 
 describe('McpService', () => {
-  function createService(servers: ClaudianMcpServer[]): McpService {
+  function createService(servers: CortexMcpServer[]): McpService {
     const mockPlugin = {
       storage: {
         mcp: {
-          load: jest.fn().mockResolvedValue(servers),
+          load: vi.fn().mockResolvedValue(servers),
         },
       },
     } as any;
@@ -1090,7 +1130,7 @@ describe('McpService', () => {
   }
 
   describe('getActiveServers', () => {
-    const servers: ClaudianMcpServer[] = [
+    const servers: CortexMcpServer[] = [
       {
         name: 'always-on',
         config: { command: 'server1' },
@@ -1149,7 +1189,7 @@ describe('McpService', () => {
     });
 
     it('should return empty object for all disabled servers', () => {
-      const disabledServers: ClaudianMcpServer[] = [
+      const disabledServers: CortexMcpServer[] = [
         { name: 's1', config: { command: 'c1' }, enabled: false, contextSaving: false },
         { name: 's2', config: { command: 'c2' }, enabled: false, contextSaving: true },
       ];
@@ -1162,9 +1202,14 @@ describe('McpService', () => {
   });
 
   describe('isValidMcpMention', () => {
-    const servers: ClaudianMcpServer[] = [
+    const servers: CortexMcpServer[] = [
       { name: 'enabled-context', config: { command: 'c1' }, enabled: true, contextSaving: true },
-      { name: 'enabled-no-context', config: { command: 'c2' }, enabled: true, contextSaving: false },
+      {
+        name: 'enabled-no-context',
+        config: { command: 'c2' },
+        enabled: true,
+        contextSaving: false,
+      },
       { name: 'disabled-context', config: { command: 'c3' }, enabled: false, contextSaving: true },
     ];
 
@@ -1190,7 +1235,7 @@ describe('McpService', () => {
   });
 
   describe('getContextSavingServers', () => {
-    const servers: ClaudianMcpServer[] = [
+    const servers: CortexMcpServer[] = [
       { name: 's1', config: { command: 'c1' }, enabled: true, contextSaving: true },
       { name: 's2', config: { command: 'c2' }, enabled: true, contextSaving: false },
       { name: 's3', config: { command: 'c3' }, enabled: false, contextSaving: true },
@@ -1207,7 +1252,7 @@ describe('McpService', () => {
   });
 
   describe('extractMentions', () => {
-    const servers: ClaudianMcpServer[] = [
+    const servers: CortexMcpServer[] = [
       { name: 'context7', config: { command: 'c1' }, enabled: true, contextSaving: true },
       { name: 'always-on', config: { command: 'c2' }, enabled: true, contextSaving: false },
       { name: 'disabled', config: { command: 'c3' }, enabled: false, contextSaving: true },
@@ -1231,7 +1276,7 @@ describe('McpService', () => {
 
   describe('helper methods', () => {
     it('should report server lists and enabled counts', () => {
-      const servers: ClaudianMcpServer[] = [
+      const servers: CortexMcpServer[] = [
         { name: 's1', config: { command: 'c1' }, enabled: true, contextSaving: true },
         { name: 's2', config: { command: 'c2' }, enabled: true, contextSaving: false },
         { name: 's3', config: { command: 'c3' }, enabled: false, contextSaving: true },

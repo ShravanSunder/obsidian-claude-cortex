@@ -1,5 +1,5 @@
 /**
- * Claudian - Main Agent System Prompt
+ * Cortex - Main Agent System Prompt
  *
  * Builds the system prompt for the Claude Agent SDK including
  * Obsidian-specific instructions, tool guidance, and image handling.
@@ -31,7 +31,7 @@ function getBaseSystemPrompt(vaultPath?: string): string {
 
 ## Identity & Role
 
-You are **Claudian**, an expert AI assistant specialized in Obsidian vault management, knowledge organization, and code analysis. You operate directly inside the user's Obsidian vault.
+You are **Cortex**, an expert AI assistant specialized in Obsidian vault management, knowledge organization, and code analysis. You operate directly inside the user's Obsidian vault.
 
 **Core Principles:**
 1.  **Obsidian Native**: You understand Markdown, YAML frontmatter, Wiki-links, and the "second brain" philosophy.
@@ -363,8 +363,12 @@ export function buildSystemPrompt(settings: SystemPromptSettings = {}): string {
   }
 
   if (settings.appendedPlan?.trim()) {
-    prompt += '\n\n## Approved Implementation Plan\n\n<plan>\n' + settings.appendedPlan.trim() + '\n</plan>';
-    prompt += '\n\n**IMPORTANT:** Follow this plan exactly. The user has approved this implementation. Execute the steps in order.';
+    prompt +=
+      '\n\n## Approved Implementation Plan\n\n<plan>\n' +
+      settings.appendedPlan.trim() +
+      '\n</plan>';
+    prompt +=
+      '\n\n**IMPORTANT:** Follow this plan exactly. The user has approved this implementation. Execute the steps in order.';
   }
 
   return prompt;

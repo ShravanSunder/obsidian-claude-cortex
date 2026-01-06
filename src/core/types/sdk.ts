@@ -42,7 +42,15 @@ export interface ModelUsageInfo {
 
 /** SDK message structure from the Claude Agent SDK. */
 export interface SDKMessage {
-  type: 'system' | 'assistant' | 'user' | 'stream_event' | 'result' | 'error' | 'tool_progress' | 'auth_status';
+  type:
+    | 'system'
+    | 'assistant'
+    | 'user'
+    | 'stream_event'
+    | 'result'
+    | 'error'
+    | 'tool_progress'
+    | 'auth_status';
   subtype?: 'init' | 'compact_boundary' | 'status' | 'hook_response' | string;
   session_id?: string;
   message?: SDKMessageContent;

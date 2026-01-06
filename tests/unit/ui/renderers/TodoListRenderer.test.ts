@@ -6,7 +6,7 @@ import { extractLastTodosFromMessages, parseTodoInput } from '@/ui/renderers/Tod
 
 describe('TodoListRenderer', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('parseTodoInput', () => {
@@ -38,7 +38,7 @@ describe('TodoListRenderer', () => {
           { status: 'pending' },
         ],
       };
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       try {
         const result = parseTodoInput(input);
@@ -59,7 +59,7 @@ describe('TodoListRenderer', () => {
           { content: 'Also valid', status: 'completed', activeForm: 'Done' },
         ],
       };
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       try {
         const result = parseTodoInput(input);
@@ -78,18 +78,22 @@ describe('TodoListRenderer', () => {
       const messages = [
         {
           role: 'assistant',
-          toolCalls: [{
-            name: 'TodoWrite',
-            input: { todos: [{ content: 'Old task', status: 'completed', activeForm: 'Old' }] },
-          }],
+          toolCalls: [
+            {
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'Old task', status: 'completed', activeForm: 'Old' }] },
+            },
+          ],
         },
         { role: 'user' },
         {
           role: 'assistant',
-          toolCalls: [{
-            name: 'TodoWrite',
-            input: { todos: [{ content: 'New task', status: 'pending', activeForm: 'New' }] },
-          }],
+          toolCalls: [
+            {
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'New task', status: 'pending', activeForm: 'New' }] },
+            },
+          ],
         },
       ];
 
@@ -114,10 +118,7 @@ describe('TodoListRenderer', () => {
     });
 
     it('should handle messages without toolCalls', () => {
-      const messages = [
-        { role: 'assistant' },
-        { role: 'user' },
-      ];
+      const messages = [{ role: 'assistant' }, { role: 'user' }];
 
       expect(extractLastTodosFromMessages(messages)).toBeNull();
     });
@@ -126,10 +127,12 @@ describe('TodoListRenderer', () => {
       const messages = [
         {
           role: 'user',
-          toolCalls: [{
-            name: 'TodoWrite',
-            input: { todos: [{ content: 'User task', status: 'pending', activeForm: 'Task' }] },
-          }],
+          toolCalls: [
+            {
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'User task', status: 'pending', activeForm: 'Task' }] },
+            },
+          ],
         },
       ];
 
@@ -142,7 +145,10 @@ describe('TodoListRenderer', () => {
           role: 'assistant',
           toolCalls: [
             { name: 'Read', input: {} },
-            { name: 'TodoWrite', input: { todos: [{ content: 'Task', status: 'in_progress', activeForm: 'Doing' }] } },
+            {
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'Task', status: 'in_progress', activeForm: 'Doing' }] },
+            },
             { name: 'Write', input: {} },
           ],
         },
@@ -159,8 +165,14 @@ describe('TodoListRenderer', () => {
         {
           role: 'assistant',
           toolCalls: [
-            { name: 'TodoWrite', input: { todos: [{ content: 'First', status: 'pending', activeForm: 'First' }] } },
-            { name: 'TodoWrite', input: { todos: [{ content: 'Last', status: 'pending', activeForm: 'Last' }] } },
+            {
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'First', status: 'pending', activeForm: 'First' }] },
+            },
+            {
+              name: 'TodoWrite',
+              input: { todos: [{ content: 'Last', status: 'pending', activeForm: 'Last' }] },
+            },
           ],
         },
       ];
@@ -172,7 +184,7 @@ describe('TodoListRenderer', () => {
     });
 
     it('should log warning when TodoWrite parsing fails', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const messages = [
         {
           role: 'assistant',
@@ -191,7 +203,7 @@ describe('TodoListRenderer', () => {
           messageIndex: 0,
           toolCallIndex: 0,
           inputKeys: ['todos'],
-        })
+        }),
       );
       warnSpy.mockRestore();
     });

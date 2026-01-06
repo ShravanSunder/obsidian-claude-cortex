@@ -35,5 +35,5 @@ export interface AskUserQuestionInput {
 
 /** Callback type for handling AskUserQuestion tool calls. */
 export type AskUserQuestionCallback = (
-  input: AskUserQuestionInput
+  input: AskUserQuestionInput,
 ) => Promise<Record<string, string | string[]> | null>;

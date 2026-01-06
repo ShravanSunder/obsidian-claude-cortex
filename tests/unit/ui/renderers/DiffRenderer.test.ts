@@ -68,11 +68,11 @@ describe('DiffRenderer', () => {
       const newText = 'line1\ninserted\nline2\nline3';
       const result = computeLineDiff(oldText, newText);
 
-      const insertedLines = result.filter(l => l.type === 'insert');
+      const insertedLines = result.filter((l) => l.type === 'insert');
       expect(insertedLines).toHaveLength(1);
       expect(insertedLines[0].text).toBe('inserted');
 
-      const equalLines = result.filter(l => l.type === 'equal');
+      const equalLines = result.filter((l) => l.type === 'equal');
       expect(equalLines).toHaveLength(3);
     });
 
@@ -81,11 +81,11 @@ describe('DiffRenderer', () => {
       const newText = 'line1\nline2\nline3';
       const result = computeLineDiff(oldText, newText);
 
-      const deletedLines = result.filter(l => l.type === 'delete');
+      const deletedLines = result.filter((l) => l.type === 'delete');
       expect(deletedLines).toHaveLength(1);
       expect(deletedLines[0].text).toBe('deleted');
 
-      const equalLines = result.filter(l => l.type === 'equal');
+      const equalLines = result.filter((l) => l.type === 'equal');
       expect(equalLines).toHaveLength(3);
     });
 
@@ -94,8 +94,8 @@ describe('DiffRenderer', () => {
       const newText = 'new1\nnew2\nnew3';
       const result = computeLineDiff(oldText, newText);
 
-      const deletedLines = result.filter(l => l.type === 'delete');
-      const insertedLines = result.filter(l => l.type === 'insert');
+      const deletedLines = result.filter((l) => l.type === 'delete');
+      const insertedLines = result.filter((l) => l.type === 'insert');
 
       expect(deletedLines).toHaveLength(3);
       expect(insertedLines).toHaveLength(3);
@@ -115,7 +115,7 @@ describe('DiffRenderer', () => {
       });
 
       // Inserted line should have only newLineNum
-      const inserted = result.find(l => l.type === 'insert');
+      const inserted = result.find((l) => l.type === 'insert');
       expect(inserted).toBeDefined();
       expect(inserted!.newLineNum).toBeDefined();
       expect(inserted!.oldLineNum).toBeUndefined();
@@ -127,7 +127,7 @@ describe('DiffRenderer', () => {
       const result = computeLineDiff(oldText, newText);
 
       // Should have 3 equal lines (line1, line2, empty)
-      expect(result.every(l => l.type === 'equal')).toBe(true);
+      expect(result.every((l) => l.type === 'equal')).toBe(true);
       expect(result).toHaveLength(3);
     });
 
@@ -137,16 +137,16 @@ describe('DiffRenderer', () => {
       const result = computeLineDiff(oldText, newText);
 
       // A, C, E should be equal
-      const equalLines = result.filter(l => l.type === 'equal');
-      expect(equalLines.map(l => l.text)).toEqual(['A', 'C', 'E']);
+      const equalLines = result.filter((l) => l.type === 'equal');
+      expect(equalLines.map((l) => l.text)).toEqual(['A', 'C', 'E']);
 
       // B, D should be deleted
-      const deletedLines = result.filter(l => l.type === 'delete');
-      expect(deletedLines.map(l => l.text)).toEqual(['B', 'D']);
+      const deletedLines = result.filter((l) => l.type === 'delete');
+      expect(deletedLines.map((l) => l.text)).toEqual(['B', 'D']);
 
       // X, Y should be inserted
-      const insertedLines = result.filter(l => l.type === 'insert');
-      expect(insertedLines.map(l => l.text)).toEqual(['X', 'Y']);
+      const insertedLines = result.filter((l) => l.type === 'insert');
+      expect(insertedLines.map((l) => l.text)).toEqual(['X', 'Y']);
     });
   });
 
@@ -354,26 +354,22 @@ describe('DiffRenderer', () => {
         { type: 'equal', text: 'line1', oldLineNum: 1, newLineNum: 1 },
       ];
       const html = diffLinesToHtml(diffLines);
-      expect(html).toContain('claudian-diff-no-changes');
+      expect(html).toContain('cortex-diff-no-changes');
       expect(html).toContain('No changes');
     });
 
     it('should render inserted line with + prefix', () => {
-      const diffLines: DiffLine[] = [
-        { type: 'insert', text: 'new line', newLineNum: 1 },
-      ];
+      const diffLines: DiffLine[] = [{ type: 'insert', text: 'new line', newLineNum: 1 }];
       const html = diffLinesToHtml(diffLines);
-      expect(html).toContain('claudian-diff-insert');
+      expect(html).toContain('cortex-diff-insert');
       expect(html).toContain('+');
       expect(html).toContain('new line');
     });
 
     it('should render deleted line with - prefix', () => {
-      const diffLines: DiffLine[] = [
-        { type: 'delete', text: 'old line', oldLineNum: 1 },
-      ];
+      const diffLines: DiffLine[] = [{ type: 'delete', text: 'old line', oldLineNum: 1 }];
       const html = diffLinesToHtml(diffLines);
-      expect(html).toContain('claudian-diff-delete');
+      expect(html).toContain('cortex-diff-delete');
       expect(html).toContain('-');
       expect(html).toContain('old line');
     });
@@ -384,7 +380,7 @@ describe('DiffRenderer', () => {
         { type: 'insert', text: 'new', newLineNum: 2 },
       ];
       const html = diffLinesToHtml(diffLines);
-      expect(html).toContain('claudian-diff-equal');
+      expect(html).toContain('cortex-diff-equal');
     });
 
     it('should escape HTML special characters', () => {
@@ -413,17 +409,15 @@ describe('DiffRenderer', () => {
       }
 
       const html = diffLinesToHtml(lines, 3);
-      expect(html).toContain('claudian-diff-separator');
+      expect(html).toContain('cortex-diff-separator');
       expect(html).toContain('...');
     });
 
     it('should handle empty line text', () => {
-      const diffLines: DiffLine[] = [
-        { type: 'insert', text: '', newLineNum: 1 },
-      ];
+      const diffLines: DiffLine[] = [{ type: 'insert', text: '', newLineNum: 1 }];
       const html = diffLinesToHtml(diffLines);
       // Should render space for empty line
-      expect(html).toContain('claudian-diff-text');
+      expect(html).toContain('cortex-diff-text');
     });
   });
 
@@ -439,7 +433,7 @@ describe('DiffRenderer', () => {
       const lines = Array(100).fill('line').join('\n');
       const result = computeLineDiff(lines, lines);
       expect(result).toHaveLength(100);
-      expect(result.every(l => l.type === 'equal')).toBe(true);
+      expect(result.every((l) => l.type === 'equal')).toBe(true);
     });
 
     it('should handle special characters in content', () => {
@@ -448,7 +442,7 @@ describe('DiffRenderer', () => {
       const result = computeLineDiff(oldText, newText);
 
       expect(result).toHaveLength(4);
-      const changed = result.filter(l => l.type !== 'equal');
+      const changed = result.filter((l) => l.type !== 'equal');
       expect(changed).toHaveLength(2); // One delete, one insert
     });
 
@@ -457,8 +451,8 @@ describe('DiffRenderer', () => {
       const newText = 'Hello 世界\nさようなら';
       const result = computeLineDiff(oldText, newText);
 
-      const deleted = result.find(l => l.type === 'delete');
-      const inserted = result.find(l => l.type === 'insert');
+      const deleted = result.find((l) => l.type === 'delete');
+      const inserted = result.find((l) => l.type === 'insert');
 
       expect(deleted?.text).toBe('こんにちは');
       expect(inserted?.text).toBe('さようなら');
@@ -470,7 +464,7 @@ describe('DiffRenderer', () => {
       const result = computeLineDiff(oldText, newText);
 
       // Split on \n treats \r as part of line
-      expect(result.every(l => l.type === 'equal')).toBe(true);
+      expect(result.every((l) => l.type === 'equal')).toBe(true);
     });
   });
 });

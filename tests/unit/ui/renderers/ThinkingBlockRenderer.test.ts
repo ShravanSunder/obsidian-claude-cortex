@@ -27,7 +27,10 @@ function createMockElement(tag = 'div'): any {
     set className(value: string) {
       classes.clear();
       if (value) {
-        value.split(' ').filter(Boolean).forEach(c => classes.add(c));
+        value
+          .split(' ')
+          .filter(Boolean)
+          .forEach((c) => classes.add(c));
       }
     },
     addClass: (cls: string) => {
@@ -65,7 +68,7 @@ function createMockElement(tag = 'div'): any {
     createDiv: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement('div');
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -74,7 +77,7 @@ function createMockElement(tag = 'div'): any {
     createSpan: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement('span');
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -94,16 +97,16 @@ function createMockElement(tag = 'div'): any {
 }
 
 // Mock renderContent function
-const mockRenderContent = jest.fn().mockResolvedValue(undefined);
+const mockRenderContent = vi.fn().mockResolvedValue(undefined);
 
 describe('ThinkingBlockRenderer', () => {
   beforeEach(() => {
-    jest.useFakeTimers();
-    jest.clearAllMocks();
+    vi.useFakeTimers();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.useRealTimers();
+    vi.useRealTimers();
   });
 
   describe('createThinkingBlock', () => {
@@ -224,7 +227,7 @@ describe('ThinkingBlockRenderer', () => {
       const state = createThinkingBlock(parentEl, mockRenderContent);
 
       // Advance time by 5 seconds
-      jest.advanceTimersByTime(5000);
+      vi.advanceTimersByTime(5000);
 
       const duration = finalizeThinkingBlock(state);
 
@@ -277,7 +280,12 @@ describe('ThinkingBlockRenderer', () => {
     it('should start collapsed by default', () => {
       const parentEl = createMockElement();
 
-      const wrapperEl = renderStoredThinkingBlock(parentEl, 'thinking content', 10, mockRenderContent);
+      const wrapperEl = renderStoredThinkingBlock(
+        parentEl,
+        'thinking content',
+        10,
+        mockRenderContent,
+      );
 
       expect((wrapperEl as any).hasClass('expanded')).toBe(false);
     });
@@ -285,7 +293,12 @@ describe('ThinkingBlockRenderer', () => {
     it('should set aria-expanded to false by default', () => {
       const parentEl = createMockElement();
 
-      const wrapperEl = renderStoredThinkingBlock(parentEl, 'thinking content', 10, mockRenderContent);
+      const wrapperEl = renderStoredThinkingBlock(
+        parentEl,
+        'thinking content',
+        10,
+        mockRenderContent,
+      );
 
       const header = (wrapperEl as any)._children[0];
       expect(header.getAttribute('aria-expanded')).toBe('false');
@@ -294,7 +307,12 @@ describe('ThinkingBlockRenderer', () => {
     it('should hide content by default', () => {
       const parentEl = createMockElement();
 
-      const wrapperEl = renderStoredThinkingBlock(parentEl, 'thinking content', 10, mockRenderContent);
+      const wrapperEl = renderStoredThinkingBlock(
+        parentEl,
+        'thinking content',
+        10,
+        mockRenderContent,
+      );
 
       const content = (wrapperEl as any)._children[1];
       expect(content.style.display).toBe('none');
@@ -303,7 +321,12 @@ describe('ThinkingBlockRenderer', () => {
     it('should toggle expand/collapse on click', () => {
       const parentEl = createMockElement();
 
-      const wrapperEl = renderStoredThinkingBlock(parentEl, 'thinking content', 10, mockRenderContent);
+      const wrapperEl = renderStoredThinkingBlock(
+        parentEl,
+        'thinking content',
+        10,
+        mockRenderContent,
+      );
       const header = (wrapperEl as any)._children[0];
       const content = (wrapperEl as any)._children[1];
 
@@ -323,21 +346,26 @@ describe('ThinkingBlockRenderer', () => {
     it('should support keyboard navigation (Enter/Space)', () => {
       const parentEl = createMockElement();
 
-      const wrapperEl = renderStoredThinkingBlock(parentEl, 'thinking content', 10, mockRenderContent);
+      const wrapperEl = renderStoredThinkingBlock(
+        parentEl,
+        'thinking content',
+        10,
+        mockRenderContent,
+      );
       const header = (wrapperEl as any)._children[0];
 
       const keydownHandlers = header._eventListeners.get('keydown') || [];
       expect(keydownHandlers.length).toBeGreaterThan(0);
 
       // Simulate Enter key
-      const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+      const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
       keydownHandlers[0](enterEvent);
 
       expect(enterEvent.preventDefault).toHaveBeenCalled();
       expect((wrapperEl as any).hasClass('expanded')).toBe(true);
 
       // Simulate Space key to collapse
-      const spaceEvent = { key: ' ', preventDefault: jest.fn() };
+      const spaceEvent = { key: ' ', preventDefault: vi.fn() };
       keydownHandlers[0](spaceEvent);
 
       expect(spaceEvent.preventDefault).toHaveBeenCalled();
@@ -356,7 +384,7 @@ describe('ThinkingBlockRenderer', () => {
       expect(keydownHandlers.length).toBeGreaterThan(0);
 
       // Simulate Enter key
-      const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+      const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
       keydownHandlers[0](enterEvent);
 
       expect(enterEvent.preventDefault).toHaveBeenCalled();
@@ -364,7 +392,7 @@ describe('ThinkingBlockRenderer', () => {
       expect((state.contentEl as any).style.display).toBe('block');
 
       // Simulate Space key to collapse
-      const spaceEvent = { key: ' ', preventDefault: jest.fn() };
+      const spaceEvent = { key: ' ', preventDefault: vi.fn() };
       keydownHandlers[0](spaceEvent);
 
       expect(spaceEvent.preventDefault).toHaveBeenCalled();
@@ -381,7 +409,7 @@ describe('ThinkingBlockRenderer', () => {
       const keydownHandlers = header._eventListeners.get('keydown') || [];
 
       // Simulate Tab key (should not toggle)
-      const tabEvent = { key: 'Tab', preventDefault: jest.fn() };
+      const tabEvent = { key: 'Tab', preventDefault: vi.fn() };
       keydownHandlers[0](tabEvent);
 
       expect(tabEvent.preventDefault).not.toHaveBeenCalled();

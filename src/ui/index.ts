@@ -1,4 +1,4 @@
-/** Claudian UI components - barrel export. */
+/** Cortex UI components - barrel export. */
 
 // Re-export from subdirectories
 export * from './components';

@@ -85,11 +85,12 @@ export class SelectionController {
       const notePath = view.file?.path || 'unknown';
       const lineCount = selectedText.split(/\r?\n/).length;
 
-      const sameRange = this.storedSelection
-        && this.storedSelection.editorView === editorView
-        && this.storedSelection.from === from
-        && this.storedSelection.to === to
-        && this.storedSelection.notePath === notePath;
+      const sameRange =
+        this.storedSelection &&
+        this.storedSelection.editorView === editorView &&
+        this.storedSelection.from === from &&
+        this.storedSelection.to === to &&
+        this.storedSelection.notePath === notePath;
       const sameText = sameRange && this.storedSelection?.selectedText === selectedText;
       const sameLineCount = sameRange && this.storedSelection?.lineCount === lineCount;
       const sameStartLine = sameRange && this.storedSelection?.startLine === startLine;
@@ -98,7 +99,15 @@ export class SelectionController {
         if (this.storedSelection && !sameRange) {
           this.clearHighlight();
         }
-        this.storedSelection = { notePath, selectedText, lineCount, startLine, from, to, editorView };
+        this.storedSelection = {
+          notePath,
+          selectedText,
+          lineCount,
+          startLine,
+          from,
+          to,
+          editorView,
+        };
         this.updateIndicator();
       }
     } else if (document.activeElement !== this.inputEl) {

@@ -1,5 +1,5 @@
 /* @ Mention dropdown */
-.claudian-mention-dropdown {
+.cortex-mention-dropdown {
   display: none;
   position: absolute;
   bottom: 100%;
@@ -17,17 +17,17 @@
   overflow-y: auto;
 }
 
-.claudian-mention-dropdown.visible {
+.cortex-mention-dropdown.visible {
   display: block;
 }
 
 /* Fixed positioning for inline editor */
-.claudian-mention-dropdown-fixed {
+.cortex-mention-dropdown-fixed {
   position: fixed;
   z-index: 10001;
 }
 
-.claudian-mention-item {
+.cortex-mention-item {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -36,24 +36,24 @@
   transition: background 0.1s ease;
 }
 
-.claudian-mention-item:hover,
-.claudian-mention-item.selected {
+.cortex-mention-item:hover,
+.cortex-mention-item.selected {
   background: var(--background-modifier-hover);
 }
 
-.claudian-mention-icon {
+.cortex-mention-icon {
   display: flex;
   align-items: center;
   color: var(--text-muted);
   flex-shrink: 0;
 }
 
-.claudian-mention-icon svg {
+.cortex-mention-icon svg {
   width: 14px;
   height: 14px;
 }
 
-.claudian-mention-path {
+.cortex-mention-path {
   font-size: 13px;
   color: var(--text-normal);
   overflow: hidden;
@@ -61,7 +61,7 @@
   white-space: nowrap;
 }
 
-.claudian-mention-empty {
+.cortex-mention-empty {
   padding: 12px;
   text-align: center;
   color: var(--text-muted);
@@ -69,25 +69,25 @@
 }
 
 /* Scrollbar for mention dropdown */
-.claudian-mention-dropdown::-webkit-scrollbar {
+.cortex-mention-dropdown::-webkit-scrollbar {
   width: 6px;
 }
 
-.claudian-mention-dropdown::-webkit-scrollbar-track {
+.cortex-mention-dropdown::-webkit-scrollbar-track {
   background: transparent;
 }
 
-.claudian-mention-dropdown::-webkit-scrollbar-thumb {
+.cortex-mention-dropdown::-webkit-scrollbar-thumb {
   background: var(--background-modifier-border);
   border-radius: 3px;
 }
 
 /* MCP items in @-mention dropdown */
-.claudian-mention-item.mcp-server .claudian-mention-icon {
+.cortex-mention-item.mcp-server .cortex-mention-icon {
   color: var(--interactive-accent);
 }
 
-.claudian-mention-text {
+.cortex-mention-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -95,13 +95,13 @@
   flex: 1;
 }
 
-.claudian-mention-name {
+.cortex-mention-name {
   font-size: 13px;
   font-weight: 500;
   color: var(--interactive-accent);
 }
 
-.claudian-mention-desc {
+.cortex-mention-desc {
   font-size: 11px;
   color: var(--text-muted);
   overflow: hidden;
@@ -110,21 +110,20 @@
 }
 
 /* Context file items in @-mention dropdown */
-.claudian-mention-item.context-file .claudian-mention-icon {
-  color: #D97757;
+.cortex-mention-item.context-file .cortex-mention-icon {
+  color: #d97757;
 }
 
 /* Context folder filter items in @-mention dropdown */
-.claudian-mention-item.context-folder .claudian-mention-icon {
-  color: #D97757;
+.cortex-mention-item.context-folder .cortex-mention-icon {
+  color: #d97757;
 }
 
-.claudian-mention-name-folder {
-  color: #D97757;
+.cortex-mention-name-folder {
+  color: #d97757;
   font-weight: 600;
 }
 
-.claudian-mention-name-context {
+.cortex-mention-name-context {
   color: var(--text-normal);
 }
-

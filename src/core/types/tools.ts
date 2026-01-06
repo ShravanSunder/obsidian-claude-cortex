@@ -25,12 +25,7 @@ export interface ToolCallInfo {
 export type SubagentMode = 'sync' | 'async';
 
 /** Async subagent lifecycle states. */
-export type AsyncSubagentStatus =
-  | 'pending'
-  | 'running'
-  | 'completed'
-  | 'error'
-  | 'orphaned';
+export type AsyncSubagentStatus = 'pending' | 'running' | 'completed' | 'error' | 'orphaned';
 
 /** Subagent (Task tool) tracking for sync and async modes. */
 export interface SubagentInfo {

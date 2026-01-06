@@ -1,5 +1,5 @@
 /**
- * Claudian - Thinking block renderer
+ * Cortex - Thinking block renderer
  *
  * Renders extended thinking blocks with live timer and expand/collapse.
  */
@@ -23,19 +23,19 @@ export interface ThinkingBlockState {
 /** Create a streaming thinking block. Collapsed by default. */
 export function createThinkingBlock(
   parentEl: HTMLElement,
-  renderContent: RenderContentFn
+  _renderContent: RenderContentFn,
 ): ThinkingBlockState {
-  const wrapperEl = parentEl.createDiv({ cls: 'claudian-thinking-block' });
+  const wrapperEl = parentEl.createDiv({ cls: 'cortex-thinking-block' });
 
   // Header (clickable to expand/collapse)
-  const header = wrapperEl.createDiv({ cls: 'claudian-thinking-header' });
+  const header = wrapperEl.createDiv({ cls: 'cortex-thinking-header' });
   header.setAttribute('tabindex', '0');
   header.setAttribute('role', 'button');
   header.setAttribute('aria-expanded', 'false');
   header.setAttribute('aria-label', 'Extended thinking - click to expand');
 
   // Label with timer
-  const labelEl = header.createSpan({ cls: 'claudian-thinking-label' });
+  const labelEl = header.createSpan({ cls: 'cortex-thinking-label' });
   const startTime = Date.now();
   labelEl.setText('Thinking 0s...');
 
@@ -46,7 +46,7 @@ export function createThinkingBlock(
   }, 1000);
 
   // Collapsible content (collapsed by default)
-  const contentEl = wrapperEl.createDiv({ cls: 'claudian-thinking-content' });
+  const contentEl = wrapperEl.createDiv({ cls: 'cortex-thinking-content' });
 
   // Create state object first so toggle can reference it
   const state: ThinkingBlockState = {
@@ -69,7 +69,7 @@ export function createThinkingBlock(
 export async function appendThinkingContent(
   state: ThinkingBlockState,
   content: string,
-  renderContent: RenderContentFn
+  renderContent: RenderContentFn,
 ) {
   state.content += content;
   await renderContent(state.contentEl, state.content);
@@ -90,7 +90,7 @@ export function finalizeThinkingBlock(state: ThinkingBlockState): number {
   state.labelEl.setText(`Thought for ${durationSeconds}s`);
 
   // Collapse when done and sync state
-  const header = state.wrapperEl.querySelector('.claudian-thinking-header');
+  const header = state.wrapperEl.querySelector('.cortex-thinking-header');
   if (header) {
     collapseElement(state.wrapperEl, header as HTMLElement, state.contentEl, state);
   }
@@ -110,23 +110,23 @@ export function renderStoredThinkingBlock(
   parentEl: HTMLElement,
   content: string,
   durationSeconds: number | undefined,
-  renderContent: RenderContentFn
+  renderContent: RenderContentFn,
 ): HTMLElement {
-  const wrapperEl = parentEl.createDiv({ cls: 'claudian-thinking-block' });
+  const wrapperEl = parentEl.createDiv({ cls: 'cortex-thinking-block' });
 
   // Header (clickable to expand/collapse)
-  const header = wrapperEl.createDiv({ cls: 'claudian-thinking-header' });
+  const header = wrapperEl.createDiv({ cls: 'cortex-thinking-header' });
   header.setAttribute('tabindex', '0');
   header.setAttribute('role', 'button');
   header.setAttribute('aria-label', 'Extended thinking - click to expand');
 
   // Label with duration
-  const labelEl = header.createSpan({ cls: 'claudian-thinking-label' });
+  const labelEl = header.createSpan({ cls: 'cortex-thinking-label' });
   const labelText = durationSeconds !== undefined ? `Thought for ${durationSeconds}s` : 'Thinking';
   labelEl.setText(labelText);
 
   // Collapsible content
-  const contentEl = wrapperEl.createDiv({ cls: 'claudian-thinking-content' });
+  const contentEl = wrapperEl.createDiv({ cls: 'cortex-thinking-content' });
   renderContent(contentEl, content);
 
   // Setup collapsible behavior (handles click, keyboard, ARIA, CSS)

@@ -63,7 +63,10 @@ class MockElement {
 
   set className(value: string) {
     this.classList.clear();
-    value.split(/\s+/).filter(Boolean).forEach((cls) => this.classList.add(cls));
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((cls) => this.classList.add(cls));
   }
 
   get className(): string {
@@ -167,11 +170,11 @@ function createMockDocument() {
 function createContainer(document: any): MockElement {
   const container = document.createElement('div');
   const inputContainer = document.createElement('div');
-  inputContainer.className = 'claudian-input-container';
+  inputContainer.className = 'cortex-input-container';
   const inputWrapper = document.createElement('div');
-  inputWrapper.className = 'claudian-input-wrapper';
+  inputWrapper.className = 'cortex-input-wrapper';
   const thinking = document.createElement('div');
-  thinking.className = 'claudian-thinking';
+  thinking.className = 'cortex-thinking';
   inputContainer.appendChild(inputWrapper);
   container.appendChild(inputContainer);
   container.appendChild(thinking);
@@ -185,10 +188,10 @@ describe('PlanApprovalPanel', () => {
     const mockDocument = createMockDocument();
     (global as any).document = mockDocument;
     const containerEl = createContainer(mockDocument);
-    const onApprove = jest.fn();
-    const onApproveNewSession = jest.fn();
-    const onRevise = jest.fn();
-    const onCancel = jest.fn();
+    const onApprove = vi.fn();
+    const onApproveNewSession = vi.fn();
+    const onRevise = vi.fn();
+    const onCancel = vi.fn();
 
     new PlanApprovalPanel({} as any, {
       containerEl: containerEl as unknown as HTMLElement,
@@ -200,8 +203,10 @@ describe('PlanApprovalPanel', () => {
       onCancel,
     });
 
-    const reviseInput = containerEl.querySelector('.claudian-plan-approval-revise-inline') as any;
-    const option1 = containerEl.querySelector('.claudian-plan-approval-option[data-option-index="1"]') as any;
+    const reviseInput = containerEl.querySelector('.cortex-plan-approval-revise-inline') as any;
+    const option1 = containerEl.querySelector(
+      '.cortex-plan-approval-option[data-option-index="1"]',
+    ) as any;
 
     expect(reviseInput).toBeTruthy();
     expect(option1).toBeTruthy();

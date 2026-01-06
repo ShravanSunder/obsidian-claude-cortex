@@ -7,41 +7,45 @@
 
 import { TOOL_ASK_USER_QUESTION, TOOL_TASK, TOOL_TODO_WRITE } from '@/core/tools/toolNames';
 import type { ChatMessage } from '@/core/types';
-import { StreamController, type StreamControllerDeps } from '@/features/chat/controllers/StreamController';
+import {
+  StreamController,
+  type StreamControllerDeps,
+} from '@/features/chat/controllers/StreamController';
 import { ChatState } from '@/features/chat/state/ChatState';
+import * as uiModule from '@/ui';
 
 // Mock UI module
-jest.mock('@/ui', () => {
+vi.mock('@/ui', () => {
   const mockWrapperEl = {
-    addClass: jest.fn(),
-    removeClass: jest.fn(),
+    addClass: vi.fn(),
+    removeClass: vi.fn(),
   };
   return {
-    createSubagentBlock: jest.fn().mockReturnValue({
+    createSubagentBlock: vi.fn().mockReturnValue({
       info: { id: 'task-1', description: 'test', status: 'running', toolCalls: [] },
     }),
-    createAskUserQuestionBlock: jest.fn().mockReturnValue({
+    createAskUserQuestionBlock: vi.fn().mockReturnValue({
       wrapperEl: mockWrapperEl,
       headerEl: {},
       answerEl: {},
       questions: [],
     }),
-    parseAskUserQuestionInput: jest.fn().mockReturnValue({
+    parseAskUserQuestionInput: vi.fn().mockReturnValue({
       questions: [],
     }),
-    finalizeAskUserQuestionBlock: jest.fn(),
-    createThinkingBlock: jest.fn().mockReturnValue({
+    finalizeAskUserQuestionBlock: vi.fn(),
+    createThinkingBlock: vi.fn().mockReturnValue({
       container: {},
       contentEl: {},
       content: '',
       startTime: Date.now(),
     }),
-    appendThinkingContent: jest.fn(),
-    finalizeThinkingBlock: jest.fn().mockReturnValue(0),
-    renderToolCall: jest.fn(),
-    updateToolCallResult: jest.fn(),
-    isBlockedToolResult: jest.fn().mockReturnValue(false),
-    parseTodoInput: jest.fn(),
+    appendThinkingContent: vi.fn(),
+    finalizeThinkingBlock: vi.fn().mockReturnValue(0),
+    renderToolCall: vi.fn(),
+    updateToolCallResult: vi.fn(),
+    isBlockedToolResult: vi.fn().mockReturnValue(false),
+    parseTodoInput: vi.fn(),
   };
 });
 
@@ -66,7 +70,9 @@ function createMockElement() {
     scrollTop: 0,
     scrollHeight: 0,
     dataset,
-    empty: () => { children.length = 0; },
+    empty: () => {
+      children.length = 0;
+    },
     createDiv: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement();
       if (opts?.cls) child.addClass(opts.cls);
@@ -89,16 +95,23 @@ function createMockElement() {
       children.push(child);
       return child;
     },
-    appendChild: (child: any) => { children.push(child); return child; },
-    querySelector: jest.fn().mockReturnValue(null),
-    querySelectorAll: jest.fn().mockReturnValue([]),
-    remove: jest.fn(),
-    setText: jest.fn((text: string) => { element.textContent = text; }),
-    setAttr: jest.fn(),
-    setAttribute: (name: string, value: string) => { attributes[name] = value; },
+    appendChild: (child: any) => {
+      children.push(child);
+      return child;
+    },
+    querySelector: vi.fn().mockReturnValue(null),
+    querySelectorAll: vi.fn().mockReturnValue([]),
+    remove: vi.fn(),
+    setText: vi.fn((text: string) => {
+      element.textContent = text;
+    }),
+    setAttr: vi.fn(),
+    setAttribute: (name: string, value: string) => {
+      attributes[name] = value;
+    },
     getAttribute: (name: string) => attributes[name],
-    addEventListener: jest.fn(),
-    removeEventListener: jest.fn(),
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
     textContent: '',
     tagName: 'DIV',
   };
@@ -111,15 +124,15 @@ function createMockDeps(): StreamControllerDeps {
   const state = new ChatState();
   const messagesEl = createMockElement();
   const agentService = {
-    getAskUserQuestionAnswers: jest.fn().mockReturnValue(undefined),
-    getDiffData: jest.fn().mockReturnValue(undefined),
-    getSessionId: jest.fn().mockReturnValue('session-1'),
+    getAskUserQuestionAnswers: vi.fn().mockReturnValue(undefined),
+    getDiffData: vi.fn().mockReturnValue(undefined),
+    getSessionId: vi.fn().mockReturnValue('session-1'),
   };
   const fileContextManager = {
-    markFileBeingEdited: jest.fn(),
-    trackEditedFile: jest.fn(),
-    getAttachedFiles: jest.fn().mockReturnValue(new Set()),
-    hasFilesChanged: jest.fn().mockReturnValue(false),
+    markFileBeingEdited: vi.fn(),
+    trackEditedFile: vi.fn(),
+    getAttachedFiles: vi.fn().mockReturnValue(new Set()),
+    hasFilesChanged: vi.fn().mockReturnValue(false),
   };
 
   return {
@@ -138,22 +151,22 @@ function createMockDeps(): StreamControllerDeps {
     } as any,
     state,
     renderer: {
-      renderContent: jest.fn(),
+      renderContent: vi.fn(),
     } as any,
     asyncSubagentManager: {
-      isAsyncTask: jest.fn().mockReturnValue(false),
-      isPendingAsyncTask: jest.fn().mockReturnValue(false),
-      isLinkedAgentOutputTool: jest.fn().mockReturnValue(false),
-      handleAgentOutputToolResult: jest.fn().mockReturnValue(undefined),
-      registerTask: jest.fn(),
-      updateTaskRunning: jest.fn(),
-      completeTask: jest.fn(),
-      failTask: jest.fn(),
+      isAsyncTask: vi.fn().mockReturnValue(false),
+      isPendingAsyncTask: vi.fn().mockReturnValue(false),
+      isLinkedAgentOutputTool: vi.fn().mockReturnValue(false),
+      handleAgentOutputToolResult: vi.fn().mockReturnValue(undefined),
+      registerTask: vi.fn(),
+      updateTaskRunning: vi.fn(),
+      completeTask: vi.fn(),
+      failTask: vi.fn(),
     } as any,
     getMessagesEl: () => messagesEl,
     getFileContextManager: () => fileContextManager as any,
-    updateQueueIndicator: jest.fn(),
-    setPlanModeActive: jest.fn(),
+    updateQueueIndicator: vi.fn(),
+    setPlanModeActive: vi.fn(),
   };
 }
 
@@ -174,7 +187,7 @@ describe('StreamController - Text Content', () => {
   let deps: StreamControllerDeps;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     deps = createMockDeps();
     controller = new StreamController(deps);
     deps.state.currentContentEl = createMockElement();
@@ -211,10 +224,7 @@ describe('StreamController - Text Content', () => {
       const msg = createTestMessage();
       deps.state.currentTextEl = createMockElement();
 
-      await controller.handleStreamChunk(
-        { type: 'error', content: 'Something went wrong' },
-        msg
-      );
+      await controller.handleStreamChunk({ type: 'error', content: 'Something went wrong' }, msg);
 
       expect(deps.state.currentTextContent).toContain('Error');
     });
@@ -223,10 +233,7 @@ describe('StreamController - Text Content', () => {
       const msg = createTestMessage();
       deps.state.currentTextEl = createMockElement();
 
-      await controller.handleStreamChunk(
-        { type: 'blocked', content: 'Tool was blocked' },
-        msg
-      );
+      await controller.handleStreamChunk({ type: 'blocked', content: 'Tool was blocked' }, msg);
 
       expect(deps.state.currentTextContent).toContain('Blocked');
     });
@@ -238,9 +245,7 @@ describe('StreamController - Text Content', () => {
       deps.state.currentTextEl = createMockElement();
 
       // Should not throw
-      await expect(
-        controller.handleStreamChunk({ type: 'done' }, msg)
-      ).resolves.not.toThrow();
+      await expect(controller.handleStreamChunk({ type: 'done' }, msg)).resolves.not.toThrow();
     });
   });
 
@@ -287,7 +292,7 @@ describe('StreamController - Text Content', () => {
 
       await controller.handleStreamChunk(
         { type: 'tool_use', id: 'tool-1', name: 'Read', input: { file_path: 'notes/test.md' } },
-        msg
+        msg,
       );
 
       expect(msg.toolCalls).toHaveLength(1);
@@ -310,10 +315,7 @@ describe('StreamController - Text Content', () => {
       ];
       deps.state.currentContentEl = createMockElement();
 
-      await controller.handleStreamChunk(
-        { type: 'tool_result', id: 'tool-1', content: 'ok' },
-        msg
-      );
+      await controller.handleStreamChunk({ type: 'tool_result', id: 'tool-1', content: 'ok' }, msg);
 
       expect(msg.toolCalls![0].status).toBe('completed');
       expect(msg.toolCalls![0].result).toBe('ok');
@@ -342,7 +344,7 @@ describe('StreamController - Text Content', () => {
             ],
           },
         },
-        msg
+        msg,
       );
 
       const agentService = (deps.plugin as any).agentService;
@@ -350,7 +352,7 @@ describe('StreamController - Text Content', () => {
 
       await controller.handleStreamChunk(
         { type: 'tool_result', id: 'tool-ask-1', content: 'ok' },
-        msg
+        msg,
       );
 
       expect(agentService.getAskUserQuestionAnswers).toHaveBeenCalledWith('tool-ask-1');
@@ -371,7 +373,7 @@ describe('StreamController - Text Content', () => {
           name: TOOL_TASK,
           input: { prompt: 'Do something', subagent_type: 'general-purpose' },
         },
-        msg
+        msg,
       );
 
       expect(msg.contentBlocks).toHaveLength(1);
@@ -381,9 +383,10 @@ describe('StreamController - Text Content', () => {
     });
 
     it('should render as raw tool call when TodoWrite parsing fails', async () => {
-      const { parseTodoInput, renderToolCall } = jest.requireMock('@/ui');
+      const parseTodoInput = vi.mocked(uiModule.parseTodoInput);
+      const renderToolCall = vi.mocked(uiModule.renderToolCall);
       parseTodoInput.mockReturnValue(null); // Simulate parse failure
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       const msg = createTestMessage();
       deps.state.currentContentEl = createMockElement();
@@ -396,7 +399,7 @@ describe('StreamController - Text Content', () => {
             name: TOOL_TODO_WRITE,
             input: { invalid: 'data' },
           },
-          msg
+          msg,
         );
 
         // Should fall back to rendering as tool call
@@ -408,7 +411,7 @@ describe('StreamController - Text Content', () => {
         expect(deps.state.currentTodos).toBeNull();
         expect(warnSpy).toHaveBeenCalledWith(
           '[StreamController] TodoWrite input parsing failed',
-          expect.objectContaining({ toolId: 'todo-1', inputKeys: ['invalid'] })
+          expect.objectContaining({ toolId: 'todo-1', inputKeys: ['invalid'] }),
         );
       } finally {
         warnSpy.mockRestore();

@@ -7,14 +7,14 @@
  */
 
 import { McpServerManager } from '../../core/mcp';
-import type { ClaudianMcpServer, McpServerConfig } from '../../core/types';
-import type ClaudianPlugin from '../../main';
+import type { CortexMcpServer, McpServerConfig } from '../../core/types';
+import type CortexPlugin from '../../main';
 import { extractMcpMentions, transformMcpMentions } from '../../utils/mcp';
 
 export class McpService {
   private manager: McpServerManager;
 
-  constructor(plugin: ClaudianPlugin) {
+  constructor(plugin: CortexPlugin) {
     this.manager = new McpServerManager(plugin.storage.mcp);
   }
 
@@ -28,7 +28,7 @@ export class McpService {
   }
 
   /** Get all loaded servers. */
-  getServers(): ClaudianMcpServer[] {
+  getServers(): CortexMcpServer[] {
     return this.manager.getServers();
   }
 
@@ -58,11 +58,14 @@ export class McpService {
 
   /** Get enabled server names for @-mention validation. */
   getEnabledServerNames(): string[] {
-    return this.manager.getServers().filter((s) => s.enabled).map((s) => s.name);
+    return this.manager
+      .getServers()
+      .filter((s) => s.enabled)
+      .map((s) => s.name);
   }
 
   /** Get servers with context-saving enabled (for @-mention autocomplete). */
-  getContextSavingServers(): ClaudianMcpServer[] {
+  getContextSavingServers(): CortexMcpServer[] {
     return this.manager.getServers().filter((s) => s.enabled && s.contextSaving);
   }
 
@@ -77,7 +80,10 @@ export class McpService {
    */
   extractMentions(text: string): Set<string> {
     const validNames = new Set(
-      this.manager.getServers().filter((s) => s.enabled && s.contextSaving).map((s) => s.name)
+      this.manager
+        .getServers()
+        .filter((s) => s.enabled && s.contextSaving)
+        .map((s) => s.name),
     );
     return extractMcpMentions(text, validNames);
   }
@@ -93,7 +99,10 @@ export class McpService {
    */
   transformMentions(text: string): string {
     const validNames = new Set(
-      this.manager.getServers().filter((s) => s.enabled && s.contextSaving).map((s) => s.name)
+      this.manager
+        .getServers()
+        .filter((s) => s.enabled && s.contextSaving)
+        .map((s) => s.name),
     );
     return transformMcpMentions(text, validNames);
   }

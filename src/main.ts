@@ -1,40 +1,37 @@
 /**
- * Claudian - Obsidian plugin entry point
+ * Cortex - Obsidian plugin entry point
  *
  * Registers the sidebar chat view, settings tab, and commands.
  * Manages conversation persistence and environment variable configuration.
  */
 
-import type { Editor,MarkdownView } from 'obsidian';
-import { Notice,Plugin } from 'obsidian';
+import type { Editor, MarkdownView } from 'obsidian';
+import { Notice, Plugin } from 'obsidian';
 
-import { ClaudianService } from './core/agent/ClaudianService';
+import { CortexService } from './core/agent/CortexService';
 import { deleteCachedImages } from './core/images/imageCache';
 import { StorageService } from './core/storage';
-import type {
-  ClaudianSettings,
-  Conversation,
-  ConversationMeta} from './core/types';
-import {
-  DEFAULT_CLAUDE_MODELS,
-  DEFAULT_SETTINGS,
-  VIEW_TYPE_CLAUDIAN,
-} from './core/types';
-import { ClaudianView } from './features/chat/ClaudianView';
+import type { Conversation, ConversationMeta, CortexSettings } from './core/types';
+import { DEFAULT_CLAUDE_MODELS, DEFAULT_SETTINGS, VIEW_TYPE_CORTEX } from './core/types';
+import { CortexView } from './features/chat/CortexView';
 import { McpService } from './features/mcp/McpService';
-import { ClaudianSettingTab } from './features/settings/ClaudianSettings';
+import { CortexSettingTab } from './features/settings/CortexSettings';
 import { type InlineEditContext, InlineEditModal } from './ui/modals/InlineEditModal';
 import { ClaudeCliResolver } from './utils/claudeCli';
 import { buildCursorContext } from './utils/editor';
-import { getCurrentModelFromEnvironment, getModelsFromEnvironment, parseEnvironmentVariables } from './utils/env';
+import {
+  getCurrentModelFromEnvironment,
+  getModelsFromEnvironment,
+  parseEnvironmentVariables,
+} from './utils/env';
 
 /**
- * Main plugin class for Claudian.
+ * Main plugin class for Cortex.
  * Handles plugin lifecycle, settings persistence, and conversation management.
  */
-export default class ClaudianPlugin extends Plugin {
-  settings: ClaudianSettings;
-  agentService: ClaudianService;
+export default class CortexPlugin extends Plugin {
+  settings: CortexSettings;
+  agentService: CortexService;
   mcpService: McpService;
   storage: StorageService;
   cliResolver: ClaudeCliResolver;
@@ -53,7 +50,7 @@ export default class ClaudianPlugin extends Plugin {
     await this.mcpService.loadServers();
 
     // Initialize agent service with the MCP manager
-    this.agentService = new ClaudianService(this, this.mcpService.getManager());
+    this.agentService = new CortexService(this, this.mcpService.getManager());
 
     // Pre-warm the Claude Agent SDK in the background
     // This spawns the subprocess early so the first user message is faster
@@ -62,12 +59,9 @@ export default class ClaudianPlugin extends Plugin {
     const sessionToPreWarm = activeConv?.sessionId ?? undefined;
     void this.agentService.preWarm(sessionToPreWarm);
 
-    this.registerView(
-      VIEW_TYPE_CLAUDIAN,
-      (leaf) => new ClaudianView(leaf, this)
-    );
+    this.registerView(VIEW_TYPE_CORTEX, (leaf) => new CortexView(leaf, this));
 
-    this.addRibbonIcon('bot', 'Open Claudian', () => {
+    this.addRibbonIcon('bot', 'Open Cortex', () => {
       this.activateView();
     });
 
@@ -97,7 +91,7 @@ export default class ClaudianPlugin extends Plugin {
             (line) => editor.getLine(line),
             editor.lineCount(),
             cursor.line,
-            cursor.ch
+            cursor.ch,
           );
           editContext = { mode: 'cursor', cursorContext };
         }
@@ -111,23 +105,23 @@ export default class ClaudianPlugin extends Plugin {
       },
     });
 
-    this.addSettingTab(new ClaudianSettingTab(this.app, this));
+    this.addSettingTab(new CortexSettingTab(this.app, this));
   }
 
   onunload() {
     this.agentService.cleanup();
   }
 
-  /** Opens the Claudian sidebar view, creating it if necessary. */
+  /** Opens the Cortex sidebar view, creating it if necessary. */
   async activateView() {
     const { workspace } = this.app;
-    let leaf = workspace.getLeavesOfType(VIEW_TYPE_CLAUDIAN)[0];
+    let leaf = workspace.getLeavesOfType(VIEW_TYPE_CORTEX)[0];
 
     if (!leaf) {
       const rightLeaf = workspace.getRightLeaf(false);
       if (rightLeaf) {
         await rightLeaf.setViewState({
-          type: VIEW_TYPE_CLAUDIAN,
+          type: VIEW_TYPE_CORTEX,
           active: true,
         });
         leaf = rightLeaf;
@@ -164,15 +158,19 @@ export default class ClaudianPlugin extends Plugin {
     this.activeConversationId = state.activeConversationId;
 
     // Validate active conversation exists
-    if (this.activeConversationId &&
-        !this.conversations.find(c => c.id === this.activeConversationId)) {
+    if (
+      this.activeConversationId &&
+      !this.conversations.find((c) => c.id === this.activeConversationId)
+    ) {
       this.activeConversationId = null;
     }
 
     const backfilledConversations = this.backfillConversationResponseTimestamps();
 
     this.runtimeEnvironmentVariables = this.settings.environmentVariables || '';
-    const { changed, invalidatedConversations } = this.reconcileModelWithEnvironment(this.runtimeEnvironmentVariables);
+    const { changed, invalidatedConversations } = this.reconcileModelWithEnvironment(
+      this.runtimeEnvironmentVariables,
+    );
 
     if (changed) {
       await this.saveSettings();
@@ -247,7 +245,7 @@ export default class ClaudianPlugin extends Plugin {
   getResolvedClaudeCliPath(): string | null {
     return this.cliResolver.resolve(
       this.settings.claudeCliPath,
-      this.getActiveEnvironmentVariables()
+      this.getActiveEnvironmentVariables(),
     );
   }
 
@@ -255,7 +253,10 @@ export default class ClaudianPlugin extends Plugin {
     return DEFAULT_CLAUDE_MODELS.map((m) => m.value);
   }
 
-  private getPreferredCustomModel(envVars: Record<string, string>, customModels: { value: string }[]): string {
+  private getPreferredCustomModel(
+    envVars: Record<string, string>,
+    customModels: { value: string }[],
+  ): string {
     const envPreferred = getCurrentModelFromEnvironment(envVars);
     if (envPreferred && customModels.some((m) => m.value === envPreferred)) {
       return envPreferred;
@@ -272,13 +273,11 @@ export default class ClaudianPlugin extends Plugin {
       'ANTHROPIC_DEFAULT_SONNET_MODEL',
       'ANTHROPIC_DEFAULT_HAIKU_MODEL',
     ];
-    const providerKeys = [
-      'ANTHROPIC_BASE_URL',
-    ];
+    const providerKeys = ['ANTHROPIC_BASE_URL'];
     const allKeys = [...modelKeys, ...providerKeys];
     const relevantPairs = allKeys
-      .filter(key => envVars[key])
-      .map(key => `${key}=${envVars[key]}`)
+      .filter((key) => envVars[key])
+      .map((key) => `${key}=${envVars[key]}`)
       .sort()
       .join('|');
     return relevantPairs;
@@ -357,7 +356,7 @@ export default class ClaudianPlugin extends Plugin {
       }
     }
 
-    const deletable = Array.from(cachePaths).filter(p => !inUseElsewhere.has(p));
+    const deletable = Array.from(cachePaths).filter((p) => !inUseElsewhere.has(p));
     if (deletable.length > 0) {
       deleteCachedImages(this.app, deletable);
     }
@@ -378,7 +377,7 @@ export default class ClaudianPlugin extends Plugin {
   }
 
   private getConversationPreview(conv: Conversation): string {
-    const firstUserMsg = conv.messages.find(m => m.role === 'user');
+    const firstUserMsg = conv.messages.find((m) => m.role === 'user');
     if (!firstUserMsg) return 'New conversation';
     return firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '');
   }
@@ -407,7 +406,7 @@ export default class ClaudianPlugin extends Plugin {
 
   /** Switches to an existing conversation by ID. */
   async switchConversation(id: string): Promise<Conversation | null> {
-    const conversation = this.conversations.find(c => c.id === id);
+    const conversation = this.conversations.find((c) => c.id === id);
     if (!conversation) return null;
 
     this.activeConversationId = id;
@@ -420,7 +419,7 @@ export default class ClaudianPlugin extends Plugin {
 
   /** Deletes a conversation and switches to another if necessary. */
   async deleteConversation(id: string): Promise<void> {
-    const index = this.conversations.findIndex(c => c.id === id);
+    const index = this.conversations.findIndex((c) => c.id === id);
     if (index === -1) return;
 
     const conversation = this.conversations[index];
@@ -441,7 +440,7 @@ export default class ClaudianPlugin extends Plugin {
 
   /** Renames a conversation. */
   async renameConversation(id: string, title: string): Promise<void> {
-    const conversation = this.conversations.find(c => c.id === id);
+    const conversation = this.conversations.find((c) => c.id === id);
     if (!conversation) return;
 
     conversation.title = title.trim() || this.generateDefaultTitle();
@@ -451,7 +450,7 @@ export default class ClaudianPlugin extends Plugin {
 
   /** Updates conversation properties (messages, sessionId, etc.). */
   async updateConversation(id: string, updates: Partial<Conversation>): Promise<void> {
-    const conversation = this.conversations.find(c => c.id === id);
+    const conversation = this.conversations.find((c) => c.id === id);
     if (!conversation) return;
 
     Object.assign(conversation, updates, { updatedAt: Date.now() });
@@ -460,22 +459,22 @@ export default class ClaudianPlugin extends Plugin {
 
   /** Returns the current active conversation. */
   getActiveConversation(): Conversation | null {
-    return this.conversations.find(c => c.id === this.activeConversationId) || null;
+    return this.conversations.find((c) => c.id === this.activeConversationId) || null;
   }
 
   /** Gets a conversation by ID from the in-memory cache. */
   getConversationById(id: string): Conversation | null {
-    return this.conversations.find(c => c.id === id) || null;
+    return this.conversations.find((c) => c.id === id) || null;
   }
 
   /** Finds an existing empty conversation (no messages). */
   findEmptyConversation(): Conversation | null {
-    return this.conversations.find(c => c.messages.length === 0) || null;
+    return this.conversations.find((c) => c.messages.length === 0) || null;
   }
 
   /** Returns conversation metadata list for the history dropdown. */
   getConversationList(): ConversationMeta[] {
-    return this.conversations.map(c => ({
+    return this.conversations.map((c) => ({
       id: c.id,
       title: c.title,
       createdAt: c.createdAt,
@@ -487,11 +486,11 @@ export default class ClaudianPlugin extends Plugin {
     }));
   }
 
-  /** Returns the active Claudian view from workspace, if open. */
-  getView(): ClaudianView | null {
-    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CLAUDIAN);
+  /** Returns the active Cortex view from workspace, if open. */
+  getView(): CortexView | null {
+    const leaves = this.app.workspace.getLeavesOfType(VIEW_TYPE_CORTEX);
     if (leaves.length > 0) {
-      return leaves[0].view as ClaudianView;
+      return leaves[0].view as CortexView;
     }
     return null;
   }

@@ -2,9 +2,17 @@
  * Tests for NavigationController - Vim-style keyboard navigation
  */
 
-import { NavigationController, type NavigationControllerDeps } from '@/features/chat/controllers/NavigationController';
+import {
+  NavigationController,
+  type NavigationControllerDeps,
+} from '@/features/chat/controllers/NavigationController';
 
-type Listener = (event: any) => void;
+type Listener = (event: unknown) => void;
+
+// Mock function types
+type MockRafFn = ReturnType<typeof vi.fn<(callback: FrameRequestCallback) => number>>;
+type MockCancelRafFn = ReturnType<typeof vi.fn<(handle: number) => void>>;
+type MockBoolFn = ReturnType<typeof vi.fn<() => boolean>>;
 
 /** Mock KeyboardEvent for Node environment. */
 class MockKeyboardEvent {
@@ -19,15 +27,18 @@ class MockKeyboardEvent {
   private defaultPrevented = false;
   private propagationStopped = false;
 
-  constructor(type: string, options: {
-    key: string;
-    cancelable?: boolean;
-    bubbles?: boolean;
-    ctrlKey?: boolean;
-    metaKey?: boolean;
-    altKey?: boolean;
-    shiftKey?: boolean;
-  } = { key: '' }) {
+  constructor(
+    type: string,
+    options: {
+      key: string;
+      cancelable?: boolean;
+      bubbles?: boolean;
+      ctrlKey?: boolean;
+      metaKey?: boolean;
+      altKey?: boolean;
+      shiftKey?: boolean;
+    } = { key: '' },
+  ) {
     this.type = type;
     this.key = options.key;
     this.cancelable = options.cancelable ?? false;
@@ -65,7 +76,8 @@ class MockElement {
   public style: Record<string, string> = {};
   private attributes: Map<string, string> = new Map();
   private classes: Set<string> = new Set();
-  private listeners: Map<string, { listener: Listener; options?: AddEventListenerOptions }[]> = new Map();
+  private listeners: Map<string, { listener: Listener; options?: AddEventListenerOptions }[]> =
+    new Map();
 
   constructor(tagName = 'DIV') {
     this.tagName = tagName;
@@ -91,7 +103,11 @@ class MockElement {
     return this.classes.has(cls);
   }
 
-  addEventListener(type: string, listener: Listener, options?: AddEventListenerOptions | boolean): void {
+  addEventListener(
+    type: string,
+    listener: Listener,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
     if (!this.listeners.has(type)) {
       this.listeners.set(type, []);
     }
@@ -99,11 +115,17 @@ class MockElement {
     this.listeners.get(type)!.push({ listener, options: opts });
   }
 
-  removeEventListener(type: string, listener: Listener, options?: AddEventListenerOptions | boolean): void {
+  removeEventListener(
+    type: string,
+    listener: Listener,
+    options?: AddEventListenerOptions | boolean,
+  ): void {
     const eventListeners = this.listeners.get(type);
     if (eventListeners) {
       const opts = typeof options === 'boolean' ? { capture: options } : options;
-      const idx = eventListeners.findIndex((l) => l.listener === listener && l.options?.capture === opts?.capture);
+      const idx = eventListeners.findIndex(
+        (l) => l.listener === listener && l.options?.capture === opts?.capture,
+      );
       if (idx !== -1) {
         eventListeners.splice(idx, 1);
       }
@@ -140,15 +162,15 @@ describe('NavigationController', () => {
   let deps: NavigationControllerDeps;
   let settings: { scrollUpKey: string; scrollDownKey: string; focusInputKey: string };
   let isStreaming: boolean;
-  let shouldSkipEscapeHandling: jest.Mock | undefined;
-  let mockRaf: jest.Mock;
-  let mockCancelRaf: jest.Mock;
+  let shouldSkipEscapeHandling: MockBoolFn | undefined;
+  let mockRaf: MockRafFn;
+  let mockCancelRaf: MockCancelRafFn;
   let originalRaf: typeof requestAnimationFrame;
   let originalCancelRaf: typeof cancelAnimationFrame;
   let originalDocument: typeof document;
 
   beforeEach(() => {
-    jest.useFakeTimers();
+    vi.useFakeTimers();
 
     // Save originals
     originalRaf = global.requestAnimationFrame;
@@ -157,12 +179,12 @@ describe('NavigationController', () => {
 
     // Mock requestAnimationFrame
     let rafId = 0;
-    mockRaf = jest.fn((cb: FrameRequestCallback) => {
+    mockRaf = vi.fn<(callback: FrameRequestCallback) => number>((cb: FrameRequestCallback) => {
       rafId++;
       setTimeout(() => cb(performance.now()), 16);
       return rafId;
     });
-    mockCancelRaf = jest.fn();
+    mockCancelRaf = vi.fn<(handle: number) => void>();
     global.requestAnimationFrame = mockRaf;
     global.cancelAnimationFrame = mockCancelRaf;
 
@@ -214,7 +236,7 @@ describe('NavigationController', () => {
     if (controller) {
       controller.dispose();
     }
-    jest.useRealTimers();
+    vi.useRealTimers();
 
     // Restore originals
     global.requestAnimationFrame = originalRaf;
@@ -230,48 +252,52 @@ describe('NavigationController', () => {
 
     it('adds focusable CSS class to messagesEl', () => {
       controller.initialize();
-      expect(messagesEl.hasClass('claudian-messages-focusable')).toBe(true);
+      expect(messagesEl.hasClass('cortex-messages-focusable')).toBe(true);
     });
 
     it('attaches keydown listener to messagesEl', () => {
-      const addEventListenerSpy = jest.spyOn(messagesEl, 'addEventListener');
+      const addEventListenerSpy = vi.spyOn(messagesEl, 'addEventListener');
       controller.initialize();
       expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
     it('attaches keyup listener to document', () => {
-      const addEventListenerSpy = jest.spyOn((global as any).document, 'addEventListener');
+      const addEventListenerSpy = vi.spyOn((global as any).document, 'addEventListener');
       controller.initialize();
       expect(addEventListenerSpy).toHaveBeenCalledWith('keyup', expect.any(Function));
     });
 
     it('attaches keydown listener to inputEl with capture phase', () => {
-      const addEventListenerSpy = jest.spyOn(inputEl, 'addEventListener');
+      const addEventListenerSpy = vi.spyOn(inputEl, 'addEventListener');
       controller.initialize();
-      expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function), { capture: true });
+      expect(addEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function), {
+        capture: true,
+      });
     });
   });
 
   describe('disposal', () => {
     it('removes keydown listener from messagesEl', () => {
       controller.initialize();
-      const removeEventListenerSpy = jest.spyOn(messagesEl, 'removeEventListener');
+      const removeEventListenerSpy = vi.spyOn(messagesEl, 'removeEventListener');
       controller.dispose();
       expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function));
     });
 
     it('removes keyup listener from document', () => {
       controller.initialize();
-      const removeEventListenerSpy = jest.spyOn((global as any).document, 'removeEventListener');
+      const removeEventListenerSpy = vi.spyOn((global as any).document, 'removeEventListener');
       controller.dispose();
       expect(removeEventListenerSpy).toHaveBeenCalledWith('keyup', expect.any(Function));
     });
 
     it('removes keydown listener from inputEl', () => {
       controller.initialize();
-      const removeEventListenerSpy = jest.spyOn(inputEl, 'removeEventListener');
+      const removeEventListenerSpy = vi.spyOn(inputEl, 'removeEventListener');
       controller.dispose();
-      expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function), { capture: true });
+      expect(removeEventListenerSpy).toHaveBeenCalledWith('keydown', expect.any(Function), {
+        capture: true,
+      });
     });
 
     it('cancels ongoing animation frame', () => {
@@ -297,7 +323,7 @@ describe('NavigationController', () => {
       messagesEl.dispatchEvent(keydownEvent);
 
       // Advance timers to trigger RAF callback
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       expect(messagesEl.scrollTop).toBeLessThan(100);
     });
@@ -306,7 +332,7 @@ describe('NavigationController', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 's' });
       messagesEl.dispatchEvent(keydownEvent);
 
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       expect(messagesEl.scrollTop).toBeGreaterThan(100);
     });
@@ -331,19 +357,19 @@ describe('NavigationController', () => {
       // 'w' should not scroll now
       const keydownW = new KeyboardEvent('keydown', { key: 'w' });
       messagesEl.dispatchEvent(keydownW);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
       expect(messagesEl.scrollTop).toBe(100);
 
       // 'k' should scroll up
       const keydownK = new KeyboardEvent('keydown', { key: 'K' }); // Test uppercase
       messagesEl.dispatchEvent(keydownK);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
       expect(messagesEl.scrollTop).toBeLessThan(100);
     });
 
     it('prevents default on scroll key press', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 'w', cancelable: true });
-      const preventDefaultSpy = jest.spyOn(keydownEvent, 'preventDefault');
+      const preventDefaultSpy = vi.spyOn(keydownEvent, 'preventDefault');
 
       messagesEl.dispatchEvent(keydownEvent);
 
@@ -371,7 +397,7 @@ describe('NavigationController', () => {
       // Start scrolling up
       const keydownUp = new KeyboardEvent('keydown', { key: 'w' });
       messagesEl.dispatchEvent(keydownUp);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       const scrollAfterUp = messagesEl.scrollTop;
       expect(scrollAfterUp).toBeLessThan(100);
@@ -379,7 +405,7 @@ describe('NavigationController', () => {
       // Change to scrolling down
       const keydownDown = new KeyboardEvent('keydown', { key: 's' });
       messagesEl.dispatchEvent(keydownDown);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       expect(messagesEl.scrollTop).toBeGreaterThan(scrollAfterUp);
     });
@@ -387,7 +413,7 @@ describe('NavigationController', () => {
     it('ignores scroll key when modifier keys are held (Ctrl)', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 'w', ctrlKey: true });
       messagesEl.dispatchEvent(keydownEvent);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       // scrollTop should not change - modifier key blocks scrolling
       expect(messagesEl.scrollTop).toBe(100);
@@ -396,7 +422,7 @@ describe('NavigationController', () => {
     it('ignores scroll key when modifier keys are held (Meta/Cmd)', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 'w', metaKey: true });
       messagesEl.dispatchEvent(keydownEvent);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       expect(messagesEl.scrollTop).toBe(100);
     });
@@ -404,7 +430,7 @@ describe('NavigationController', () => {
     it('ignores scroll key when modifier keys are held (Alt)', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 's', altKey: true });
       messagesEl.dispatchEvent(keydownEvent);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       expect(messagesEl.scrollTop).toBe(100);
     });
@@ -412,7 +438,7 @@ describe('NavigationController', () => {
     it('ignores scroll key when modifier keys are held (Shift)', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 'w', shiftKey: true });
       messagesEl.dispatchEvent(keydownEvent);
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
 
       expect(messagesEl.scrollTop).toBe(100);
     });
@@ -424,7 +450,7 @@ describe('NavigationController', () => {
     });
 
     it('focuses input when i is pressed on messages', () => {
-      const focusSpy = jest.spyOn(inputEl, 'focus');
+      const focusSpy = vi.spyOn(inputEl, 'focus');
 
       const keydownEvent = new KeyboardEvent('keydown', { key: 'i' });
       messagesEl.dispatchEvent(keydownEvent);
@@ -434,7 +460,7 @@ describe('NavigationController', () => {
 
     it('prevents default on i key press', () => {
       const keydownEvent = new KeyboardEvent('keydown', { key: 'i', cancelable: true });
-      const preventDefaultSpy = jest.spyOn(keydownEvent, 'preventDefault');
+      const preventDefaultSpy = vi.spyOn(keydownEvent, 'preventDefault');
 
       messagesEl.dispatchEvent(keydownEvent);
 
@@ -442,7 +468,7 @@ describe('NavigationController', () => {
     });
 
     it('works with uppercase I', () => {
-      const focusSpy = jest.spyOn(inputEl, 'focus');
+      const focusSpy = vi.spyOn(inputEl, 'focus');
 
       const keydownEvent = new KeyboardEvent('keydown', { key: 'I' });
       messagesEl.dispatchEvent(keydownEvent);
@@ -452,7 +478,7 @@ describe('NavigationController', () => {
 
     it('uses configured focus input key', () => {
       settings.focusInputKey = 'a';
-      const focusSpy = jest.spyOn(inputEl, 'focus');
+      const focusSpy = vi.spyOn(inputEl, 'focus');
 
       // 'i' should not focus now
       const keydownI = new KeyboardEvent('keydown', { key: 'i' });
@@ -473,10 +499,14 @@ describe('NavigationController', () => {
 
     it('blurs input and focuses messages when Escape pressed (not streaming)', () => {
       isStreaming = false;
-      const blurSpy = jest.spyOn(inputEl, 'blur');
-      const focusSpy = jest.spyOn(messagesEl, 'focus');
+      const blurSpy = vi.spyOn(inputEl, 'blur');
+      const focusSpy = vi.spyOn(messagesEl, 'focus');
 
-      const keydownEvent = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true });
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true,
+        bubbles: true,
+      });
       inputEl.dispatchEvent(keydownEvent);
 
       expect(blurSpy).toHaveBeenCalled();
@@ -486,9 +516,13 @@ describe('NavigationController', () => {
     it('prevents default and stops propagation when Escape handled', () => {
       isStreaming = false;
 
-      const keydownEvent = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true });
-      const preventDefaultSpy = jest.spyOn(keydownEvent, 'preventDefault');
-      const stopPropagationSpy = jest.spyOn(keydownEvent, 'stopPropagation');
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true,
+        bubbles: true,
+      });
+      const preventDefaultSpy = vi.spyOn(keydownEvent, 'preventDefault');
+      const stopPropagationSpy = vi.spyOn(keydownEvent, 'stopPropagation');
 
       inputEl.dispatchEvent(keydownEvent);
 
@@ -498,10 +532,14 @@ describe('NavigationController', () => {
 
     it('does not handle Escape when streaming (lets other handlers work)', () => {
       isStreaming = true;
-      const blurSpy = jest.spyOn(inputEl, 'blur');
+      const blurSpy = vi.spyOn(inputEl, 'blur');
 
-      const keydownEvent = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true });
-      const preventDefaultSpy = jest.spyOn(keydownEvent, 'preventDefault');
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true,
+        bubbles: true,
+      });
+      const preventDefaultSpy = vi.spyOn(keydownEvent, 'preventDefault');
 
       inputEl.dispatchEvent(keydownEvent);
 
@@ -513,7 +551,7 @@ describe('NavigationController', () => {
       // Dispose current controller and create one with shouldSkipEscapeHandling
       controller.dispose();
 
-      shouldSkipEscapeHandling = jest.fn().mockReturnValue(true);
+      shouldSkipEscapeHandling = vi.fn<() => boolean>().mockReturnValue(true);
       controller = new NavigationController({
         ...deps,
         shouldSkipEscapeHandling,
@@ -521,10 +559,14 @@ describe('NavigationController', () => {
       controller.initialize();
 
       isStreaming = false;
-      const blurSpy = jest.spyOn(inputEl, 'blur');
+      const blurSpy = vi.spyOn(inputEl, 'blur');
 
-      const keydownEvent = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true });
-      const preventDefaultSpy = jest.spyOn(keydownEvent, 'preventDefault');
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true,
+        bubbles: true,
+      });
+      const preventDefaultSpy = vi.spyOn(keydownEvent, 'preventDefault');
 
       inputEl.dispatchEvent(keydownEvent);
 
@@ -537,7 +579,7 @@ describe('NavigationController', () => {
       // Dispose current controller and create one with shouldSkipEscapeHandling
       controller.dispose();
 
-      shouldSkipEscapeHandling = jest.fn().mockReturnValue(false);
+      shouldSkipEscapeHandling = vi.fn<() => boolean>().mockReturnValue(false);
       controller = new NavigationController({
         ...deps,
         shouldSkipEscapeHandling,
@@ -545,9 +587,13 @@ describe('NavigationController', () => {
       controller.initialize();
 
       isStreaming = false;
-      const blurSpy = jest.spyOn(inputEl, 'blur');
+      const blurSpy = vi.spyOn(inputEl, 'blur');
 
-      const keydownEvent = new KeyboardEvent('keydown', { key: 'Escape', cancelable: true, bubbles: true });
+      const keydownEvent = new KeyboardEvent('keydown', {
+        key: 'Escape',
+        cancelable: true,
+        bubbles: true,
+      });
 
       inputEl.dispatchEvent(keydownEvent);
 
@@ -556,7 +602,7 @@ describe('NavigationController', () => {
     });
 
     it('ignores non-Escape keys', () => {
-      const blurSpy = jest.spyOn(inputEl, 'blur');
+      const blurSpy = vi.spyOn(inputEl, 'blur');
 
       const keydownEvent = new KeyboardEvent('keydown', { key: 'Enter', cancelable: true });
       inputEl.dispatchEvent(keydownEvent);
@@ -571,13 +617,13 @@ describe('NavigationController', () => {
     });
 
     it('focusMessages focuses the messages element', () => {
-      const focusSpy = jest.spyOn(messagesEl, 'focus');
+      const focusSpy = vi.spyOn(messagesEl, 'focus');
       controller.focusMessages();
       expect(focusSpy).toHaveBeenCalled();
     });
 
     it('focusInput focuses the input element', () => {
-      const focusSpy = jest.spyOn(inputEl, 'focus');
+      const focusSpy = vi.spyOn(inputEl, 'focus');
       controller.focusInput();
       expect(focusSpy).toHaveBeenCalled();
     });
@@ -598,7 +644,7 @@ describe('NavigationController', () => {
       }
 
       // Should not throw and should be scrolling down (last direction)
-      jest.advanceTimersByTime(16);
+      vi.advanceTimersByTime(16);
       expect(messagesEl.scrollTop).toBeGreaterThan(100);
     });
 

@@ -5,19 +5,27 @@
  * state tracking, and thinking indicator display.
  */
 
-import { isPlanModeTool, isWriteEditTool, TOOL_AGENT_OUTPUT, TOOL_ASK_USER_QUESTION, TOOL_TASK, TOOL_TODO_WRITE } from '../../../core/tools/toolNames';
-import type { ChatMessage, StreamChunk, SubagentInfo, ToolCallInfo } from '../../../core/types';
-import type ClaudianPlugin from '../../../main';
 import {
+  TOOL_AGENT_OUTPUT,
+  TOOL_ASK_USER_QUESTION,
+  TOOL_TASK,
+  TOOL_TODO_WRITE,
+  isPlanModeTool,
+  isWriteEditTool,
+} from '../../../core/tools/toolNames';
+import type { ChatMessage, StreamChunk, SubagentInfo, ToolCallInfo } from '../../../core/types';
+import type CortexPlugin from '../../../main';
+import {
+  type AsyncSubagentState,
+  type FileContextManager,
+  type SubagentState,
   addSubagentToolCall,
   appendThinkingContent,
-  type AsyncSubagentState,
   createAskUserQuestionBlock,
   createAsyncSubagentBlock,
   createSubagentBlock,
   createThinkingBlock,
   createWriteEditBlock,
-  type FileContextManager,
   finalizeAskUserQuestionBlock,
   finalizeAsyncSubagent,
   finalizeSubagentBlock,
@@ -28,7 +36,6 @@ import {
   parseAskUserQuestionInput,
   parseTodoInput,
   renderToolCall,
-  type SubagentState,
   updateAsyncSubagentRunning,
   updateSubagentToolResult,
   updateToolCallResult,
@@ -41,7 +48,7 @@ import type { ChatState } from '../state/ChatState';
 
 /** Dependencies for StreamController. */
 export interface StreamControllerDeps {
-  plugin: ClaudianPlugin;
+  plugin: CortexPlugin;
   state: ChatState;
   renderer: MessageRenderer;
   asyncSubagentManager: AsyncSubagentManager;
@@ -181,7 +188,7 @@ export class StreamController {
   /** Handles regular tool_use chunks. */
   private handleRegularToolUse(
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
-    msg: ChatMessage
+    msg: ChatMessage,
   ): void {
     const { plugin, state } = this.deps;
 
@@ -239,7 +246,7 @@ export class StreamController {
   /** Handles AskUserQuestion tool_use chunks. */
   private handleAskUserQuestionToolUse(
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
-    msg: ChatMessage
+    msg: ChatMessage,
   ): void {
     const { state } = this.deps;
     if (!state.currentContentEl) return;
@@ -269,7 +276,7 @@ export class StreamController {
   /** Handles tool_result chunks. */
   private handleToolResult(
     chunk: { type: 'tool_result'; id: string; content: string; isError?: boolean },
-    msg: ChatMessage
+    msg: ChatMessage,
   ): void {
     const { plugin, state } = this.deps;
 
@@ -296,18 +303,18 @@ export class StreamController {
       return;
     }
 
-    const existingToolCall = msg.toolCalls?.find(tc => tc.id === chunk.id);
+    const existingToolCall = msg.toolCalls?.find((tc) => tc.id === chunk.id);
     const askQuestionState = state.askUserQuestionStates.get(chunk.id);
 
     // Check if it's an AskUserQuestion result
     if (existingToolCall?.name === TOOL_ASK_USER_QUESTION || askQuestionState) {
       const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
       if (existingToolCall) {
-        existingToolCall.status = isBlocked ? 'blocked' : (chunk.isError ? 'error' : 'completed');
+        existingToolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
         existingToolCall.result = chunk.content;
       }
 
-      // Get answers from stored map (set by ClaudianService callback)
+      // Get answers from stored map (set by CortexService callback)
       const storedAnswers = plugin.agentService.getAskUserQuestionAnswers(chunk.id);
       const parsed = existingToolCall ? parseAskUserQuestionInput(existingToolCall.input) : null;
 
@@ -324,7 +331,7 @@ export class StreamController {
           askQuestionState,
           answers,
           chunk.isError || isBlocked,
-          parsed?.questions
+          parsed?.questions,
         );
       }
 
@@ -342,7 +349,7 @@ export class StreamController {
     const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
 
     if (existingToolCall) {
-      existingToolCall.status = isBlocked ? 'blocked' : (chunk.isError ? 'error' : 'completed');
+      existingToolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
       existingToolCall.result = chunk.content;
 
       const writeEditState = state.writeEditStates.get(chunk.id);
@@ -375,7 +382,7 @@ export class StreamController {
     if (!state.currentContentEl) return;
 
     if (!state.currentTextEl) {
-      state.currentTextEl = state.currentContentEl.createDiv({ cls: 'claudian-text-block' });
+      state.currentTextEl = state.currentContentEl.createDiv({ cls: 'cortex-text-block' });
       state.currentTextContent = '';
     }
 
@@ -399,19 +406,20 @@ export class StreamController {
   // ============================================
 
   /** Appends thinking content. */
-  async appendThinking(content: string, msg: ChatMessage): Promise<void> {
+  async appendThinking(content: string, _msg: ChatMessage): Promise<void> {
     const { state, renderer } = this.deps;
     if (!state.currentContentEl) return;
 
     this.hideThinkingIndicator();
     if (!state.currentThinkingState) {
-      state.currentThinkingState = createThinkingBlock(
-        state.currentContentEl,
-        (el, md) => renderer.renderContent(el, md)
+      state.currentThinkingState = createThinkingBlock(state.currentContentEl, (el, md) =>
+        renderer.renderContent(el, md),
       );
     }
 
-    await appendThinkingContent(state.currentThinkingState, content, (el, md) => renderer.renderContent(el, md));
+    await appendThinkingContent(state.currentThinkingState, content, (el, md) =>
+      renderer.renderContent(el, md),
+    );
   }
 
   /** Finalizes the current thinking block. */
@@ -443,7 +451,7 @@ export class StreamController {
   /** Handles Task tool_use by creating a sync subagent block. */
   private async handleTaskToolUse(
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
-    msg: ChatMessage
+    msg: ChatMessage,
   ): Promise<void> {
     const { state } = this.deps;
     if (!state.currentContentEl) return;
@@ -463,7 +471,7 @@ export class StreamController {
   }
 
   /** Routes chunks from subagents. */
-  private async handleSubagentChunk(chunk: StreamChunk, msg: ChatMessage): Promise<void> {
+  private async handleSubagentChunk(chunk: StreamChunk, _msg: ChatMessage): Promise<void> {
     if (!('parentToolUseId' in chunk) || !chunk.parentToolUseId) {
       return;
     }
@@ -492,10 +500,10 @@ export class StreamController {
       }
 
       case 'tool_result': {
-        const toolCall = subagentState.info.toolCalls.find(tc => tc.id === chunk.id);
+        const toolCall = subagentState.info.toolCalls.find((tc) => tc.id === chunk.id);
         if (toolCall) {
           const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
-          toolCall.status = isBlocked ? 'blocked' : (chunk.isError ? 'error' : 'completed');
+          toolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
           toolCall.result = chunk.content;
           updateSubagentToolResult(subagentState, chunk.id, toolCall);
           this.deps.plugin.agentService.getDiffData(chunk.id);
@@ -513,13 +521,13 @@ export class StreamController {
   private finalizeSubagent(
     chunk: { type: 'tool_result'; id: string; content: string; isError?: boolean },
     msg: ChatMessage,
-    subagentState: SubagentState
+    subagentState: SubagentState,
   ): void {
     const { state } = this.deps;
     const isError = chunk.isError || false;
     finalizeSubagentBlock(subagentState, chunk.content, isError);
 
-    const subagentInfo = msg.subagents?.find(s => s.id === chunk.id);
+    const subagentInfo = msg.subagents?.find((s) => s.id === chunk.id);
     if (subagentInfo) {
       subagentInfo.status = isError ? 'error' : 'completed';
       subagentInfo.result = chunk.content;
@@ -539,7 +547,7 @@ export class StreamController {
   /** Handles async Task tool_use (run_in_background=true). */
   private async handleAsyncTaskToolUse(
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
-    msg: ChatMessage
+    msg: ChatMessage,
   ): Promise<void> {
     const { state, asyncSubagentManager } = this.deps;
     if (!state.currentContentEl) return;
@@ -563,7 +571,7 @@ export class StreamController {
   /** Handles AgentOutputTool tool_use (invisible, links to async subagent). */
   private handleAgentOutputToolUse(
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
-    _msg: ChatMessage
+    _msg: ChatMessage,
   ): void {
     const toolCall: ToolCallInfo = {
       id: chunk.id,
@@ -579,7 +587,7 @@ export class StreamController {
   /** Handles async Task tool_result to extract agent_id. */
   private handleAsyncTaskToolResult(
     chunk: { type: 'tool_result'; id: string; content: string; isError?: boolean },
-    _msg: ChatMessage
+    _msg: ChatMessage,
   ): boolean {
     const { asyncSubagentManager } = this.deps;
     if (!asyncSubagentManager.isPendingAsyncTask(chunk.id)) {
@@ -593,7 +601,7 @@ export class StreamController {
   /** Handles AgentOutputTool result to finalize async subagent. */
   private handleAgentOutputToolResult(
     chunk: { type: 'tool_result'; id: string; content: string; isError?: boolean },
-    _msg: ChatMessage
+    _msg: ChatMessage,
   ): boolean {
     const { asyncSubagentManager } = this.deps;
     const isLinked = asyncSubagentManager.isLinkedAgentOutputTool(chunk.id);
@@ -601,7 +609,7 @@ export class StreamController {
     const handled = asyncSubagentManager.handleAgentOutputToolResult(
       chunk.id,
       chunk.content,
-      chunk.isError || false
+      chunk.isError || false,
     );
 
     return isLinked || handled !== undefined;
@@ -626,10 +634,7 @@ export class StreamController {
   }
 
   /** Updates async subagent UI based on state. */
-  private updateAsyncSubagentUI(
-    asyncState: AsyncSubagentState,
-    subagent: SubagentInfo
-  ): void {
+  private updateAsyncSubagentUI(asyncState: AsyncSubagentState, subagent: SubagentInfo): void {
     asyncState.info = subagent;
 
     switch (subagent.asyncStatus) {
@@ -657,7 +662,7 @@ export class StreamController {
     for (let i = state.messages.length - 1; i >= 0; i--) {
       const msg = state.messages[i];
       if (msg.role === 'assistant' && msg.subagents) {
-        const idx = msg.subagents.findIndex(s => s.id === subagent.id);
+        const idx = msg.subagents.findIndex((s) => s.id === subagent.id);
         if (idx !== -1) {
           msg.subagents[idx] = subagent;
           return;
@@ -681,13 +686,13 @@ export class StreamController {
       return;
     }
 
-    state.thinkingEl = parentEl.createDiv({ cls: 'claudian-thinking' });
+    state.thinkingEl = parentEl.createDiv({ cls: 'cortex-thinking' });
     const randomText = FLAVOR_TEXTS[Math.floor(Math.random() * FLAVOR_TEXTS.length)];
     state.thinkingEl.createSpan({ text: randomText });
-    state.thinkingEl.createSpan({ text: ' (esc to interrupt)', cls: 'claudian-thinking-hint' });
+    state.thinkingEl.createSpan({ text: ' (esc to interrupt)', cls: 'cortex-thinking-hint' });
 
     // Queue indicator line (initially hidden)
-    state.queueIndicatorEl = state.thinkingEl.createDiv({ cls: 'claudian-queue-indicator' });
+    state.queueIndicatorEl = state.thinkingEl.createDiv({ cls: 'cortex-queue-indicator' });
     this.deps.updateQueueIndicator();
   }
 

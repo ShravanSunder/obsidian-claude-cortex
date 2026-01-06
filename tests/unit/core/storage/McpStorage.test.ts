@@ -116,7 +116,7 @@ describe('McpStorage', () => {
         '.claude/mcp.json': 'invalid json{',
       });
       const storage = new McpStorage(adapter);
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       try {
         const servers = await storage.load();
@@ -173,8 +173,8 @@ describe('McpStorage', () => {
         {
           name: 'alpha',
           config: { command: 'alpha-cmd' },
-          enabled: true,  // default
-          contextSaving: true,  // default
+          enabled: true, // default
+          contextSaving: true, // default
           disabledTools: [],
         },
       ]);

@@ -1,4 +1,5 @@
 // Mock for Obsidian API
+import { vi } from 'vitest';
 
 export class Plugin {
   app: any;
@@ -9,21 +10,21 @@ export class Plugin {
     this.manifest = manifest;
   }
 
-  addRibbonIcon = jest.fn();
-  addCommand = jest.fn();
-  addSettingTab = jest.fn();
-  registerView = jest.fn();
-  loadData = jest.fn().mockResolvedValue({});
-  saveData = jest.fn().mockResolvedValue(undefined);
+  addRibbonIcon = vi.fn();
+  addCommand = vi.fn();
+  addSettingTab = vi.fn();
+  registerView = vi.fn();
+  loadData = vi.fn().mockResolvedValue({});
+  saveData = vi.fn().mockResolvedValue(undefined);
 }
 
 export class PluginSettingTab {
   app: any;
   plugin: any;
   containerEl: any = {
-    empty: jest.fn(),
-    createEl: jest.fn().mockReturnValue({ createEl: jest.fn(), createDiv: jest.fn() }),
-    createDiv: jest.fn().mockReturnValue({ createEl: jest.fn(), createDiv: jest.fn() }),
+    empty: vi.fn(),
+    createEl: vi.fn().mockReturnValue({ createEl: vi.fn(), createDiv: vi.fn() }),
+    createDiv: vi.fn().mockReturnValue({ createEl: vi.fn(), createDiv: vi.fn() }),
   };
 
   constructor(app: any, plugin: any) {
@@ -38,10 +39,19 @@ export class ItemView {
   app: any;
   leaf: any;
   containerEl: any = {
-    children: [{}, { empty: jest.fn(), addClass: jest.fn(), createDiv: jest.fn().mockReturnValue({
-      createEl: jest.fn().mockReturnValue({ addEventListener: jest.fn(), setAttribute: jest.fn() }),
-      createDiv: jest.fn().mockReturnValue({ createEl: jest.fn().mockReturnValue({ addEventListener: jest.fn() }) }),
-    }) }],
+    children: [
+      {},
+      {
+        empty: vi.fn(),
+        addClass: vi.fn(),
+        createDiv: vi.fn().mockReturnValue({
+          createEl: vi.fn().mockReturnValue({ addEventListener: vi.fn(), setAttribute: vi.fn() }),
+          createDiv: vi
+            .fn()
+            .mockReturnValue({ createEl: vi.fn().mockReturnValue({ addEventListener: vi.fn() }) }),
+        }),
+      },
+    ],
   };
 
   constructor(leaf: any) {
@@ -70,11 +80,11 @@ export class App {
     },
   };
   workspace: any = {
-    getLeavesOfType: jest.fn().mockReturnValue([]),
-    getRightLeaf: jest.fn().mockReturnValue({
-      setViewState: jest.fn().mockResolvedValue(undefined),
+    getLeavesOfType: vi.fn().mockReturnValue([]),
+    getRightLeaf: vi.fn().mockReturnValue({
+      setViewState: vi.fn().mockResolvedValue(undefined),
     }),
-    revealLeaf: jest.fn(),
+    revealLeaf: vi.fn(),
   };
 }
 
@@ -89,63 +99,63 @@ export class MarkdownView {
 }
 
 export class Setting {
-  constructor(containerEl: any) {}
-  setName = jest.fn().mockReturnThis();
-  setDesc = jest.fn().mockReturnThis();
-  addToggle = jest.fn().mockReturnThis();
-  addTextArea = jest.fn().mockReturnThis();
+  constructor(_containerEl: unknown) {}
+  setName = vi.fn().mockReturnThis();
+  setDesc = vi.fn().mockReturnThis();
+  addToggle = vi.fn().mockReturnThis();
+  addTextArea = vi.fn().mockReturnThis();
 }
 
 export class Modal {
   app: any;
   containerEl: any = {
-    createDiv: jest.fn().mockReturnValue({
-      createEl: jest.fn().mockReturnValue({ addEventListener: jest.fn() }),
-      createDiv: jest.fn().mockReturnValue({
-        createEl: jest.fn().mockReturnValue({ addEventListener: jest.fn() }),
-        createDiv: jest.fn().mockReturnValue({
-          createEl: jest.fn(),
+    createDiv: vi.fn().mockReturnValue({
+      createEl: vi.fn().mockReturnValue({ addEventListener: vi.fn() }),
+      createDiv: vi.fn().mockReturnValue({
+        createEl: vi.fn().mockReturnValue({ addEventListener: vi.fn() }),
+        createDiv: vi.fn().mockReturnValue({
+          createEl: vi.fn(),
         }),
-        setText: jest.fn(),
+        setText: vi.fn(),
       }),
-      addClass: jest.fn(),
-      setText: jest.fn(),
+      addClass: vi.fn(),
+      setText: vi.fn(),
     }),
-    empty: jest.fn(),
-    addClass: jest.fn(),
+    empty: vi.fn(),
+    addClass: vi.fn(),
   };
   contentEl: any = {
-    createDiv: jest.fn().mockReturnValue({
-      createEl: jest.fn().mockReturnValue({ addEventListener: jest.fn() }),
-      createDiv: jest.fn().mockReturnValue({
-        createEl: jest.fn().mockReturnValue({ addEventListener: jest.fn() }),
-        createDiv: jest.fn().mockReturnValue({
-          createEl: jest.fn(),
+    createDiv: vi.fn().mockReturnValue({
+      createEl: vi.fn().mockReturnValue({ addEventListener: vi.fn() }),
+      createDiv: vi.fn().mockReturnValue({
+        createEl: vi.fn().mockReturnValue({ addEventListener: vi.fn() }),
+        createDiv: vi.fn().mockReturnValue({
+          createEl: vi.fn(),
         }),
-        setText: jest.fn(),
+        setText: vi.fn(),
       }),
-      addClass: jest.fn(),
-      setText: jest.fn(),
+      addClass: vi.fn(),
+      setText: vi.fn(),
     }),
-    empty: jest.fn(),
-    addClass: jest.fn(),
+    empty: vi.fn(),
+    addClass: vi.fn(),
   };
 
   constructor(app: any) {
     this.app = app;
   }
 
-  open = jest.fn();
-  close = jest.fn();
-  onOpen = jest.fn();
-  onClose = jest.fn();
+  open = vi.fn();
+  close = vi.fn();
+  onOpen = vi.fn();
+  onClose = vi.fn();
 }
 
 export const MarkdownRenderer = {
-  renderMarkdown: jest.fn().mockResolvedValue(undefined),
+  renderMarkdown: vi.fn().mockResolvedValue(undefined),
 };
 
-export const setIcon = jest.fn();
+export const setIcon = vi.fn();
 
 export class Notice {
   constructor(_message: string) {}
@@ -158,7 +168,7 @@ export class TFile {
   basename: string;
   extension: string;
 
-  constructor(path: string = '') {
+  constructor(path = '') {
     this.path = path;
     this.name = path.split('/').pop() || '';
     this.basename = this.name.replace(/\.[^.]+$/, '');

@@ -4,9 +4,9 @@
  * Pre/Post ToolUse hooks for capturing file content before and after edits.
  */
 
-import type { HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
+import type { HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 
 import { normalizePathForFilesystem } from '../../utils/path';
 import { TOOL_EDIT, TOOL_WRITE } from '../tools/toolNames';
@@ -20,7 +20,7 @@ export interface FileEditPostCallback {
   trackEditedFile(
     toolName: string | undefined,
     toolInput: Record<string, unknown> | undefined,
-    isError: boolean
+    isError: boolean,
   ): Promise<void>;
 }
 
@@ -38,7 +38,7 @@ export interface DiffContentEntry {
  */
 export function createFileHashPreHook(
   vaultPath: string | null,
-  originalContents: Map<string, DiffContentEntry>
+  originalContents: Map<string, DiffContentEntry>,
 ): HookCallbackMatcher {
   return {
     matcher: 'Write|Edit|NotebookEdit',
@@ -68,7 +68,11 @@ export function createFileHashPreHook(
                   originalContents.set(toolUseId, { filePath, content });
                 } else {
                   // File too large for diff
-                  originalContents.set(toolUseId, { filePath, content: null, skippedReason: 'too_large' });
+                  originalContents.set(toolUseId, {
+                    filePath,
+                    content: null,
+                    skippedReason: 'too_large',
+                  });
                 }
               } else {
                 // New file
@@ -76,7 +80,11 @@ export function createFileHashPreHook(
               }
             } catch (error) {
               console.warn('Failed to capture original file contents:', fullPath, error);
-              originalContents.set(toolUseId, { filePath, content: null, skippedReason: 'unavailable' });
+              originalContents.set(toolUseId, {
+                filePath,
+                content: null,
+                skippedReason: 'unavailable',
+              });
             }
           }
         }
@@ -94,7 +102,7 @@ export function createFileHashPostHook(
   vaultPath: string | null,
   originalContents: Map<string, DiffContentEntry>,
   pendingDiffData: Map<string, ToolDiffData>,
-  postCallback?: FileEditPostCallback
+  postCallback?: FileEditPostCallback,
 ): HookCallbackMatcher {
   return {
     matcher: 'Write|Edit|NotebookEdit',

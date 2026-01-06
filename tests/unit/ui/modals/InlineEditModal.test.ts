@@ -71,9 +71,9 @@ function diffToHtml(ops: DiffOp[]): string {
       const escaped = op.text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
       switch (op.type) {
         case 'delete':
-          return `<span class="claudian-diff-del">${escaped}</span>`;
+          return `<span class="cortex-diff-del">${escaped}</span>`;
         case 'insert':
-          return `<span class="claudian-diff-ins">${escaped}</span>`;
+          return `<span class="cortex-diff-ins">${escaped}</span>`;
         default:
           return escaped;
       }
@@ -132,9 +132,12 @@ describe('InlineEditModal - Insertion Newline Trimming', () => {
     });
 
     it('should handle multiline markdown content', () => {
-      const input = '\n## Description\n\nThis project provides tools for managing notes.\n\n### Features\n- Feature 1\n- Feature 2\n';
+      const input =
+        '\n## Description\n\nThis project provides tools for managing notes.\n\n### Features\n- Feature 1\n- Feature 2\n';
       const result = normalizeInsertionText(input);
-      expect(result).toBe('## Description\n\nThis project provides tools for managing notes.\n\n### Features\n- Feature 1\n- Feature 2');
+      expect(result).toBe(
+        '## Description\n\nThis project provides tools for managing notes.\n\n### Features\n- Feature 1\n- Feature 2',
+      );
     });
 
     it('should handle code blocks with newlines', () => {
@@ -297,7 +300,7 @@ describe('InlineEditModal - Word-level Diff', () => {
 
       const html = diffToHtml(ops);
 
-      expect(html).toContain('claudian-diff-del');
+      expect(html).toContain('cortex-diff-del');
       expect(html).toContain('removed');
     });
 
@@ -306,7 +309,7 @@ describe('InlineEditModal - Word-level Diff', () => {
 
       const html = diffToHtml(ops);
 
-      expect(html).toContain('claudian-diff-ins');
+      expect(html).toContain('cortex-diff-ins');
       expect(html).toContain('added');
     });
 
@@ -329,9 +332,9 @@ describe('InlineEditModal - Word-level Diff', () => {
       const html = diffToHtml(ops);
 
       expect(html).toContain('Hello ');
-      expect(html).toContain('claudian-diff-del');
+      expect(html).toContain('cortex-diff-del');
       expect(html).toContain('world');
-      expect(html).toContain('claudian-diff-ins');
+      expect(html).toContain('cortex-diff-ins');
       expect(html).toContain('universe');
     });
 
@@ -370,8 +373,8 @@ describe('InlineEditModal - Word-level Diff', () => {
       const html = diffToHtml(ops);
 
       // Should have both del and ins spans
-      expect(html).toContain('claudian-diff-del');
-      expect(html).toContain('claudian-diff-ins');
+      expect(html).toContain('cortex-diff-del');
+      expect(html).toContain('cortex-diff-ins');
     });
 
     it('should produce plain text for no changes', () => {
@@ -414,7 +417,7 @@ describe('normalizePathForVault edge cases', () => {
   // Helper that mirrors the InlineEditModal.normalizePathForVault logic
   function normalizePathForVault(
     rawPath: string | undefined | null,
-    vaultPath: string | null
+    vaultPath: string | null,
   ): string | null {
     if (!rawPath) return null;
     try {

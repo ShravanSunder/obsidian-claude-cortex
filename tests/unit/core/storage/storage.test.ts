@@ -58,21 +58,24 @@ describe('SessionStorage JSONL format', () => {
     });
 
     it('should return null if no meta record found', () => {
-      const jsonl = '{"type":"message","message":{"id":"msg-1","role":"user","content":"Hello","timestamp":1001}}';
+      const jsonl =
+        '{"type":"message","message":{"id":"msg-1","role":"user","content":"Hello","timestamp":1001}}';
 
       const conversation = parseJSONLHelper(jsonl);
       expect(conversation).toBeNull();
     });
 
     it('should parse lastResponseAt when present', () => {
-      const jsonl = '{"type":"meta","id":"conv-123","title":"Test","createdAt":1000,"updatedAt":2000,"lastResponseAt":1500,"sessionId":null}';
+      const jsonl =
+        '{"type":"meta","id":"conv-123","title":"Test","createdAt":1000,"updatedAt":2000,"lastResponseAt":1500,"sessionId":null}';
 
       const conversation = parseJSONLHelper(jsonl);
       expect(conversation!.lastResponseAt).toBe(1500);
     });
 
     it('should parse currentNote when present', () => {
-      const jsonl = '{"type":"meta","id":"conv-123","title":"Test","createdAt":1000,"updatedAt":2000,"sessionId":null,"currentNote":"file1.md"}';
+      const jsonl =
+        '{"type":"meta","id":"conv-123","title":"Test","createdAt":1000,"updatedAt":2000,"sessionId":null,"currentNote":"file1.md"}';
 
       const conversation = parseJSONLHelper(jsonl);
       expect(conversation!.currentNote).toBe('file1.md');
@@ -539,7 +542,7 @@ interface SessionMessageRecord {
 type SessionRecord = SessionMetaRecord | SessionMessageRecord;
 
 function parseJSONLHelper(content: string): Conversation | null {
-  const lines = content.split('\n').filter(l => l.trim());
+  const lines = content.split('\n').filter((l) => l.trim());
   if (lines.length === 0) return null;
 
   let meta: SessionMetaRecord | null = null;
@@ -591,7 +594,7 @@ function serializeToJSONLHelper(conversation: Conversation): string {
     // Strip image data
     const storedMessage = { ...message };
     if (storedMessage.images) {
-      storedMessage.images = storedMessage.images.map(img => {
+      storedMessage.images = storedMessage.images.map((img) => {
         if (!img.cachePath && !img.filePath) {
           return img as typeof img;
         }
@@ -612,19 +615,15 @@ function serializeToJSONLHelper(conversation: Conversation): string {
 const COMMANDS_PATH = '.claude/commands';
 
 function filePathToIdHelper(filePath: string): string {
-  const relativePath = filePath
-    .replace(`${COMMANDS_PATH}/`, '')
-    .replace(/\.md$/, '');
+  const relativePath = filePath.replace(`${COMMANDS_PATH}/`, '').replace(/\.md$/, '');
   const escaped = relativePath
-    .replace(/-/g, '-_')   // Escape dashes first
+    .replace(/-/g, '-_') // Escape dashes first
     .replace(/\//g, '--'); // Then encode slashes
   return `cmd-${escaped}`;
 }
 
 function filePathToNameHelper(filePath: string): string {
-  return filePath
-    .replace(`${COMMANDS_PATH}/`, '')
-    .replace(/\.md$/, '');
+  return filePath.replace(`${COMMANDS_PATH}/`, '').replace(/\.md$/, '');
 }
 
 function serializeCommandHelper(command: SlashCommand): string {
@@ -656,8 +655,13 @@ function serializeCommandHelper(command: SlashCommand): string {
 }
 
 function yamlStringHelper(value: string): string {
-  if (value.includes(':') || value.includes('#') || value.includes('\n') ||
-      value.startsWith(' ') || value.endsWith(' ')) {
+  if (
+    value.includes(':') ||
+    value.includes('#') ||
+    value.includes('\n') ||
+    value.startsWith(' ') ||
+    value.endsWith(' ')
+  ) {
     return `"${value.replace(/"/g, '\\"')}"`;
   }
   return value;
@@ -678,7 +682,7 @@ function needsMigrationHelper(legacyData: any): boolean {
     'lastCustomModel',
     'migrationVersion',
   ]);
-  const hasSettings = Object.keys(legacyData).some(key => !stateKeys.has(key));
+  const hasSettings = Object.keys(legacyData).some((key) => !stateKeys.has(key));
 
   return hasConversations || hasSlashCommands || hasSettings;
 }

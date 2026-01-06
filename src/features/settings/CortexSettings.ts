@@ -1,5 +1,5 @@
 /**
- * Claudian - Settings tab
+ * Cortex - Settings tab
  *
  * Plugin settings UI for hotkeys, customization, safety, and environment variables.
  */
@@ -10,7 +10,7 @@ import { Notice, PluginSettingTab, Setting } from 'obsidian';
 
 import { getCurrentPlatformKey } from '../../core/types';
 import { DEFAULT_CLAUDE_MODELS } from '../../core/types/models';
-import type ClaudianPlugin from '../../main';
+import type CortexPlugin from '../../main';
 import { EnvSnippetManager, McpSettingsManager, SlashCommandSettings } from '../../ui';
 import { getModelsFromEnvironment, parseEnvironmentVariables } from '../../utils/env';
 import { expandHomePath } from '../../utils/path';
@@ -29,7 +29,7 @@ function formatHotkey(hotkey: { modifiers: string[]; key: string }): string {
   return isMac ? [...mods, key].join('') : [...mods, key].join('+');
 }
 
-/** Open Obsidian's hotkey settings filtered to Claudian commands. */
+/** Open Obsidian's hotkey settings filtered to Cortex commands. */
 function openHotkeySettings(app: App): void {
   const setting = (app as any).setting;
   setting.open();
@@ -41,7 +41,7 @@ function openHotkeySettings(app: App): void {
       // Handle both old and new Obsidian versions
       const searchEl = tab.searchInputEl ?? tab.searchComponent?.inputEl;
       if (searchEl) {
-        searchEl.value = 'Claudian';
+        searchEl.value = 'Cortex';
         tab.updateHotkeyVisibility?.();
       }
     }
@@ -65,10 +65,10 @@ function getHotkeyForCommand(app: App, commandId: string): string | null {
 }
 
 /** Plugin settings tab displayed in Obsidian's settings pane. */
-export class ClaudianSettingTab extends PluginSettingTab {
-  plugin: ClaudianPlugin;
+export class CortexSettingTab extends PluginSettingTab {
+  plugin: CortexPlugin;
 
-  constructor(app: App, plugin: ClaudianPlugin) {
+  constructor(app: App, plugin: CortexPlugin) {
     super(app, plugin);
     this.plugin = plugin;
   }
@@ -76,13 +76,13 @@ export class ClaudianSettingTab extends PluginSettingTab {
   display(): void {
     const { containerEl } = this;
     containerEl.empty();
-    containerEl.addClass('claudian-settings');
+    containerEl.addClass('cortex-settings');
 
     // Customization section
     new Setting(containerEl).setName('Customization').setHeading();
 
     new Setting(containerEl)
-      .setName('What should Claudian call you?')
+      .setName('What should Cortex call you?')
       .setDesc('Your name for personalized greetings (leave empty for generic greetings)')
       .addText((text) =>
         text
@@ -91,7 +91,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
           .onChange(async (value) => {
             this.plugin.settings.userName = value;
             await this.plugin.saveSettings();
-          })
+          }),
       );
 
     new Setting(containerEl)
@@ -103,8 +103,8 @@ export class ClaudianSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.excludedTags.join('\n'))
           .onChange(async (value) => {
             this.plugin.settings.excludedTags = value
-              .split(/\r?\n/)  // Handle both Unix (LF) and Windows (CRLF) line endings
-              .map((s) => s.trim().replace(/^#/, ''))  // Remove leading # if present
+              .split(/\r?\n/) // Handle both Unix (LF) and Windows (CRLF) line endings
+              .map((s) => s.trim().replace(/^#/, '')) // Remove leading # if present
               .filter((s) => s.length > 0);
             await this.plugin.saveSettings();
           });
@@ -114,7 +114,9 @@ export class ClaudianSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Media folder')
-      .setDesc('Folder containing attachments/images. When notes use ![[image.jpg]], Claude will look here. Leave empty for vault root.')
+      .setDesc(
+        'Folder containing attachments/images. When notes use ![[image.jpg]], Claude will look here. Leave empty for vault root.',
+      )
       .addText((text) => {
         text
           .setPlaceholder('attachments')
@@ -123,7 +125,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
             this.plugin.settings.mediaFolder = value.trim();
             await this.plugin.saveSettings();
           });
-        text.inputEl.addClass('claudian-settings-media-input');
+        text.inputEl.addClass('cortex-settings-media-input');
       });
 
     new Setting(containerEl)
@@ -145,13 +147,11 @@ export class ClaudianSettingTab extends PluginSettingTab {
       .setName('Auto-generate conversation titles')
       .setDesc('Automatically generate conversation titles after the first exchange.')
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableAutoTitleGeneration)
-          .onChange(async (value) => {
-            this.plugin.settings.enableAutoTitleGeneration = value;
-            await this.plugin.saveSettings();
-            this.display();
-          })
+        toggle.setValue(this.plugin.settings.enableAutoTitleGeneration).onChange(async (value) => {
+          this.plugin.settings.enableAutoTitleGeneration = value;
+          await this.plugin.saveSettings();
+          this.display();
+        }),
       );
 
     if (this.plugin.settings.enableAutoTitleGeneration) {
@@ -182,7 +182,9 @@ export class ClaudianSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Vim-style navigation mappings')
-      .setDesc('One mapping per line. Format: "map <key> <action>" (actions: scrollUp, scrollDown, focusInput).')
+      .setDesc(
+        'One mapping per line. Format: "map <key> <action>" (actions: scrollUp, scrollDown, focusInput).',
+      )
       .addTextArea((text) => {
         let pendingValue = buildNavMappingText(this.plugin.settings.keyboardNavigation);
         let saveTimeout: number | null = null;
@@ -237,54 +239,54 @@ export class ClaudianSettingTab extends PluginSettingTab {
     // Hotkeys section
     new Setting(containerEl).setName('Hotkeys').setHeading();
 
-    const inlineEditCommandId = 'claudian:inline-edit';
+    const inlineEditCommandId = 'cortex:inline-edit';
     const inlineEditHotkey = getHotkeyForCommand(this.app, inlineEditCommandId);
     new Setting(containerEl)
       .setName('Inline edit hotkey')
-      .setDesc(inlineEditHotkey
-        ? `Current: ${inlineEditHotkey}`
-        : 'No hotkey set. Click to configure.')
+      .setDesc(
+        inlineEditHotkey ? `Current: ${inlineEditHotkey}` : 'No hotkey set. Click to configure.',
+      )
       .addButton((button) =>
         button
           .setButtonText(inlineEditHotkey ? 'Change' : 'Set hotkey')
-          .onClick(() => openHotkeySettings(this.app))
+          .onClick(() => openHotkeySettings(this.app)),
       );
 
-    const openChatCommandId = 'claudian:open-view';
+    const openChatCommandId = 'cortex:open-view';
     const openChatHotkey = getHotkeyForCommand(this.app, openChatCommandId);
     new Setting(containerEl)
       .setName('Open chat hotkey')
-      .setDesc(openChatHotkey
-        ? `Current: ${openChatHotkey}`
-        : 'No hotkey set. Click to configure.')
+      .setDesc(openChatHotkey ? `Current: ${openChatHotkey}` : 'No hotkey set. Click to configure.')
       .addButton((button) =>
         button
           .setButtonText(openChatHotkey ? 'Change' : 'Set hotkey')
-          .onClick(() => openHotkeySettings(this.app))
+          .onClick(() => openHotkeySettings(this.app)),
       );
 
     // Slash Commands section
     new Setting(containerEl).setName('Slash Commands').setHeading();
 
-    const slashCommandsDesc = containerEl.createDiv({ cls: 'claudian-slash-settings-desc' });
+    const slashCommandsDesc = containerEl.createDiv({ cls: 'cortex-slash-settings-desc' });
     slashCommandsDesc.createEl('p', {
       text: 'Create custom prompt templates triggered by /command. Use $ARGUMENTS for all arguments, $1/$2 for positional args, @file for file content, and !`bash` for command output.',
       cls: 'setting-item-description',
     });
 
-    const slashCommandsContainer = containerEl.createDiv({ cls: 'claudian-slash-commands-container' });
+    const slashCommandsContainer = containerEl.createDiv({
+      cls: 'cortex-slash-commands-container',
+    });
     new SlashCommandSettings(slashCommandsContainer, this.plugin);
 
     // MCP Servers section
     new Setting(containerEl).setName('MCP Servers').setHeading();
 
-    const mcpDesc = containerEl.createDiv({ cls: 'claudian-mcp-settings-desc' });
+    const mcpDesc = containerEl.createDiv({ cls: 'cortex-mcp-settings-desc' });
     mcpDesc.createEl('p', {
-      text: 'Configure Model Context Protocol servers to extend Claude\'s capabilities with external tools and data sources. Servers with context-saving mode require @mention to activate.',
+      text: "Configure Model Context Protocol servers to extend Claude's capabilities with external tools and data sources. Servers with context-saving mode require @mention to activate.",
       cls: 'setting-item-description',
     });
 
-    const mcpContainer = containerEl.createDiv({ cls: 'claudian-mcp-container' });
+    const mcpContainer = containerEl.createDiv({ cls: 'cortex-mcp-container' });
     new McpSettingsManager(mcpContainer, this.plugin);
 
     // Safety section
@@ -292,26 +294,24 @@ export class ClaudianSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Load user Claude settings')
-      .setDesc('Load ~/.claude/settings.json. When enabled, user\'s Claude Code permission rules may bypass Safe mode.')
+      .setDesc(
+        "Load ~/.claude/settings.json. When enabled, user's Claude Code permission rules may bypass Safe mode.",
+      )
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.loadUserClaudeSettings)
-          .onChange(async (value) => {
-            this.plugin.settings.loadUserClaudeSettings = value;
-            await this.plugin.saveSettings();
-          })
+        toggle.setValue(this.plugin.settings.loadUserClaudeSettings).onChange(async (value) => {
+          this.plugin.settings.loadUserClaudeSettings = value;
+          await this.plugin.saveSettings();
+        }),
       );
 
     new Setting(containerEl)
       .setName('Enable command blocklist')
       .setDesc('Block potentially dangerous bash commands')
       .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.enableBlocklist)
-          .onChange(async (value) => {
-            this.plugin.settings.enableBlocklist = value;
-            await this.plugin.saveSettings();
-          })
+        toggle.setValue(this.plugin.settings.enableBlocklist).onChange(async (value) => {
+          this.plugin.settings.enableBlocklist = value;
+          await this.plugin.saveSettings();
+        }),
       );
 
     const platformKey = getCurrentPlatformKey();
@@ -331,7 +331,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.blockedCommands[platformKey].join('\n'))
           .onChange(async (value) => {
             this.plugin.settings.blockedCommands[platformKey] = value
-              .split(/\r?\n/)  // Handle both Unix (LF) and Windows (CRLF) line endings
+              .split(/\r?\n/) // Handle both Unix (LF) and Windows (CRLF) line endings
               .map((s) => s.trim())
               .filter((s) => s.length > 0);
             await this.plugin.saveSettings();
@@ -363,18 +363,21 @@ export class ClaudianSettingTab extends PluginSettingTab {
 
     new Setting(containerEl)
       .setName('Allowed export paths')
-      .setDesc('Paths outside the vault where files can be exported (one per line). Supports ~ for home directory.')
+      .setDesc(
+        'Paths outside the vault where files can be exported (one per line). Supports ~ for home directory.',
+      )
       .addTextArea((text) => {
         // Platform-aware placeholder
-        const placeholder = process.platform === 'win32'
-          ? '~/Desktop\n~/Downloads\n%TEMP%'
-          : '~/Desktop\n~/Downloads\n/tmp';
+        const placeholder =
+          process.platform === 'win32'
+            ? '~/Desktop\n~/Downloads\n%TEMP%'
+            : '~/Desktop\n~/Downloads\n/tmp';
         text
           .setPlaceholder(placeholder)
           .setValue(this.plugin.settings.allowedExportPaths.join('\n'))
           .onChange(async (value) => {
             this.plugin.settings.allowedExportPaths = value
-              .split(/\r?\n/)  // Handle both Unix (LF) and Windows (CRLF) line endings
+              .split(/\r?\n/) // Handle both Unix (LF) and Windows (CRLF) line endings
               .map((s) => s.trim())
               .filter((s) => s.length > 0);
             await this.plugin.saveSettings();
@@ -383,7 +386,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
         text.inputEl.cols = 40;
       });
 
-    const approvedDesc = containerEl.createDiv({ cls: 'claudian-approved-desc' });
+    const approvedDesc = containerEl.createDiv({ cls: 'cortex-approved-desc' });
     approvedDesc.createEl('p', {
       text: 'Actions that have been permanently approved (via "Always Allow"). These will not require approval in Safe mode.',
       cls: 'setting-item-description',
@@ -392,32 +395,35 @@ export class ClaudianSettingTab extends PluginSettingTab {
     const permissions = this.plugin.settings.permissions;
 
     if (permissions.length === 0) {
-      const emptyEl = containerEl.createDiv({ cls: 'claudian-approved-empty' });
-      emptyEl.setText('No approved actions yet. When you click "Always Allow" in the approval dialog, actions will appear here.');
+      const emptyEl = containerEl.createDiv({ cls: 'cortex-approved-empty' });
+      emptyEl.setText(
+        'No approved actions yet. When you click "Always Allow" in the approval dialog, actions will appear here.',
+      );
     } else {
-      const listEl = containerEl.createDiv({ cls: 'claudian-approved-list' });
+      const listEl = containerEl.createDiv({ cls: 'cortex-approved-list' });
 
       for (const action of permissions) {
-        const itemEl = listEl.createDiv({ cls: 'claudian-approved-item' });
+        const itemEl = listEl.createDiv({ cls: 'cortex-approved-item' });
 
-        const infoEl = itemEl.createDiv({ cls: 'claudian-approved-item-info' });
+        const infoEl = itemEl.createDiv({ cls: 'cortex-approved-item-info' });
 
-        const toolEl = infoEl.createSpan({ cls: 'claudian-approved-item-tool' });
+        const toolEl = infoEl.createSpan({ cls: 'cortex-approved-item-tool' });
         toolEl.setText(action.toolName);
 
-        const patternEl = infoEl.createDiv({ cls: 'claudian-approved-item-pattern' });
+        const patternEl = infoEl.createDiv({ cls: 'cortex-approved-item-pattern' });
         patternEl.setText(action.pattern);
 
-        const dateEl = infoEl.createSpan({ cls: 'claudian-approved-item-date' });
+        const dateEl = infoEl.createSpan({ cls: 'cortex-approved-item-date' });
         dateEl.setText(new Date(action.approvedAt).toLocaleDateString());
 
         const removeBtn = itemEl.createEl('button', {
           text: 'Remove',
-          cls: 'claudian-approved-remove-btn',
+          cls: 'cortex-approved-remove-btn',
         });
         removeBtn.addEventListener('click', async () => {
-          this.plugin.settings.permissions =
-            this.plugin.settings.permissions.filter((a) => a !== action);
+          this.plugin.settings.permissions = this.plugin.settings.permissions.filter(
+            (a) => a !== action,
+          );
           await this.plugin.saveSettings();
           this.display(); // Refresh
         });
@@ -435,7 +441,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
               this.plugin.settings.permissions = [];
               await this.plugin.saveSettings();
               this.display(); // Refresh
-            })
+            }),
         );
     }
 
@@ -447,33 +453,36 @@ export class ClaudianSettingTab extends PluginSettingTab {
       .setDesc('Environment variables for Claude SDK (KEY=VALUE format, one per line)')
       .addTextArea((text) => {
         text
-          .setPlaceholder('ANTHROPIC_API_KEY=your-key\nANTHROPIC_BASE_URL=https://api.example.com\nANTHROPIC_MODEL=custom-model')
+          .setPlaceholder(
+            'ANTHROPIC_API_KEY=your-key\nANTHROPIC_BASE_URL=https://api.example.com\nANTHROPIC_MODEL=custom-model',
+          )
           .setValue(this.plugin.settings.environmentVariables)
           .onChange(async (value) => {
             await this.plugin.applyEnvironmentVariables(value);
           });
         text.inputEl.rows = 6;
         text.inputEl.cols = 50;
-        text.inputEl.addClass('claudian-settings-env-textarea');
+        text.inputEl.addClass('cortex-settings-env-textarea');
       });
 
     // Environment Snippets subsection
-    const envSnippetsContainer = containerEl.createDiv({ cls: 'claudian-env-snippets-container' });
+    const envSnippetsContainer = containerEl.createDiv({ cls: 'cortex-env-snippets-container' });
     new EnvSnippetManager(envSnippetsContainer, this.plugin);
 
     // Advanced section
     new Setting(containerEl).setName('Advanced').setHeading();
 
-    const cliPathDescription = process.platform === 'win32'
-      ? 'Custom path to Claude Code CLI. Leave empty for auto-detection. For the native installer, use claude.exe. For npm/pnpm/yarn or other package manager installs, use the cli.js path (not claude.cmd).'
-      : 'Custom path to Claude Code CLI. Leave empty for auto-detection. Paste the output of "which claude" — works for both native and npm/pnpm/yarn installs.';
+    const cliPathDescription =
+      process.platform === 'win32'
+        ? 'Custom path to Claude Code CLI. Leave empty for auto-detection. For the native installer, use claude.exe. For npm/pnpm/yarn or other package manager installs, use the cli.js path (not claude.cmd).'
+        : 'Custom path to Claude Code CLI. Leave empty for auto-detection. Paste the output of "which claude" — works for both native and npm/pnpm/yarn installs.';
 
     const cliPathSetting = new Setting(containerEl)
       .setName('Claude CLI path')
       .setDesc(cliPathDescription);
 
     // Create validation message element
-    const validationEl = containerEl.createDiv({ cls: 'claudian-cli-path-validation' });
+    const validationEl = containerEl.createDiv({ cls: 'cortex-cli-path-validation' });
     validationEl.style.color = 'var(--text-error)';
     validationEl.style.fontSize = '0.85em';
     validationEl.style.marginTop = '-0.5em';
@@ -498,9 +507,10 @@ export class ClaudianSettingTab extends PluginSettingTab {
 
     cliPathSetting.addText((text) => {
       // Platform-aware placeholder
-      const placeholder = process.platform === 'win32'
-        ? 'D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\cli.js'
-        : '/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js';
+      const placeholder =
+        process.platform === 'win32'
+          ? 'D:\\nodejs\\node_global\\node_modules\\@anthropic-ai\\claude-code\\cli.js'
+          : '/usr/local/lib/node_modules/@anthropic-ai/claude-code/cli.js';
       text
         .setPlaceholder(placeholder)
         .setValue(this.plugin.settings.claudeCliPath || '')
@@ -521,7 +531,7 @@ export class ClaudianSettingTab extends PluginSettingTab {
           this.plugin.cliResolver?.reset();
           this.plugin.agentService?.cleanup();
         });
-      text.inputEl.addClass('claudian-settings-cli-path-input');
+      text.inputEl.addClass('cortex-settings-cli-path-input');
       text.inputEl.style.width = '100%';
 
       // Validate on initial load
@@ -532,6 +542,5 @@ export class ClaudianSettingTab extends PluginSettingTab {
         text.inputEl.style.borderColor = 'var(--text-error)';
       }
     });
-
   }
 }

@@ -1,5 +1,5 @@
 /**
- * Claudian - Sidebar chat view
+ * Cortex - Sidebar chat view
  *
  * Main chat interface for interacting with Claude. This is a thin shell that
  * delegates to specialized controllers for different concerns.
@@ -10,13 +10,11 @@ import { ItemView, setIcon } from 'obsidian';
 
 import { SlashCommandManager } from '../../core/commands';
 import type { ClaudeModel, ThinkingBudget } from '../../core/types';
-import { DEFAULT_CLAUDE_MODELS, DEFAULT_THINKING_BUDGET, VIEW_TYPE_CLAUDIAN } from '../../core/types';
-import type ClaudianPlugin from '../../main';
+import { DEFAULT_CLAUDE_MODELS, DEFAULT_THINKING_BUDGET, VIEW_TYPE_CORTEX } from '../../core/types';
+import type CortexPlugin from '../../main';
 import {
-  cleanupThinkingBlock,
   type ContextPathSelector,
   type ContextUsageMeter,
-  createInputToolbar,
   FileContextManager,
   ImageContextManager,
   type InstructionModeManager,
@@ -28,6 +26,8 @@ import {
   SlashCommandDropdown,
   type ThinkingBudgetSelector,
   TodoPanel,
+  cleanupThinkingBlock,
+  createInputToolbar,
 } from '../../ui';
 import { getVaultPath } from '../../utils/path';
 import { LOGO_SVG } from './constants';
@@ -45,8 +45,8 @@ import { TitleGenerationService } from './services/TitleGenerationService';
 import { ChatState } from './state';
 
 /** Main sidebar chat view for interacting with Claude. */
-export class ClaudianView extends ItemView {
-  private plugin: ClaudianPlugin;
+export class CortexView extends ItemView {
+  private plugin: CortexPlugin;
 
   // State - public for test access
   public readonly state: ChatState;
@@ -89,24 +89,24 @@ export class ClaudianView extends ItemView {
   private planBanner: PlanBanner | null = null;
   private todoPanel: TodoPanel | null = null;
 
-  constructor(leaf: WorkspaceLeaf, plugin: ClaudianPlugin) {
+  constructor(leaf: WorkspaceLeaf, plugin: CortexPlugin) {
     super(leaf);
     this.plugin = plugin;
     this.state = new ChatState({
       onUsageChanged: (usage) => this.contextUsageMeter?.update(usage),
       onTodosChanged: (todos) => this.todoPanel?.updateTodos(todos),
     });
-    this.asyncSubagentManager = new AsyncSubagentManager(
-      (subagent) => this.streamController?.onAsyncSubagentStateChange(subagent)
+    this.asyncSubagentManager = new AsyncSubagentManager((subagent) =>
+      this.streamController?.onAsyncSubagentStateChange(subagent),
     );
   }
 
   getViewType(): string {
-    return VIEW_TYPE_CLAUDIAN;
+    return VIEW_TYPE_CORTEX;
   }
 
   getDisplayText(): string {
-    return 'Claudian';
+    return 'Cortex';
   }
 
   getIcon(): string {
@@ -116,10 +116,10 @@ export class ClaudianView extends ItemView {
   async onOpen() {
     const container = this.containerEl.children[1] as HTMLElement;
     container.empty();
-    container.addClass('claudian-container');
+    container.addClass('cortex-container');
 
     // Build header
-    const header = container.createDiv({ cls: 'claudian-header' });
+    const header = container.createDiv({ cls: 'cortex-header' });
     this.buildHeader(header);
 
     // Create plan banner (mounted to container, inserts before messages)
@@ -130,25 +130,21 @@ export class ClaudianView extends ItemView {
     this.planBanner.mount(container);
 
     // Build messages area
-    this.messagesEl = container.createDiv({ cls: 'claudian-messages' });
+    this.messagesEl = container.createDiv({ cls: 'cortex-messages' });
 
     // Welcome message
-    this.welcomeEl = this.messagesEl.createDiv({ cls: 'claudian-welcome' });
+    this.welcomeEl = this.messagesEl.createDiv({ cls: 'cortex-welcome' });
 
     // Create todo panel (mounts to messages area, shows at bottom)
     this.todoPanel = new TodoPanel();
     this.todoPanel.mount(this.messagesEl);
 
     // Build input area
-    const inputContainerEl = container.createDiv({ cls: 'claudian-input-container' });
+    const inputContainerEl = container.createDiv({ cls: 'cortex-input-container' });
     this.buildInputArea(inputContainerEl);
 
     // Initialize renderer
-    this.renderer = new MessageRenderer(
-      this.plugin.app,
-      this,
-      this.messagesEl
-    );
+    this.renderer = new MessageRenderer(this.plugin.app, this, this.messagesEl);
 
     // Initialize controllers
     this.initializeControllers();
@@ -206,8 +202,8 @@ export class ClaudianView extends ItemView {
   // ============================================
 
   private buildHeader(header: HTMLElement) {
-    const titleContainer = header.createDiv({ cls: 'claudian-title' });
-    const logoEl = titleContainer.createSpan({ cls: 'claudian-logo' });
+    const titleContainer = header.createDiv({ cls: 'cortex-title' });
+    const logoEl = titleContainer.createSpan({ cls: 'cortex-logo' });
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
     svg.setAttribute('viewBox', LOGO_SVG.viewBox);
     svg.setAttribute('width', LOGO_SVG.width);
@@ -218,17 +214,17 @@ export class ClaudianView extends ItemView {
     path.setAttribute('fill', LOGO_SVG.fill);
     svg.appendChild(path);
     logoEl.appendChild(svg);
-    titleContainer.createEl('h4', { text: 'Claudian' });
+    titleContainer.createEl('h4', { text: 'Cortex' });
 
-    const headerActions = header.createDiv({ cls: 'claudian-header-actions' });
+    const headerActions = header.createDiv({ cls: 'cortex-header-actions' });
 
     // History dropdown
-    const historyContainer = headerActions.createDiv({ cls: 'claudian-history-container' });
-    const trigger = historyContainer.createDiv({ cls: 'claudian-header-btn' });
+    const historyContainer = headerActions.createDiv({ cls: 'cortex-history-container' });
+    const trigger = historyContainer.createDiv({ cls: 'cortex-header-btn' });
     setIcon(trigger, 'history');
     trigger.setAttribute('aria-label', 'Chat history');
 
-    this.historyDropdown = historyContainer.createDiv({ cls: 'claudian-history-menu' });
+    this.historyDropdown = historyContainer.createDiv({ cls: 'cortex-history-menu' });
 
     trigger.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -236,22 +232,22 @@ export class ClaudianView extends ItemView {
     });
 
     // New conversation button
-    const newBtn = headerActions.createDiv({ cls: 'claudian-header-btn' });
+    const newBtn = headerActions.createDiv({ cls: 'cortex-header-btn' });
     setIcon(newBtn, 'plus');
     newBtn.setAttribute('aria-label', 'New conversation');
     newBtn.addEventListener('click', () => this.conversationController?.createNew());
   }
 
   private buildInputArea(inputContainerEl: HTMLElement) {
-    this.inputWrapper = inputContainerEl.createDiv({ cls: 'claudian-input-wrapper' });
+    this.inputWrapper = inputContainerEl.createDiv({ cls: 'cortex-input-wrapper' });
 
     // Selection indicator
-    this.selectionIndicatorEl = this.inputWrapper.createDiv({ cls: 'claudian-selection-indicator' });
+    this.selectionIndicatorEl = this.inputWrapper.createDiv({ cls: 'cortex-selection-indicator' });
     this.selectionIndicatorEl.style.display = 'none';
 
     // Input textarea
     this.inputEl = this.inputWrapper.createEl('textarea', {
-      cls: 'claudian-input',
+      cls: 'cortex-input',
       attr: {
         placeholder: 'How can I help you today?',
         rows: '3',
@@ -267,7 +263,7 @@ export class ClaudianView extends ItemView {
         getExcludedTags: () => this.plugin.settings.excludedTags,
         onChipsChanged: () => this.renderer?.scrollToBottomIfNeeded(),
         getContextPaths: () => this.contextPathSelector?.getContextPaths() || [],
-      }
+      },
     );
     this.fileContextManager.setMcpService(this.plugin.mcpService);
 
@@ -278,7 +274,7 @@ export class ClaudianView extends ItemView {
       this.inputEl,
       {
         onImagesChanged: () => this.renderer?.scrollToBottomIfNeeded(),
-      }
+      },
     );
 
     // Slash command manager
@@ -287,32 +283,25 @@ export class ClaudianView extends ItemView {
       this.slashCommandManager = new SlashCommandManager(this.plugin.app, vaultPath);
       this.slashCommandManager.setCommands(this.plugin.settings.slashCommands);
 
-      this.slashCommandDropdown = new SlashCommandDropdown(
-        inputContainerEl,
-        this.inputEl,
-        {
-          onSelect: () => {},
-          onHide: () => {},
-          getCommands: () => this.plugin.settings.slashCommands,
-        }
-      );
+      this.slashCommandDropdown = new SlashCommandDropdown(inputContainerEl, this.inputEl, {
+        onSelect: () => {},
+        onHide: () => {},
+        getCommands: () => this.plugin.settings.slashCommands,
+      });
     }
 
     // Instruction mode manager
     this.instructionRefineService = new InstructionRefineService(this.plugin);
     this.titleGenerationService = new TitleGenerationService(this.plugin);
-    this.instructionModeManager = new InstructionModeManagerClass(
-      this.inputEl,
-      {
-        onSubmit: async (rawInstruction) => {
-          await this.inputController?.handleInstructionSubmit(rawInstruction);
-        },
-        getInputWrapper: () => this.inputWrapper,
-      }
-    );
+    this.instructionModeManager = new InstructionModeManagerClass(this.inputEl, {
+      onSubmit: async (rawInstruction) => {
+        await this.inputController?.handleInstructionSubmit(rawInstruction);
+      },
+      getInputWrapper: () => this.inputWrapper,
+    });
 
     // Input toolbar
-    const inputToolbar = this.inputWrapper.createDiv({ cls: 'claudian-input-toolbar' });
+    const inputToolbar = this.inputWrapper.createDiv({ cls: 'cortex-input-toolbar' });
     const toolbarComponents = createInputToolbar(inputToolbar, {
       getSettings: () => ({
         model: this.plugin.settings.model,
@@ -401,7 +390,7 @@ export class ClaudianView extends ItemView {
     this.selectionController = new SelectionController(
       this.plugin.app,
       this.selectionIndicatorEl!,
-      this.inputEl!
+      this.inputEl!,
     );
 
     // Stream controller
@@ -427,7 +416,9 @@ export class ClaudianView extends ItemView {
         asyncSubagentManager: this.asyncSubagentManager,
         getHistoryDropdown: () => this.historyDropdown,
         getWelcomeEl: () => this.welcomeEl,
-        setWelcomeEl: (el) => { this.welcomeEl = el; },
+        setWelcomeEl: (el) => {
+          this.welcomeEl = el;
+        },
         getMessagesEl: () => this.messagesEl!,
         getInputEl: () => this.inputEl!,
         getFileContextManager: () => this.fileContextManager,
@@ -437,16 +428,19 @@ export class ClaudianView extends ItemView {
         clearQueuedMessage: () => this.inputController?.clearQueuedMessage(),
         getApprovedPlan: () => this.plugin.agentService.getApprovedPlanContent(),
         setApprovedPlan: (plan) => this.plugin.agentService.setApprovedPlanContent(plan),
-        showPlanBanner: (content) => { void this.planBanner?.show(content); },
+        showPlanBanner: (content) => {
+          void this.planBanner?.show(content);
+        },
         hidePlanBanner: () => this.planBanner?.hide(),
-        triggerPendingPlanApproval: (content) => this.inputController?.restorePendingPlanApproval(content),
+        triggerPendingPlanApproval: (content) =>
+          this.inputController?.restorePendingPlanApproval(content),
         getTitleGenerationService: () => this.titleGenerationService,
         setPlanModeActive: (_active) => {
           this.updatePlanModeUiState();
         },
         getTodoPanel: () => this.todoPanel,
       },
-      {}
+      {},
     );
 
     // Input controller
@@ -481,23 +475,23 @@ export class ClaudianView extends ItemView {
     });
 
     // Set approval callback
-    this.plugin.agentService.setApprovalCallback(
-      (toolName, input, description) => this.inputController!.handleApprovalRequest(toolName, input, description)
+    this.plugin.agentService.setApprovalCallback((toolName, input, description) =>
+      this.inputController!.handleApprovalRequest(toolName, input, description),
     );
 
     // Set AskUserQuestion callback
-    this.plugin.agentService.setAskUserQuestionCallback(
-      (input) => this.inputController!.handleAskUserQuestion(input)
+    this.plugin.agentService.setAskUserQuestionCallback((input) =>
+      this.inputController!.handleAskUserQuestion(input),
     );
 
     // Set ExitPlanMode callback
-    this.plugin.agentService.setExitPlanModeCallback(
-      (planFilePath) => this.inputController!.handleExitPlanMode(planFilePath)
+    this.plugin.agentService.setExitPlanModeCallback((planFilePath) =>
+      this.inputController!.handleExitPlanMode(planFilePath),
     );
 
     // Set EnterPlanMode callback
-    this.plugin.agentService.setEnterPlanModeCallback(
-      () => this.inputController!.handleEnterPlanMode()
+    this.plugin.agentService.setEnterPlanModeCallback(() =>
+      this.inputController!.handleEnterPlanMode(),
     );
 
     // Navigation controller (vim-style keyboard navigation)
@@ -535,33 +529,48 @@ export class ClaudianView extends ItemView {
     });
 
     // File context manager events
-    this.registerEvent(this.plugin.app.vault.on('create', () => this.fileContextManager?.markFilesCacheDirty()));
-    this.registerEvent(this.plugin.app.vault.on('delete', () => this.fileContextManager?.markFilesCacheDirty()));
-    this.registerEvent(this.plugin.app.vault.on('rename', () => this.fileContextManager?.markFilesCacheDirty()));
-    this.registerEvent(this.plugin.app.vault.on('modify', () => this.fileContextManager?.markFilesCacheDirty()));
+    this.registerEvent(
+      this.plugin.app.vault.on('create', () => this.fileContextManager?.markFilesCacheDirty()),
+    );
+    this.registerEvent(
+      this.plugin.app.vault.on('delete', () => this.fileContextManager?.markFilesCacheDirty()),
+    );
+    this.registerEvent(
+      this.plugin.app.vault.on('rename', () => this.fileContextManager?.markFilesCacheDirty()),
+    );
+    this.registerEvent(
+      this.plugin.app.vault.on('modify', () => this.fileContextManager?.markFilesCacheDirty()),
+    );
 
     this.registerEvent(
       this.plugin.app.workspace.on('file-open', (file) => {
         if (file) {
           this.fileContextManager?.handleFileOpen(file);
         }
-      })
+      }),
     );
 
     this.registerDomEvent(document, 'click', (e) => {
-      if (!this.fileContextManager?.containsElement(e.target as Node) && e.target !== this.inputEl) {
+      if (
+        !this.fileContextManager?.containsElement(e.target as Node) &&
+        e.target !== this.inputEl
+      ) {
         this.fileContextManager?.hideMentionDropdown();
       }
     });
 
     // Shift+Tab: Toggle plan mode (capture phase for priority)
-    this.inputEl!.addEventListener('keydown', (e) => {
-      if (e.key === 'Tab' && e.shiftKey && !this.state.isStreaming) {
-        e.preventDefault();
-        e.stopPropagation();
-        this.permissionToggle?.togglePlanMode();
-      }
-    }, { capture: true });
+    this.inputEl!.addEventListener(
+      'keydown',
+      (e) => {
+        if (e.key === 'Tab' && e.shiftKey && !this.state.isStreaming) {
+          e.preventDefault();
+          e.stopPropagation();
+          this.permissionToggle?.togglePlanMode();
+        }
+      },
+      { capture: true },
+    );
 
     // Input events
     this.inputEl!.addEventListener('keydown', (e) => {
@@ -622,5 +631,4 @@ export class ClaudianView extends ItemView {
     const isPlanModeRequested = this.state.planModeRequested;
     this.permissionToggle?.setPlanModeActive(isPlanMode || isPlanModeRequested);
   }
-
 }

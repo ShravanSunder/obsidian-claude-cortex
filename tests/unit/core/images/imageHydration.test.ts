@@ -24,17 +24,17 @@ function createMockPlugin(vaultPath: string) {
         },
       },
     },
-    saveSettings: jest.fn().mockResolvedValue(undefined),
-    getActiveEnvironmentVariables: jest.fn().mockReturnValue(''),
+    saveSettings: vi.fn().mockResolvedValue(undefined),
+    getActiveEnvironmentVariables: vi.fn().mockReturnValue(''),
   } as any;
 }
 
 function createTempVault() {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'claudian-vault-'));
+  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-vault-'));
   return dir;
 }
 
-describe('ClaudianService image hydration', () => {
+describe('CortexService image hydration', () => {
   let vaultPath: string;
   let plugin: any;
 
@@ -51,14 +51,16 @@ describe('ClaudianService image hydration', () => {
     const buffer = Buffer.from('cached-image');
     const cache = saveImageToCache(plugin.app, buffer, 'image/png', 'cached.png');
 
-    const images: ImageAttachment[] = [{
-      id: 'img-1',
-      name: 'cached.png',
-      mediaType: 'image/png',
-      size: buffer.length,
-      cachePath: cache!.relPath,
-      source: 'paste',
-    }];
+    const images: ImageAttachment[] = [
+      {
+        id: 'img-1',
+        name: 'cached.png',
+        mediaType: 'image/png',
+        size: buffer.length,
+        cachePath: cache!.relPath,
+        source: 'paste',
+      },
+    ];
 
     const hydrated = await hydrateImagesData(plugin.app, images, vaultPath);
     expect(hydrated).toBeDefined();
@@ -71,14 +73,16 @@ describe('ClaudianService image hydration', () => {
     const buffer = Buffer.from('file-image');
     fs.writeFileSync(imgPath, buffer);
 
-    const images: ImageAttachment[] = [{
-      id: 'img-2',
-      name: 'photo.jpg',
-      mediaType: 'image/jpeg',
-      size: buffer.length,
-      filePath: 'images/photo.jpg',
-      source: 'file',
-    }];
+    const images: ImageAttachment[] = [
+      {
+        id: 'img-2',
+        name: 'photo.jpg',
+        mediaType: 'image/jpeg',
+        size: buffer.length,
+        filePath: 'images/photo.jpg',
+        source: 'file',
+      },
+    ];
 
     const hydrated = await hydrateImagesData(plugin.app, images, vaultPath);
     expect(hydrated).toBeDefined();
@@ -86,15 +90,17 @@ describe('ClaudianService image hydration', () => {
   });
 
   it('returns undefined when no sources are available', async () => {
-    const images: ImageAttachment[] = [{
-      id: 'img-3',
-      name: 'missing.png',
-      mediaType: 'image/png',
-      size: 1,
-      cachePath: '.claudian-cache/images/missing.png',
-      filePath: 'missing.png',
-      source: 'paste',
-    }];
+    const images: ImageAttachment[] = [
+      {
+        id: 'img-3',
+        name: 'missing.png',
+        mediaType: 'image/png',
+        size: 1,
+        cachePath: '.cortex-cache/images/missing.png',
+        filePath: 'missing.png',
+        source: 'paste',
+      },
+    ];
 
     const hydrated = await hydrateImagesData(plugin.app, images, vaultPath);
     expect(hydrated).toBeUndefined();

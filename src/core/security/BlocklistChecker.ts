@@ -16,7 +16,7 @@
 export function isCommandBlocked(
   command: string,
   patterns: string[],
-  enableBlocklist: boolean
+  enableBlocklist: boolean,
 ): boolean {
   if (!enableBlocklist) {
     return false;

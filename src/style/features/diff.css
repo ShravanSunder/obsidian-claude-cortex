@@ -1,25 +1,25 @@
 /* Write/Edit Diff Block - Subagent style */
-.claudian-write-edit-block {
+.cortex-write-edit-block {
   margin: 4px 0;
   background: transparent;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.claudian-write-edit-block::-webkit-scrollbar {
+.cortex-write-edit-block::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
 
-.claudian-text-block+.claudian-write-edit-block {
+.cortex-text-block + .cortex-write-edit-block {
   margin-top: 8px;
 }
 
-.claudian-write-edit-block+.claudian-text-block {
+.cortex-write-edit-block + .cortex-text-block {
   margin-top: 8px;
 }
 
-.claudian-write-edit-header {
+.cortex-write-edit-header {
   display: flex;
   align-items: center;
   gap: 6px;
@@ -29,19 +29,19 @@
   background: transparent;
 }
 
-.claudian-write-edit-icon {
+.cortex-write-edit-icon {
   width: 16px;
   height: 16px;
   color: var(--text-accent);
   flex-shrink: 0;
 }
 
-.claudian-write-edit-icon svg {
+.cortex-write-edit-icon svg {
   width: 16px;
   height: 16px;
 }
 
-.claudian-write-edit-label {
+.cortex-write-edit-label {
   flex: 1;
   font-size: 13px;
   font-weight: 500;
@@ -51,68 +51,68 @@
   white-space: nowrap;
 }
 
-.claudian-write-edit-stats {
+.cortex-write-edit-stats {
   font-family: var(--font-monospace);
   font-size: 11px;
   flex-shrink: 0;
 }
 
-.claudian-write-edit-stats .added {
+.cortex-write-edit-stats .added {
   color: var(--color-green);
 }
 
-.claudian-write-edit-stats .removed {
+.cortex-write-edit-stats .removed {
   color: var(--color-red);
   margin-left: 4px;
 }
 
-.claudian-write-edit-status {
+.cortex-write-edit-status {
   width: 16px;
   height: 16px;
   flex-shrink: 0;
 }
 
 /* Hide empty status on successful completion so stats align to right edge */
-.claudian-write-edit-block.done .claudian-write-edit-status:empty {
+.cortex-write-edit-block.done .cortex-write-edit-status:empty {
   display: none;
 }
 
-.claudian-write-edit-status svg {
+.cortex-write-edit-status svg {
   width: 16px;
   height: 16px;
 }
 
-.claudian-write-edit-status.status-running .claudian-spinner {
+.cortex-write-edit-status.status-running .cortex-spinner {
   width: 14px;
   height: 14px;
 }
 
-.claudian-write-edit-status.status-completed {
+.cortex-write-edit-status.status-completed {
   color: var(--color-green);
 }
 
-.claudian-write-edit-status.status-error,
-.claudian-write-edit-status.status-blocked {
+.cortex-write-edit-status.status-error,
+.cortex-write-edit-status.status-blocked {
   color: var(--color-red);
 }
 
-.claudian-write-edit-content {
+.cortex-write-edit-content {
   padding: 0;
   background: transparent;
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
 
-.claudian-write-edit-content::-webkit-scrollbar {
+.cortex-write-edit-content::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
 
-.claudian-write-edit-diff-row {
+.cortex-write-edit-diff-row {
   display: flex;
 }
 
-.claudian-write-edit-diff {
+.cortex-write-edit-diff {
   flex: 1;
   font-family: var(--font-monospace);
   font-size: 12px;
@@ -125,36 +125,36 @@
   -ms-overflow-style: none;
 }
 
-.claudian-write-edit-diff::-webkit-scrollbar {
+.cortex-write-edit-diff::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
 
-.claudian-write-edit-loading,
-.claudian-write-edit-binary,
-.claudian-write-edit-error,
-.claudian-write-edit-done-text {
+.cortex-write-edit-loading,
+.cortex-write-edit-binary,
+.cortex-write-edit-error,
+.cortex-write-edit-done-text {
   font-family: var(--font-monospace);
   font-size: 12px;
   color: var(--text-muted);
 }
 
-.claudian-write-edit-error {
+.cortex-write-edit-error {
   color: var(--color-red);
 }
 
 /* Diff line styling */
-.claudian-diff-hunk {
+.cortex-diff-hunk {
   margin-bottom: 4px;
 }
 
-.claudian-diff-line {
+.cortex-diff-line {
   display: flex;
   white-space: pre-wrap;
   word-break: break-all;
 }
 
-.claudian-diff-prefix {
+.cortex-diff-prefix {
   flex-shrink: 0;
   width: 16px;
   text-align: center;
@@ -162,36 +162,36 @@
   user-select: none;
 }
 
-.claudian-diff-text {
+.cortex-diff-text {
   flex: 1;
   min-width: 0;
 }
 
 /* Diff colors - NO strikethrough for Write/Edit blocks */
-.claudian-diff-equal {
+.cortex-diff-equal {
   color: var(--text-muted);
 }
 
-.claudian-diff-delete {
+.cortex-diff-delete {
   background: rgba(255, 80, 80, 0.25);
   color: var(--text-normal);
 }
 
-.claudian-diff-delete .claudian-diff-prefix {
+.cortex-diff-delete .cortex-diff-prefix {
   color: var(--color-red);
 }
 
-.claudian-diff-insert {
+.cortex-diff-insert {
   background: rgba(80, 200, 80, 0.25);
   color: var(--text-normal);
 }
 
-.claudian-diff-insert .claudian-diff-prefix {
+.cortex-diff-insert .cortex-diff-prefix {
   color: var(--color-green);
 }
 
 /* Hunk separator */
-.claudian-diff-separator {
+.cortex-diff-separator {
   color: var(--text-muted);
   text-align: center;
   padding: 4px 0;
@@ -202,7 +202,7 @@
   font-size: 11px;
 }
 
-.claudian-diff-no-changes {
+.cortex-diff-no-changes {
   color: var(--text-muted);
   font-style: italic;
   padding: 8px;

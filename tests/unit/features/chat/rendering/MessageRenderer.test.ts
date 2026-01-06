@@ -12,12 +12,12 @@ import {
   renderStoredWriteEdit,
 } from '@/ui';
 
-jest.mock('@/ui', () => ({
-  renderStoredAsyncSubagent: jest.fn(),
-  renderStoredSubagent: jest.fn(),
-  renderStoredThinkingBlock: jest.fn(),
-  renderStoredToolCall: jest.fn(),
-  renderStoredWriteEdit: jest.fn(),
+vi.mock('@/ui', () => ({
+  renderStoredAsyncSubagent: vi.fn(),
+  renderStoredSubagent: vi.fn(),
+  renderStoredThinkingBlock: vi.fn(),
+  renderStoredToolCall: vi.fn(),
+  renderStoredWriteEdit: vi.fn(),
 }));
 
 function createMockElement() {
@@ -38,7 +38,9 @@ function createMockElement() {
     scrollTop: 0,
     scrollHeight: 0,
     textContent: '',
-    empty: jest.fn(() => { children.length = 0; }),
+    empty: vi.fn(() => {
+      children.length = 0;
+    }),
     createDiv: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement();
       if (opts?.cls) child.addClass(opts.cls);
@@ -61,10 +63,15 @@ function createMockElement() {
       children.push(child);
       return child;
     },
-    appendChild: (child: any) => { children.push(child); return child; },
-    querySelector: jest.fn().mockReturnValue(null),
-    querySelectorAll: jest.fn().mockReturnValue([]),
-    setText: jest.fn((text: string) => { element.textContent = text; }),
+    appendChild: (child: any) => {
+      children.push(child);
+      return child;
+    },
+    querySelector: vi.fn().mockReturnValue(null),
+    querySelectorAll: vi.fn().mockReturnValue([]),
+    setText: vi.fn((text: string) => {
+      element.textContent = text;
+    }),
   };
 
   return element;
@@ -72,11 +79,11 @@ function createMockElement() {
 
 function createMockComponent() {
   return {
-    registerDomEvent: jest.fn(),
-    register: jest.fn(),
-    addChild: jest.fn(),
-    load: jest.fn(),
-    unload: jest.fn(),
+    registerDomEvent: vi.fn(),
+    register: vi.fn(),
+    addChild: vi.fn(),
+    load: vi.fn(),
+    unload: vi.fn(),
   };
 }
 
@@ -85,17 +92,24 @@ describe('MessageRenderer', () => {
     const messagesEl = createMockElement();
     const mockComponent = createMockComponent();
     const renderer = new MessageRenderer({} as any, mockComponent as any, messagesEl);
-    const renderStoredSpy = jest.spyOn(renderer, 'renderStoredMessage').mockImplementation(() => {});
+    const renderStoredSpy = vi.spyOn(renderer, 'renderStoredMessage').mockImplementation(() => {});
 
     const messages: ChatMessage[] = [
-      { id: 'm1', role: 'assistant', content: '', timestamp: Date.now(), toolCalls: [], contentBlocks: [] },
+      {
+        id: 'm1',
+        role: 'assistant',
+        content: '',
+        timestamp: Date.now(),
+        toolCalls: [],
+        contentBlocks: [],
+      },
     ];
 
     const welcomeEl = renderer.renderMessages(messages, () => 'Hello');
 
     expect(messagesEl.empty).toHaveBeenCalled();
     expect(renderStoredSpy).toHaveBeenCalledTimes(1);
-    expect(welcomeEl.hasClass('claudian-welcome')).toBe(true);
+    expect(welcomeEl.hasClass('cortex-welcome')).toBe(true);
     expect(welcomeEl.children[0].textContent).toBe('Hello');
   });
 
@@ -103,7 +117,7 @@ describe('MessageRenderer', () => {
     const messagesEl = createMockElement();
     const mockComponent = createMockComponent();
     const renderer = new MessageRenderer({} as any, mockComponent as any, messagesEl);
-    const renderContentSpy = jest.spyOn(renderer, 'renderContent').mockResolvedValue(undefined);
+    const renderContentSpy = vi.spyOn(renderer, 'renderContent').mockResolvedValue(undefined);
 
     const msg: ChatMessage = {
       id: 'm1',
@@ -124,10 +138,7 @@ describe('MessageRenderer', () => {
         { type: 'subagent', subagentId: 'sub-1', mode: 'async' } as any,
         { type: 'subagent', subagentId: 'sub-2' } as any,
       ],
-      subagents: [
-        { id: 'sub-1', mode: 'async' } as any,
-        { id: 'sub-2', mode: 'sync' } as any,
-      ],
+      subagents: [{ id: 'sub-1', mode: 'async' } as any, { id: 'sub-2', mode: 'sync' } as any],
     };
 
     renderer.renderStoredMessage(msg);

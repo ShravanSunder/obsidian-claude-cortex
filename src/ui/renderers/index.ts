@@ -1,4 +1,4 @@
-/** Claudian UI renderers - barrel export. */
+/** Cortex UI renderers - barrel export. */
 
 export {
   type AskUserQuestionState,

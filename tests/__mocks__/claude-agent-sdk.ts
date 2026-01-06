@@ -1,8 +1,15 @@
 // Mock for @anthropic-ai/claude-agent-sdk
+import { type Mock, vi } from 'vitest';
 
 export interface HookCallbackMatcher {
   matcher?: string;
-  hooks: Array<(hookInput: any, toolUseID: string, options: any) => Promise<{ continue: boolean; hookSpecificOutput?: any }>>;
+  hooks: Array<
+    (
+      hookInput: any,
+      toolUseID: string,
+      options: any,
+    ) => Promise<{ continue: boolean; hookSpecificOutput?: any }>
+  >;
 }
 
 export interface Options {
@@ -25,16 +32,25 @@ export interface Options {
 }
 
 // Type exports that match the real SDK
-export type CanUseTool = (toolName: string, input: Record<string, unknown>, options: any) => Promise<PermissionResult>;
-export type PermissionResult = { behavior: 'allow' | 'deny'; updatedInput?: Record<string, unknown>; message?: string; interrupt?: boolean };
+export type CanUseTool = (
+  toolName: string,
+  input: Record<string, unknown>,
+  options: any,
+) => Promise<PermissionResult>;
+export type PermissionResult = {
+  behavior: 'allow' | 'deny';
+  updatedInput?: Record<string, unknown>;
+  message?: string;
+  interrupt?: boolean;
+};
 
 // Query type that includes dynamic update methods
 interface Query extends AsyncGenerator<any> {
-  interrupt: jest.Mock;
-  setModel: jest.Mock;
-  setMcpServers: jest.Mock;
-  setPermissionMode: jest.Mock;
-  setMaxThinkingTokens: jest.Mock;
+  interrupt: Mock;
+  setModel: Mock;
+  setMcpServers: Mock;
+  setPermissionMode: Mock;
+  setMaxThinkingTokens: Mock;
 }
 
 // Default mock messages for testing
@@ -47,16 +63,23 @@ const mockMessages = [
 let customMockMessages: any[] | null = null;
 let lastOptions: Options | undefined;
 let lastResponse: Query | null = null;
+let mockError: Error | null = null;
 
 // Allow tests to set custom mock messages
 export function setMockMessages(messages: any[]) {
   customMockMessages = messages;
 }
 
+// Allow tests to make query throw an error
+export function setMockError(error: Error | null) {
+  mockError = error;
+}
+
 export function resetMockMessages() {
   customMockMessages = null;
   lastOptions = undefined;
   lastResponse = null;
+  mockError = null;
 }
 
 export function getLastOptions(): Options | undefined {
@@ -72,7 +95,7 @@ async function runPreToolUseHooks(
   hooks: HookCallbackMatcher[] | undefined,
   toolName: string,
   toolInput: Record<string, unknown>,
-  toolId: string
+  toolId: string,
 ): Promise<{ blocked: boolean; reason?: string }> {
   if (!hooks) return { blocked: false };
 
@@ -98,12 +121,23 @@ async function runPreToolUseHooks(
 
 // Mock query function that returns an async generator
 // Supports both string prompts (old behavior) and AsyncIterable prompts (streaming mode)
-export function query({ prompt, options }: { prompt: string | AsyncIterable<any>; options: Options }): Query {
+export function query({
+  prompt,
+  options,
+}: { prompt: string | AsyncIterable<any>; options: Options }): Query {
+  // If an error is set, throw it immediately
+  if (mockError) {
+    throw mockError;
+  }
+
   const messages = customMockMessages || mockMessages;
   lastOptions = options;
 
   // Check if prompt is an AsyncIterable (streaming mode)
-  const isStreamingMode = typeof prompt !== 'string' && prompt !== null && typeof (prompt as any)[Symbol.asyncIterator] === 'function';
+  const isStreamingMode =
+    typeof prompt !== 'string' &&
+    prompt !== null &&
+    typeof (prompt as any)[Symbol.asyncIterator] === 'function';
 
   const generator = async function* () {
     if (isStreamingMode) {
@@ -123,7 +157,7 @@ export function query({ prompt, options }: { prompt: string | AsyncIterable<any>
                   options.hooks?.PreToolUse,
                   block.name,
                   block.input,
-                  block.id || `tool-${Date.now()}`
+                  block.id || `tool-${Date.now()}`,
                 );
 
                 if (hookResult.blocked) {
@@ -163,7 +197,7 @@ export function query({ prompt, options }: { prompt: string | AsyncIterable<any>
                 options.hooks?.PreToolUse,
                 block.name,
                 block.input,
-                block.id || `tool-${Date.now()}`
+                block.id || `tool-${Date.now()}`,
               );
 
               if (hookResult.blocked) {
@@ -194,12 +228,12 @@ export function query({ prompt, options }: { prompt: string | AsyncIterable<any>
   };
 
   const gen = generator() as Query;
-  gen.interrupt = jest.fn().mockResolvedValue(undefined);
+  gen.interrupt = vi.fn().mockResolvedValue(undefined);
   // Add dynamic update methods
-  gen.setModel = jest.fn().mockResolvedValue(undefined);
-  gen.setMcpServers = jest.fn().mockResolvedValue(undefined);
-  gen.setPermissionMode = jest.fn().mockResolvedValue(undefined);
-  gen.setMaxThinkingTokens = jest.fn().mockResolvedValue(undefined);
+  gen.setModel = vi.fn().mockResolvedValue(undefined);
+  gen.setMcpServers = vi.fn().mockResolvedValue(undefined);
+  gen.setPermissionMode = vi.fn().mockResolvedValue(undefined);
+  gen.setMaxThinkingTokens = vi.fn().mockResolvedValue(undefined);
   lastResponse = gen;
 
   return gen;

@@ -1,18 +1,18 @@
 import type {
   ChatMessage,
-  ClaudianSettings,
   Conversation,
   ConversationMeta,
-  EnvSnippet,  StreamChunk,
-  ToolCallInfo} from '@/core/types';
-import {
-  DEFAULT_SETTINGS,
-  VIEW_TYPE_CLAUDIAN} from '@/core/types';
+  CortexSettings,
+  EnvSnippet,
+  StreamChunk,
+  ToolCallInfo,
+} from '@/core/types';
+import { DEFAULT_SETTINGS, VIEW_TYPE_CORTEX } from '@/core/types';
 
 describe('types.ts', () => {
-  describe('VIEW_TYPE_CLAUDIAN', () => {
+  describe('VIEW_TYPE_CORTEX', () => {
     it('should be defined as the correct view type', () => {
-      expect(VIEW_TYPE_CLAUDIAN).toBe('claudian-view');
+      expect(VIEW_TYPE_CORTEX).toBe('cortex-view');
     });
   });
 
@@ -48,10 +48,18 @@ describe('types.ts', () => {
     });
 
     it('should only contain non-empty default blocked commands', () => {
-      expect(DEFAULT_SETTINGS.blockedCommands.unix.every((cmd) => cmd.trim().length > 0)).toBe(true);
-      expect(new Set(DEFAULT_SETTINGS.blockedCommands.unix).size).toBe(DEFAULT_SETTINGS.blockedCommands.unix.length);
-      expect(DEFAULT_SETTINGS.blockedCommands.windows.every((cmd) => cmd.trim().length > 0)).toBe(true);
-      expect(new Set(DEFAULT_SETTINGS.blockedCommands.windows).size).toBe(DEFAULT_SETTINGS.blockedCommands.windows.length);
+      expect(DEFAULT_SETTINGS.blockedCommands.unix.every((cmd) => cmd.trim().length > 0)).toBe(
+        true,
+      );
+      expect(new Set(DEFAULT_SETTINGS.blockedCommands.unix).size).toBe(
+        DEFAULT_SETTINGS.blockedCommands.unix.length,
+      );
+      expect(DEFAULT_SETTINGS.blockedCommands.windows.every((cmd) => cmd.trim().length > 0)).toBe(
+        true,
+      );
+      expect(new Set(DEFAULT_SETTINGS.blockedCommands.windows).size).toBe(
+        DEFAULT_SETTINGS.blockedCommands.windows.length,
+      );
     });
 
     it('should have environmentVariables as empty string by default', () => {
@@ -71,9 +79,9 @@ describe('types.ts', () => {
     });
   });
 
-  describe('ClaudianSettings type', () => {
+  describe('CortexSettings type', () => {
     it('should be assignable with valid settings', () => {
-      const settings: ClaudianSettings = {
+      const settings: CortexSettings = {
         userName: '',
         enableBlocklist: false,
         blockedCommands: { unix: ['test'], windows: ['test-win'] },
@@ -102,7 +110,7 @@ describe('types.ts', () => {
     });
 
     it('should accept custom model strings', () => {
-      const settings: ClaudianSettings = {
+      const settings: CortexSettings = {
         userName: '',
         enableBlocklist: true,
         blockedCommands: { unix: [], windows: [] },
@@ -129,7 +137,7 @@ describe('types.ts', () => {
     });
 
     it('should accept optional lastClaudeModel and lastCustomModel', () => {
-      const settings: ClaudianSettings = {
+      const settings: CortexSettings = {
         userName: '',
         enableBlocklist: true,
         blockedCommands: { unix: [], windows: [] },

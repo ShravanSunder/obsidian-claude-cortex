@@ -89,7 +89,7 @@ export class SelectableDropdown<T> {
 
         const extraClass = options.getItemClass?.(item);
         if (Array.isArray(extraClass)) {
-          extraClass.forEach(cls => itemEl.addClass(cls));
+          extraClass.forEach((cls) => itemEl.addClass(cls));
         } else if (extraClass) {
           itemEl.addClass(extraClass);
         }
@@ -137,9 +137,10 @@ export class SelectableDropdown<T> {
   }
 
   private createDropdownElement(): HTMLElement {
-    const className = this.options.fixed && this.options.fixedClassName
-      ? `${this.options.listClassName} ${this.options.fixedClassName}`
-      : this.options.listClassName;
+    const className =
+      this.options.fixed && this.options.fixedClassName
+        ? `${this.options.listClassName} ${this.options.fixedClassName}`
+        : this.options.listClassName;
 
     return this.containerEl.createDiv({ cls: className });
   }

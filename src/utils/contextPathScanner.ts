@@ -1,5 +1,5 @@
 /**
- * Claudian - Context Path Scanner
+ * Cortex - Context Path Scanner
  *
  * Scans configured context paths for files to include in @-mention dropdown.
  * Features: recursive scanning, caching, and error handling.
@@ -94,11 +94,7 @@ class ContextPathScanner {
   /**
    * Recursively scans a directory for files.
    */
-  private scanDirectory(
-    dir: string,
-    contextRoot: string,
-    depth: number
-  ): ContextPathFile[] {
+  private scanDirectory(dir: string, contextRoot: string, depth: number): ContextPathFile[] {
     if (depth > MAX_DEPTH) return [];
 
     const files: ContextPathFile[] = [];
@@ -138,7 +134,9 @@ class ContextPathScanner {
               mtime: fileStat.mtimeMs,
             });
           } catch (err) {
-            console.debug(`Skipped file ${fullPath}: ${err instanceof Error ? err.message : String(err)}`);
+            console.debug(
+              `Skipped file ${fullPath}: ${err instanceof Error ? err.message : String(err)}`,
+            );
           }
         }
 
@@ -146,7 +144,9 @@ class ContextPathScanner {
         if (files.length >= MAX_FILES_PER_PATH) break;
       }
     } catch (err) {
-      console.warn(`Failed to scan context directory ${dir}: ${err instanceof Error ? err.message : String(err)}`);
+      console.warn(
+        `Failed to scan context directory ${dir}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     return files;

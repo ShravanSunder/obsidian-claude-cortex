@@ -5,11 +5,7 @@
 import type { ClaudeModel, ThinkingBudget } from './models';
 
 /** Platform-specific blocked commands (Unix). */
-const UNIX_BLOCKED_COMMANDS = [
-  'rm -rf',
-  'chmod 777',
-  'chmod -R 777',
-];
+const UNIX_BLOCKED_COMMANDS = ['rm -rf', 'chmod 777', 'chmod -R 777'];
 
 /** Platform-specific blocked commands (Windows - both CMD and PowerShell). */
 const WINDOWS_BLOCKED_COMMANDS = [
@@ -109,29 +105,29 @@ export interface EnvSnippet {
 /** Slash command configuration with Claude Code compatibility. */
 export interface SlashCommand {
   id: string;
-  name: string;                // Command name used after / (e.g., "review-code")
-  description?: string;        // Optional description shown in dropdown
-  argumentHint?: string;       // Placeholder text for arguments (e.g., "[file] [focus]")
-  allowedTools?: string[];     // Restrict tools when command is used
-  model?: ClaudeModel;         // Override model for this command
-  content: string;             // Prompt template with placeholders
+  name: string; // Command name used after / (e.g., "review-code")
+  description?: string; // Optional description shown in dropdown
+  argumentHint?: string; // Placeholder text for arguments (e.g., "[file] [focus]")
+  allowedTools?: string[]; // Restrict tools when command is used
+  model?: ClaudeModel; // Override model for this command
+  content: string; // Prompt template with placeholders
 }
 
 /** Keyboard navigation settings for vim-style scrolling. */
 export interface KeyboardNavigationSettings {
-  scrollUpKey: string;         // Key to scroll up when focused on messages (default: 'w')
-  scrollDownKey: string;       // Key to scroll down when focused on messages (default: 's')
-  focusInputKey: string;       // Key to focus input (default: 'i', like vim insert mode)
+  scrollUpKey: string; // Key to scroll up when focused on messages (default: 'w')
+  scrollDownKey: string; // Key to scroll down when focused on messages (default: 's')
+  focusInputKey: string; // Key to focus input (default: 'i', like vim insert mode)
 }
 
 /** Plugin settings persisted to disk. */
-export interface ClaudianSettings {
+export interface CortexSettings {
   userName: string;
   enableBlocklist: boolean;
   blockedCommands: PlatformBlockedCommands;
   model: ClaudeModel;
   enableAutoTitleGeneration: boolean;
-  titleGenerationModel: string;  // Model for auto title generation (empty = auto)
+  titleGenerationModel: string; // Model for auto title generation (empty = auto)
   lastClaudeModel?: ClaudeModel;
   lastCustomModel?: ClaudeModel;
   lastEnvHash?: string;
@@ -148,18 +144,18 @@ export interface ClaudianSettings {
   allowedContextPaths: string[];
   slashCommands: SlashCommand[];
   keyboardNavigation: KeyboardNavigationSettings;
-  claudeCliPath: string;  // Custom Claude CLI path (empty = auto-detect)
-  loadUserClaudeSettings: boolean;  // Load ~/.claude/settings.json (may override permissions)
+  claudeCliPath: string; // Custom Claude CLI path (empty = auto-detect)
+  loadUserClaudeSettings: boolean; // Load ~/.claude/settings.json (may override permissions)
 }
 
 /** Default plugin settings. */
-export const DEFAULT_SETTINGS: ClaudianSettings = {
+export const DEFAULT_SETTINGS: CortexSettings = {
   userName: '',
   enableBlocklist: true,
   blockedCommands: getDefaultBlockedCommands(),
   model: 'haiku',
   enableAutoTitleGeneration: true,
-  titleGenerationModel: '',  // Empty = auto (ANTHROPIC_DEFAULT_HAIKU_MODEL or claude-haiku-4-5)
+  titleGenerationModel: '', // Empty = auto (ANTHROPIC_DEFAULT_HAIKU_MODEL or claude-haiku-4-5)
   lastClaudeModel: 'haiku',
   lastCustomModel: '',
   lastEnvHash: '',
@@ -180,14 +176,14 @@ export const DEFAULT_SETTINGS: ClaudianSettings = {
     scrollDownKey: 's',
     focusInputKey: 'i',
   },
-  claudeCliPath: '',  // Empty = auto-detect
-  loadUserClaudeSettings: true,  // Default on for compatibility
+  claudeCliPath: '', // Empty = auto-detect
+  loadUserClaudeSettings: true, // Default on for compatibility
 };
 
 /** Result from instruction refinement agent query. */
 export interface InstructionRefineResult {
   success: boolean;
-  refinedInstruction?: string;  // The refined instruction text
-  clarification?: string;       // Agent's clarifying question (if any)
-  error?: string;               // Error message (if failed)
+  refinedInstruction?: string; // The refined instruction text
+  clarification?: string; // Agent's clarifying question (if any)
+  error?: string; // Error message (if failed)
 }

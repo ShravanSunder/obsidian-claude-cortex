@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Claudian - An Obsidian plugin that embeds Claude Code as a sidebar chat interface. The vault directory becomes Claude's working directory, giving it full agentic capabilities: file read/write, bash commands, and multi-step workflows.
+Cortex - An Obsidian plugin that embeds Claude Code as a sidebar chat interface. The vault directory becomes Claude's working directory, giving it full agentic capabilities: file read/write, bash commands, and multi-step workflows.
 
 ## Architecture
 
@@ -11,7 +11,7 @@ src/
 ├── main.ts                      # Plugin entry point
 ├── core/                        # Core infrastructure (no feature dependencies)
 │   ├── agent/                   # Claude Agent SDK wrapper
-│   │   └── ClaudianService.ts
+│   │   └── CortexService.ts
 │   ├── hooks/                   # PreToolUse/PostToolUse hooks
 │   ├── images/                  # Image caching and loading
 │   ├── mcp/                     # MCP server config management
@@ -24,7 +24,7 @@ src/
 │   └── types/                   # Type definitions
 ├── features/                    # Feature modules
 │   ├── chat/                    # Main chat interface
-│   │   ├── ClaudianView.ts      # Thin shell: lifecycle + assembly
+│   │   ├── CortexView.ts      # Thin shell: lifecycle + assembly
 │   │   ├── constants.ts         # FLAVOR_TEXTS, LOGO_SVG
 │   │   ├── state/               # Centralized state (ChatState)
 │   │   ├── controllers/         # ConversationController, StreamController, InputController, SelectionController
@@ -50,7 +50,7 @@ src/
 
 | Layer | Folder | Purpose |
 |-------|--------|---------|
-| **core** | `agent/` | Claude Agent SDK wrapper (ClaudianService) |
+| **core** | `agent/` | Claude Agent SDK wrapper (CortexService) |
 | | `hooks/` | Security and diff tracking hooks |
 | | `images/` | Image caching with SHA-256 dedup |
 | | `mcp/` | MCP server config loading and filtering (McpServerManager) |
@@ -81,14 +81,14 @@ src/
 
 ## Commands
 
-This project uses npm as the package manager.
+This project uses pnpm as the package manager.
 
 ```bash
-npm run dev       # Development (watch mode)
-npm run build     # Production build
-npm run typecheck # Type check
-npm run lint      # Lint code
-npm run test      # Run tests
+pnpm run dev       # Development (watch mode)
+pnpm run build     # Production build
+pnpm run typecheck # Type check
+pnpm run lint      # Lint code
+pnpm run test      # Run tests
 ```
 
 ## Tests
@@ -112,9 +112,9 @@ tests/
 ```
 
 ```bash
-npm run test -- --selectProjects unit        # Run unit tests
-npm run test -- --selectProjects integration # Run integration tests
-npm run test:coverage -- --selectProjects unit # Unit coverage
+pnpm run test -- --selectProjects unit        # Run unit tests
+pnpm run test -- --selectProjects integration # Run integration tests
+pnpm run test:coverage -- --selectProjects unit # Unit coverage
 ```
 
 ## Key Patterns
@@ -141,7 +141,7 @@ for await (const message of response) { /* Handle streaming */ }
 ### Obsidian Basics
 ```typescript
 // View registration
-this.registerView(VIEW_TYPE_CLAUDIAN, (leaf) => new ClaudianView(leaf, this));
+this.registerView(VIEW_TYPE_CLAUDIAN, (leaf) => new CortexView(leaf, this));
 
 // Vault path
 const vaultPath = this.app.vault.adapter.basePath;
@@ -185,7 +185,7 @@ await MarkdownRenderer.renderMarkdown(markdown, container, sourcePath, component
 ## Settings
 
 ```typescript
-interface ClaudianSettings {
+interface CortexSettings {
   model: string;                     // 'claude-haiku-4-5' | 'claude-sonnet-4-5' | 'claude-opus-4-5' | custom
   titleGenerationModel: string;      // Model for auto titles (empty = auto)
   thinkingBudget: 'off' | 'low' | 'medium' | 'high' | 'xhigh';  // 0 | 4k | 8k | 16k | 32k tokens
@@ -228,14 +228,14 @@ vault/.claude/
 └── sessions/                  # Chat sessions as JSONL
     └── {conv-id}.jsonl        # Meta line + message lines
 
-.obsidian/plugins/claudian/
+.obsidian/plugins/cortex/
 └── data.json                  # Machine state only
 ```
 
 | File | Contents |
 |------|----------|
 | `settings.json` | All settings including `permissions` (like Claude Code) |
-| `mcp.json` | MCP server configs with `_claudian` metadata (Claude Code compatible) |
+| `mcp.json` | MCP server configs with `_cortex` metadata (Claude Code compatible) |
 | `commands/*.md` | Slash commands with YAML frontmatter |
 | `sessions/*.jsonl` | Conversations (meta + messages per line) |
 | `data.json` | `activeConversationId`, `lastEnvHash`, model tracking |
@@ -309,7 +309,7 @@ Type `@` in the input to open the mention dropdown for attaching context.
 ### MCP (Model Context Protocol)
 Extend Claude with external tools and data sources via MCP servers.
 - **Server types**: `stdio` (local command), `sse` (Server-Sent Events), `http` (HTTP endpoint)
-- **Storage**: `.claude/mcp.json` (Claude Code compatible with `_claudian` metadata)
+- **Storage**: `.claude/mcp.json` (Claude Code compatible with `_cortex` metadata)
 - **Context-saving mode**: Hide server tools unless `@`-mentioned (saves context window)
 - **UI**: Settings page for add/edit/delete, connection tester, toolbar selector with glow effect
 
@@ -393,7 +393,7 @@ src/style/
 
 When adding new CSS modules, register them in `src/style/index.css` via `@import` or the build will omit them.
 
-All classes use `.claudian-` prefix. Key patterns:
+All classes use `.cortex-` prefix. Key patterns:
 
 | Pattern | Examples |
 |---------|----------|
@@ -420,4 +420,4 @@ All classes use `.claudian-` prefix. Key patterns:
 - Test Driven Development
 - Generated docs go in `dev/`, move docs to `dev/archive` before commit
 - Generated agents communication notes in `.agents/`, move notes to `.agents/archive` before commit, do not check in any docs under `.agents/` or `.agents/archive`(already gitignored)
-- Run `npm run typecheck`, `npm run lint`, `npm run build`, `npm run test` after editing
+- Run `pnpm run typecheck`, `pnpm run lint`, `pnpm run build`, `pnpm run test` after editing

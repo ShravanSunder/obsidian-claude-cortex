@@ -1,5 +1,5 @@
 /**
- * Claudian - Todo list parser
+ * Cortex - Todo list parser
  *
  * Parses TodoWrite tool input into typed todo items.
  */
@@ -69,7 +69,10 @@ export function parseTodoInput(input: Record<string, unknown>): TodoItem[] | nul
  * Used to restore the todo panel when loading a saved conversation.
  */
 export function extractLastTodosFromMessages(
-  messages: Array<{ role: string; toolCalls?: Array<{ name: string; input: Record<string, unknown> }> }>
+  messages: Array<{
+    role: string;
+    toolCalls?: Array<{ name: string; input: Record<string, unknown> }>;
+  }>,
 ): TodoItem[] | null {
   // Scan from the end to find the most recent TodoWrite
   for (let i = messages.length - 1; i >= 0; i--) {

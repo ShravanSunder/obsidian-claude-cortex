@@ -6,8 +6,8 @@ import { TodoPanel } from '@/ui/components/TodoPanel';
 import type { TodoItem } from '@/ui/renderers/TodoListRenderer';
 
 // Mock obsidian setIcon
-jest.mock('obsidian', () => ({
-  setIcon: jest.fn((el: any, iconName: string) => {
+vi.mock('obsidian', () => ({
+  setIcon: vi.fn((el: any, iconName: string) => {
     el.setAttribute('data-icon', iconName);
   }),
 }));
@@ -75,7 +75,10 @@ class MockElement {
 
   set className(value: string) {
     this.classList.clear();
-    value.split(/\s+/).filter(Boolean).forEach((cls) => this.classList.add(cls));
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((cls) => this.classList.add(cls));
   }
 
   get className(): string {
@@ -149,7 +152,7 @@ class MockElement {
   querySelectorAll(selector: string): MockElement[] {
     const matches: MockElement[] = [];
     const match = (el: MockElement): boolean => {
-      // Handle class selectors like .claudian-todo-panel
+      // Handle class selectors like .cortex-todo-panel
       const classMatch = selector.match(/\.([a-zA-Z0-9_-]+)/g);
       if (classMatch) {
         for (const cls of classMatch) {
@@ -203,13 +206,13 @@ describe('TodoPanel', () => {
     it('should create panel element when mounted', () => {
       panel.mount(containerEl as unknown as HTMLElement);
 
-      expect(containerEl.querySelector('.claudian-todo-panel')).not.toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-panel')).not.toBeNull();
     });
 
     it('should create hidden todo container initially', () => {
       panel.mount(containerEl as unknown as HTMLElement);
 
-      const todoContainer = containerEl.querySelector('.claudian-todo-panel-todos');
+      const todoContainer = containerEl.querySelector('.cortex-todo-panel-todos');
       expect(todoContainer).not.toBeNull();
       expect(todoContainer!.style.display).toBe('none');
     });
@@ -227,7 +230,7 @@ describe('TodoPanel', () => {
 
       panel.updateTodos(todos);
 
-      const todoContainer = containerEl.querySelector('.claudian-todo-panel-todos');
+      const todoContainer = containerEl.querySelector('.cortex-todo-panel-todos');
       expect(todoContainer!.style.display).toBe('block');
     });
 
@@ -239,7 +242,7 @@ describe('TodoPanel', () => {
       panel.updateTodos(todos);
       panel.updateTodos(null);
 
-      const todoContainer = containerEl.querySelector('.claudian-todo-panel-todos');
+      const todoContainer = containerEl.querySelector('.cortex-todo-panel-todos');
       expect(todoContainer!.style.display).toBe('none');
     });
 
@@ -251,7 +254,7 @@ describe('TodoPanel', () => {
       panel.updateTodos(todos);
       panel.updateTodos([]);
 
-      const todoContainer = containerEl.querySelector('.claudian-todo-panel-todos');
+      const todoContainer = containerEl.querySelector('.cortex-todo-panel-todos');
       expect(todoContainer!.style.display).toBe('none');
     });
 
@@ -264,7 +267,7 @@ describe('TodoPanel', () => {
 
       panel.updateTodos(todos);
 
-      const label = containerEl.querySelector('.claudian-todo-panel-label');
+      const label = containerEl.querySelector('.cortex-todo-panel-label');
       expect(label?.textContent).toBe('Tasks (1/3)');
     });
 
@@ -276,7 +279,7 @@ describe('TodoPanel', () => {
 
       panel.updateTodos(todos);
 
-      const current = containerEl.querySelector('.claudian-todo-panel-current');
+      const current = containerEl.querySelector('.cortex-todo-panel-current');
       expect(current?.textContent).toBe('Working on Task 2');
     });
 
@@ -288,7 +291,7 @@ describe('TodoPanel', () => {
 
       panel.updateTodos(todos);
 
-      const items = containerEl.querySelectorAll('.claudian-todo-item');
+      const items = containerEl.querySelectorAll('.cortex-todo-item');
       expect(items.length).toBe(2);
     });
 
@@ -301,23 +304,25 @@ describe('TodoPanel', () => {
 
       panel.updateTodos(todos);
 
-      expect(containerEl.querySelector('.claudian-todo-pending')).not.toBeNull();
-      expect(containerEl.querySelector('.claudian-todo-in_progress')).not.toBeNull();
-      expect(containerEl.querySelector('.claudian-todo-completed')).not.toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-pending')).not.toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-in_progress')).not.toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-completed')).not.toBeNull();
     });
 
     it('should warn if called before mount with todos to display', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const unmountedPanel = new TodoPanel();
 
       unmountedPanel.updateTodos([{ content: 'Task', status: 'pending', activeForm: 'Task' }]);
 
-      expect(warnSpy).toHaveBeenCalledWith('[TodoPanel] Cannot update todos - component not mounted or destroyed');
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[TodoPanel] Cannot update todos - component not mounted or destroyed',
+      );
       warnSpy.mockRestore();
     });
 
     it('should not warn if called with null before mount', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
       const unmountedPanel = new TodoPanel();
 
       unmountedPanel.updateTodos(null);
@@ -330,14 +335,12 @@ describe('TodoPanel', () => {
   describe('toggle', () => {
     beforeEach(() => {
       panel.mount(containerEl as unknown as HTMLElement);
-      panel.updateTodos([
-        { content: 'Task 1', status: 'in_progress', activeForm: 'Doing Task 1' },
-      ]);
+      panel.updateTodos([{ content: 'Task 1', status: 'in_progress', activeForm: 'Doing Task 1' }]);
     });
 
     it('should expand content on header click', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
-      const content = containerEl.querySelector('.claudian-todo-panel-content');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
+      const content = containerEl.querySelector('.cortex-todo-panel-content');
 
       expect(content!.style.display).toBe('none');
 
@@ -347,8 +350,8 @@ describe('TodoPanel', () => {
     });
 
     it('should collapse content on second click', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
-      const content = containerEl.querySelector('.claudian-todo-panel-content');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
+      const content = containerEl.querySelector('.cortex-todo-panel-content');
 
       header!.click();
       expect(content!.style.display).toBe('block');
@@ -358,26 +361,26 @@ describe('TodoPanel', () => {
     });
 
     it('should show list icon in header', () => {
-      const icon = containerEl.querySelector('.claudian-todo-panel-icon');
+      const icon = containerEl.querySelector('.cortex-todo-panel-icon');
       expect(icon).not.toBeNull();
       expect(icon?.getAttribute('data-icon')).toBe('list-checks');
     });
 
     it('should hide current task when expanded', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
 
-      expect(containerEl.querySelector('.claudian-todo-panel-current')).not.toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-panel-current')).not.toBeNull();
 
       header!.click();
 
-      expect(containerEl.querySelector('.claudian-todo-panel-current')).toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-panel-current')).toBeNull();
     });
 
     it('should toggle on Enter key', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
-      const content = containerEl.querySelector('.claudian-todo-panel-content');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
+      const content = containerEl.querySelector('.cortex-todo-panel-content');
 
-      const event = { type: 'keydown', key: 'Enter', preventDefault: jest.fn() };
+      const event = { type: 'keydown', key: 'Enter', preventDefault: vi.fn() };
       header!.dispatchEvent(event);
 
       expect(content!.style.display).toBe('block');
@@ -385,10 +388,10 @@ describe('TodoPanel', () => {
     });
 
     it('should toggle on Space key', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
-      const content = containerEl.querySelector('.claudian-todo-panel-content');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
+      const content = containerEl.querySelector('.cortex-todo-panel-content');
 
-      const event = { type: 'keydown', key: ' ', preventDefault: jest.fn() };
+      const event = { type: 'keydown', key: ' ', preventDefault: vi.fn() };
       header!.dispatchEvent(event);
 
       expect(content!.style.display).toBe('block');
@@ -396,10 +399,10 @@ describe('TodoPanel', () => {
     });
 
     it('should not toggle on other keys', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
-      const content = containerEl.querySelector('.claudian-todo-panel-content');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
+      const content = containerEl.querySelector('.cortex-todo-panel-content');
 
-      const event = { type: 'keydown', key: 'Tab', preventDefault: jest.fn() };
+      const event = { type: 'keydown', key: 'Tab', preventDefault: vi.fn() };
       header!.dispatchEvent(event);
 
       expect(content!.style.display).toBe('none');
@@ -413,18 +416,18 @@ describe('TodoPanel', () => {
     });
 
     it('should set tabindex on header', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
       expect(header?.getAttribute('tabindex')).toBe('0');
     });
 
     it('should set role button on header', () => {
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
       expect(header?.getAttribute('role')).toBe('button');
     });
 
     it('should update aria-expanded on toggle', () => {
       panel.updateTodos([{ content: 'Task', status: 'pending', activeForm: 'Task' }]);
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
 
       expect(header!.getAttribute('aria-expanded')).toBe('false');
 
@@ -441,14 +444,14 @@ describe('TodoPanel', () => {
         { content: 'Task 2', status: 'pending', activeForm: 'Task 2' },
       ]);
 
-      const header = containerEl.querySelector('.claudian-todo-panel-header');
+      const header = containerEl.querySelector('.cortex-todo-panel-header');
       expect(header?.getAttribute('aria-label')).toBe('Expand task list - 1 of 2 completed');
     });
 
     it('should hide status icons from screen readers', () => {
       panel.updateTodos([{ content: 'Task', status: 'pending', activeForm: 'Task' }]);
 
-      const icon = containerEl.querySelector('.claudian-todo-status-icon');
+      const icon = containerEl.querySelector('.cortex-todo-status-icon');
       expect(icon?.getAttribute('aria-hidden')).toBe('true');
     });
   });
@@ -457,11 +460,11 @@ describe('TodoPanel', () => {
     it('should remove panel from DOM', () => {
       panel.mount(containerEl as unknown as HTMLElement);
 
-      expect(containerEl.querySelector('.claudian-todo-panel')).not.toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-panel')).not.toBeNull();
 
       panel.destroy();
 
-      expect(containerEl.querySelector('.claudian-todo-panel')).toBeNull();
+      expect(containerEl.querySelector('.cortex-todo-panel')).toBeNull();
     });
 
     it('should be safe to call multiple times', () => {
@@ -484,7 +487,7 @@ describe('TodoPanel', () => {
 
   describe('createPanel warning', () => {
     it('should warn when containerEl is null', () => {
-      const warnSpy = jest.spyOn(console, 'warn').mockImplementation();
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
       // Access private method via any cast - createPanel is called by mount
       // but we need to test the warning when containerEl is null
@@ -497,7 +500,9 @@ describe('TodoPanel', () => {
       const unmountedPanel = new TodoPanel();
       unmountedPanel.updateTodos([{ content: 'Task', status: 'pending', activeForm: 'Task' }]);
 
-      expect(warnSpy).toHaveBeenCalledWith('[TodoPanel] Cannot update todos - component not mounted or destroyed');
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[TodoPanel] Cannot update todos - component not mounted or destroyed',
+      );
       warnSpy.mockRestore();
     });
   });

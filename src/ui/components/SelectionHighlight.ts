@@ -24,9 +24,13 @@ export function createSelectionHighlighter(): SelectionHighlighter {
       for (const e of tr.effects) {
         if (e.is(showHighlight)) {
           const builder = new RangeSetBuilder<Decoration>();
-          builder.add(e.value.from, e.value.to, Decoration.mark({
-            class: 'claudian-selection-highlight',
-          }));
+          builder.add(
+            e.value.from,
+            e.value.to,
+            Decoration.mark({
+              class: 'cortex-selection-highlight',
+            }),
+          );
           return builder.finish();
         } else if (e.is(hideHighlight)) {
           return Decoration.none;

@@ -162,7 +162,7 @@ function escapeHtml(text: string): string {
 export function renderDiffContent(
   containerEl: HTMLElement,
   diffLines: DiffLine[],
-  contextLines = 3
+  contextLines = 3,
 ): void {
   containerEl.empty();
 
@@ -170,7 +170,7 @@ export function renderDiffContent(
 
   if (hunks.length === 0) {
     // No changes
-    const noChanges = containerEl.createDiv({ cls: 'claudian-diff-no-changes' });
+    const noChanges = containerEl.createDiv({ cls: 'cortex-diff-no-changes' });
     noChanges.setText('No changes');
     return;
   }
@@ -178,23 +178,23 @@ export function renderDiffContent(
   hunks.forEach((hunk, hunkIndex) => {
     // Add separator between hunks
     if (hunkIndex > 0) {
-      const separator = containerEl.createDiv({ cls: 'claudian-diff-separator' });
+      const separator = containerEl.createDiv({ cls: 'cortex-diff-separator' });
       separator.setText('...');
     }
 
     // Render hunk lines
-    const hunkEl = containerEl.createDiv({ cls: 'claudian-diff-hunk' });
+    const hunkEl = containerEl.createDiv({ cls: 'cortex-diff-hunk' });
 
     for (const line of hunk.lines) {
-      const lineEl = hunkEl.createDiv({ cls: `claudian-diff-line claudian-diff-${line.type}` });
+      const lineEl = hunkEl.createDiv({ cls: `cortex-diff-line cortex-diff-${line.type}` });
 
       // Line prefix
       const prefix = line.type === 'insert' ? '+' : line.type === 'delete' ? '-' : ' ';
-      const prefixEl = lineEl.createSpan({ cls: 'claudian-diff-prefix' });
+      const prefixEl = lineEl.createSpan({ cls: 'cortex-diff-prefix' });
       prefixEl.setText(prefix);
 
       // Line content
-      const contentEl = lineEl.createSpan({ cls: 'claudian-diff-text' });
+      const contentEl = lineEl.createSpan({ cls: 'cortex-diff-text' });
       contentEl.setText(line.text || ' '); // Show space for empty lines
     }
   });
@@ -205,26 +205,26 @@ export function diffLinesToHtml(diffLines: DiffLine[], contextLines = 3): string
   const hunks = splitIntoHunks(diffLines, contextLines);
 
   if (hunks.length === 0) {
-    return '<div class="claudian-diff-no-changes">No changes</div>';
+    return '<div class="cortex-diff-no-changes">No changes</div>';
   }
 
   const parts: string[] = [];
 
   hunks.forEach((hunk, hunkIndex) => {
     if (hunkIndex > 0) {
-      parts.push('<div class="claudian-diff-separator">...</div>');
+      parts.push('<div class="cortex-diff-separator">...</div>');
     }
 
-    parts.push('<div class="claudian-diff-hunk">');
+    parts.push('<div class="cortex-diff-hunk">');
 
     for (const line of hunk.lines) {
       const prefix = line.type === 'insert' ? '+' : line.type === 'delete' ? '-' : ' ';
       const escapedText = escapeHtml(line.text || ' ');
       parts.push(
-        `<div class="claudian-diff-line claudian-diff-${line.type}">` +
-          `<span class="claudian-diff-prefix">${prefix}</span>` +
-          `<span class="claudian-diff-text">${escapedText}</span>` +
-          `</div>`
+        `<div class="cortex-diff-line cortex-diff-${line.type}">` +
+          `<span class="cortex-diff-prefix">${prefix}</span>` +
+          `<span class="cortex-diff-text">${escapedText}</span>` +
+          `</div>`,
       );
     }
 

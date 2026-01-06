@@ -2,8 +2,8 @@ import { InstructionModeManager } from '@/ui/components/InstructionModeManager';
 
 function createWrapper() {
   return {
-    addClass: jest.fn(),
-    removeClass: jest.fn(),
+    addClass: vi.fn(),
+    removeClass: vi.fn(),
   } as any;
 }
 
@@ -11,7 +11,7 @@ function createKeyEvent(key: string, options: { shiftKey?: boolean } = {}) {
   return {
     key,
     shiftKey: options.shiftKey ?? false,
-    preventDefault: jest.fn(),
+    preventDefault: vi.fn(),
   } as any;
 }
 
@@ -20,7 +20,7 @@ describe('InstructionModeManager', () => {
     const wrapper = createWrapper();
     const inputEl = { value: '', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -32,14 +32,14 @@ describe('InstructionModeManager', () => {
     expect(e.preventDefault).toHaveBeenCalled();
     expect(manager.isActive()).toBe(true);
     expect(inputEl.placeholder).toBe('# Save in custom system prompt');
-    expect(wrapper.addClass).toHaveBeenCalledWith('claudian-input-instruction-mode');
+    expect(wrapper.addClass).toHaveBeenCalledWith('cortex-input-instruction-mode');
   });
 
   it('should NOT enter instruction mode on # keystroke when input has content', () => {
     const wrapper = createWrapper();
     const inputEl = { value: 'hello', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -57,7 +57,7 @@ describe('InstructionModeManager', () => {
     const wrapper = createWrapper();
     const inputEl = { value: '', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -75,7 +75,7 @@ describe('InstructionModeManager', () => {
     const wrapper = createWrapper();
     const inputEl = { value: '', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -88,14 +88,14 @@ describe('InstructionModeManager', () => {
 
     expect(manager.isActive()).toBe(false);
     expect(inputEl.placeholder).toBe('Ask...');
-    expect(wrapper.removeClass).toHaveBeenCalledWith('claudian-input-instruction-mode');
+    expect(wrapper.removeClass).toHaveBeenCalledWith('cortex-input-instruction-mode');
   });
 
   it('should submit instruction on Enter (without Shift) and trim whitespace', async () => {
     const wrapper = createWrapper();
     const inputEl = { value: '', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -117,7 +117,7 @@ describe('InstructionModeManager', () => {
     const wrapper = createWrapper();
     const inputEl = { value: '', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -139,7 +139,7 @@ describe('InstructionModeManager', () => {
     const wrapper = createWrapper();
     const inputEl = { value: '', placeholder: 'Ask...' } as any;
     const callbacks = {
-      onSubmit: jest.fn().mockResolvedValue(undefined),
+      onSubmit: vi.fn().mockResolvedValue(undefined),
       getInputWrapper: () => wrapper,
     };
 
@@ -159,4 +159,3 @@ describe('InstructionModeManager', () => {
     expect(manager.isActive()).toBe(false);
   });
 });
-

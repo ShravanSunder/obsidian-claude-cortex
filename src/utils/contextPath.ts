@@ -1,5 +1,5 @@
 /**
- * Claudian - Context Path Utilities
+ * Cortex - Context Path Utilities
  *
  * Utilities for context path validation, normalization, and conflict detection.
  */
@@ -36,10 +36,7 @@ function normalizePathForDisplay(p: string): string {
  * @param existingPaths - Array of existing context paths
  * @returns Conflict info or null if no conflict
  */
-export function findConflictingPath(
-  newPath: string,
-  existingPaths: string[]
-): PathConflict | null {
+export function findConflictingPath(newPath: string, existingPaths: string[]): PathConflict | null {
   const normalizedNew = normalizePathForComparison(newPath);
 
   for (const existing of existingPaths) {

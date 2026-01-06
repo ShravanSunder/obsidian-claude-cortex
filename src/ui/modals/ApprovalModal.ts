@@ -1,5 +1,5 @@
 /**
- * Claudian - Approval modal for Safe mode tool permission prompts.
+ * Cortex - Approval modal for Safe mode tool permission prompts.
  */
 
 import type { App } from 'obsidian';
@@ -31,7 +31,7 @@ export class ApprovalModal extends Modal {
     _input: Record<string, unknown>,
     description: string,
     resolve: (value: ApprovalDecision) => void,
-    options: ApprovalModalOptions = {}
+    options: ApprovalModalOptions = {},
   ) {
     super(app);
     this.toolName = toolName;
@@ -42,33 +42,33 @@ export class ApprovalModal extends Modal {
 
   onOpen() {
     const { contentEl } = this;
-    contentEl.addClass('claudian-approval-modal');
+    contentEl.addClass('cortex-approval-modal');
     this.setTitle(this.options.title ?? 'Permission required');
 
-    const infoEl = contentEl.createDiv({ cls: 'claudian-approval-info' });
+    const infoEl = contentEl.createDiv({ cls: 'cortex-approval-info' });
 
-    const toolEl = infoEl.createDiv({ cls: 'claudian-approval-tool' });
-    const iconEl = toolEl.createSpan({ cls: 'claudian-approval-icon' });
+    const toolEl = infoEl.createDiv({ cls: 'cortex-approval-tool' });
+    const iconEl = toolEl.createSpan({ cls: 'cortex-approval-icon' });
     iconEl.setAttribute('aria-hidden', 'true');
     setIcon(iconEl, getToolIcon(this.toolName));
-    toolEl.createSpan({ text: this.toolName, cls: 'claudian-approval-tool-name' });
+    toolEl.createSpan({ text: this.toolName, cls: 'cortex-approval-tool-name' });
 
-    const descEl = contentEl.createDiv({ cls: 'claudian-approval-desc' });
+    const descEl = contentEl.createDiv({ cls: 'cortex-approval-desc' });
     descEl.setText(this.description);
 
-    const buttonsEl = contentEl.createDiv({ cls: 'claudian-approval-buttons' });
+    const buttonsEl = contentEl.createDiv({ cls: 'cortex-approval-buttons' });
 
     const denyBtn = buttonsEl.createEl('button', {
       text: 'Deny',
-      cls: 'claudian-approval-btn claudian-deny-btn',
-      attr: { 'aria-label': `Deny ${this.toolName} action` }
+      cls: 'cortex-approval-btn cortex-deny-btn',
+      attr: { 'aria-label': `Deny ${this.toolName} action` },
     });
     denyBtn.addEventListener('click', () => this.handleDecision('deny'));
 
     const allowBtn = buttonsEl.createEl('button', {
       text: 'Allow once',
-      cls: 'claudian-approval-btn claudian-allow-btn',
-      attr: { 'aria-label': `Allow ${this.toolName} action once` }
+      cls: 'cortex-approval-btn cortex-allow-btn',
+      attr: { 'aria-label': `Allow ${this.toolName} action once` },
     });
     allowBtn.addEventListener('click', () => this.handleDecision('allow'));
 
@@ -76,8 +76,8 @@ export class ApprovalModal extends Modal {
     if (this.options.showAlwaysAllow ?? true) {
       alwaysBtn = buttonsEl.createEl('button', {
         text: 'Always allow',
-        cls: 'claudian-approval-btn claudian-always-btn',
-        attr: { 'aria-label': `Always allow ${this.toolName} actions` }
+        cls: 'cortex-approval-btn cortex-always-btn',
+        attr: { 'aria-label': `Always allow ${this.toolName} actions` },
       });
       alwaysBtn.addEventListener('click', () => this.handleDecision('allow-always'));
     }

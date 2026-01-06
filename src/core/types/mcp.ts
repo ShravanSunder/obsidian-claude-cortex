@@ -1,5 +1,5 @@
 /**
- * Claudian - MCP (Model Context Protocol) type definitions
+ * Cortex - MCP (Model Context Protocol) type definitions
  *
  * Types for configuring and managing MCP servers that extend Claude's capabilities.
  */
@@ -27,16 +27,13 @@ export interface McpHttpServerConfig {
 }
 
 /** Union type for all MCP server configurations. */
-export type McpServerConfig =
-  | McpStdioServerConfig
-  | McpSSEServerConfig
-  | McpHttpServerConfig;
+export type McpServerConfig = McpStdioServerConfig | McpSSEServerConfig | McpHttpServerConfig;
 
 /** Server type identifier. */
 export type McpServerType = 'stdio' | 'sse' | 'http';
 
-/** Extended server configuration with Claudian-specific options. */
-export interface ClaudianMcpServer {
+/** Extended server configuration with Cortex-specific options. */
+export interface CortexMcpServer {
   /** Unique server name (key in mcpServers record). */
   name: string;
   /** Server configuration. */
@@ -56,10 +53,10 @@ export interface McpConfigFile {
   mcpServers: Record<string, McpServerConfig>;
 }
 
-/** Extended config file with Claudian metadata. */
-export interface ClaudianMcpConfigFile extends McpConfigFile {
+/** Extended config file with Cortex metadata. */
+export interface CortexMcpConfigFile extends McpConfigFile {
   _claudian?: {
-    /** Per-server Claudian-specific settings. */
+    /** Per-server Cortex-specific settings. */
     servers: Record<
       string,
       {
@@ -109,7 +106,7 @@ export function inferMcpServerType(config: McpServerConfig): McpServerType {
 }
 
 /** Default values for a new MCP server. */
-export const DEFAULT_MCP_SERVER: Omit<ClaudianMcpServer, 'name' | 'config'> = {
+export const DEFAULT_MCP_SERVER: Omit<CortexMcpServer, 'name' | 'config'> = {
   enabled: true,
   contextSaving: true,
 };

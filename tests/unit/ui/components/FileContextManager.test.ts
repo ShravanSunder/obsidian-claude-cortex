@@ -4,9 +4,9 @@ import type { FileContextCallbacks } from '@/ui/components/FileContext';
 import { FileContextManager } from '@/ui/components/FileContext';
 import type { ContextPathFile } from '@/utils/contextPathScanner';
 
-jest.mock('obsidian', () => ({
-  setIcon: jest.fn(),
-  Notice: jest.fn(),
+vi.mock('obsidian', () => ({
+  setIcon: vi.fn(),
+  Notice: vi.fn(),
 }));
 
 function createMockTFile(path: string): TFile {
@@ -18,12 +18,12 @@ function createMockTFile(path: string): TFile {
 }
 
 let mockVaultPath = '/vault';
-jest.mock('@/utils/path', () => {
-  const actual = jest.requireActual('@/utils/path');
+vi.mock('@/utils/path', async () => {
+  const actual = await vi.importActual('@/utils/path');
   return {
-    ...actual,
-    getVaultPath: jest.fn(() => mockVaultPath),
-    isPathWithinVault: jest.fn((candidatePath: string, vaultPath: string) => {
+    ...(actual as object),
+    getVaultPath: vi.fn(() => mockVaultPath),
+    isPathWithinVault: vi.fn((candidatePath: string, vaultPath: string) => {
       if (!candidatePath) return false;
       if (!candidatePath.startsWith('/')) return true;
       return candidatePath.startsWith(vaultPath);
@@ -31,8 +31,8 @@ jest.mock('@/utils/path', () => {
   };
 });
 
-const mockScanPaths = jest.fn<ContextPathFile[], [string[]]>(() => []);
-jest.mock('@/utils/contextPathScanner', () => ({
+const mockScanPaths = vi.fn<(paths: string[]) => ContextPathFile[]>(() => []);
+vi.mock('@/utils/contextPathScanner', () => ({
   contextPathScanner: {
     scanPaths: (paths: string[]) => mockScanPaths(paths),
   },
@@ -74,10 +74,16 @@ function createMockElement(tag = 'div'): MockElement {
     children,
     style,
     addClass: (cls: string) => {
-      cls.split(/\s+/).filter(Boolean).forEach((c) => classList.add(c));
+      cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((c) => classList.add(c));
     },
     removeClass: (cls: string) => {
-      cls.split(/\s+/).filter(Boolean).forEach((c) => classList.delete(c));
+      cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((c) => classList.delete(c));
     },
     hasClass: (cls: string) => classList.has(cls),
     getClasses: () => Array.from(classList),
@@ -107,13 +113,13 @@ function createMockElement(tag = 'div'): MockElement {
     },
     dispatchEvent: (event: { type: string; target?: any; stopPropagation?: () => void }) => {
       const handlers = eventListeners.get(event.type) || [];
-      handlers.forEach(handler => handler(event));
+      handlers.forEach((handler) => handler(event));
     },
     click: () => {
       element.dispatchEvent({
         type: 'click',
         target: element,
-        stopPropagation: jest.fn(),
+        stopPropagation: vi.fn(),
       });
     },
     empty: () => {
@@ -123,7 +129,7 @@ function createMockElement(tag = 'div'): MockElement {
     scrollIntoView: () => {},
     contains: (node: Node) => {
       if (node === (element as unknown as Node)) return true;
-      return children.some(child => (child as any).contains?.(node));
+      return children.some((child) => (child as any).contains?.(node));
     },
     get textContent() {
       return textContent;
@@ -163,11 +169,13 @@ function findAllByClass(root: MockElement, className: string): MockElement[] {
   return results;
 }
 
-function createMockApp(options: {
-  files?: string[];
-  activeFilePath?: string | null;
-  fileCacheByPath?: Map<string, any>;
-} = {}) {
+function createMockApp(
+  options: {
+    files?: string[];
+    activeFilePath?: string | null;
+    fileCacheByPath?: Map<string, any>;
+  } = {},
+) {
   const { files = [], activeFilePath = null, fileCacheByPath = new Map() } = options;
   const fileMap = new Map<string, TFile>();
   files.forEach((filePath) => {
@@ -176,34 +184,36 @@ function createMockApp(options: {
 
   return {
     vault: {
-      on: jest.fn(() => ({ id: 'event-ref' })),
-      offref: jest.fn(),
-      getAbstractFileByPath: jest.fn((filePath: string) => fileMap.get(filePath) || null),
-      getMarkdownFiles: jest.fn(() => Array.from(fileMap.values())),
+      on: vi.fn(() => ({ id: 'event-ref' })),
+      offref: vi.fn(),
+      getAbstractFileByPath: vi.fn((filePath: string) => fileMap.get(filePath) || null),
+      getMarkdownFiles: vi.fn(() => Array.from(fileMap.values())),
     },
     workspace: {
-      getActiveFile: jest.fn(() => {
+      getActiveFile: vi.fn(() => {
         if (!activeFilePath) return null;
         return fileMap.get(activeFilePath) || createMockTFile(activeFilePath);
       }),
-      getLeaf: jest.fn(() => ({
-        openFile: jest.fn().mockResolvedValue(undefined),
+      getLeaf: vi.fn(() => ({
+        openFile: vi.fn().mockResolvedValue(undefined),
       })),
     },
     metadataCache: {
-      getFileCache: jest.fn((file: TFile) => fileCacheByPath.get(file.path) || null),
+      getFileCache: vi.fn((file: TFile) => fileCacheByPath.get(file.path) || null),
     },
   } as any;
 }
 
-function createMockCallbacks(options: {
-  contextPaths?: string[];
-  excludedTags?: string[];
-} = {}): FileContextCallbacks {
+function createMockCallbacks(
+  options: {
+    contextPaths?: string[];
+    excludedTags?: string[];
+  } = {},
+): FileContextCallbacks {
   const { contextPaths = [], excludedTags = [] } = options;
   return {
-    getExcludedTags: jest.fn(() => excludedTags),
-    getContextPaths: jest.fn(() => contextPaths),
+    getExcludedTags: vi.fn(() => excludedTags),
+    getContextPaths: vi.fn(() => contextPaths),
   };
 }
 
@@ -212,7 +222,7 @@ describe('FileContextManager', () => {
   let inputEl: HTMLTextAreaElement;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockVaultPath = '/vault';
     mockScanPaths.mockReturnValue([]);
     containerEl = createMockElement();
@@ -220,18 +230,13 @@ describe('FileContextManager', () => {
       value: '',
       selectionStart: 0,
       selectionEnd: 0,
-      focus: jest.fn(),
+      focus: vi.fn(),
     } as unknown as HTMLTextAreaElement;
   });
 
   it('tracks current note send state per session', () => {
     const app = createMockApp();
-    const manager = new FileContextManager(
-      app,
-      containerEl as any,
-      inputEl,
-      createMockCallbacks()
-    );
+    const manager = new FileContextManager(app, containerEl as any, inputEl, createMockCallbacks());
 
     manager.setCurrentNote('notes/alpha.md');
     expect(manager.shouldSendCurrentNote()).toBe(true);
@@ -251,12 +256,7 @@ describe('FileContextManager', () => {
 
   it('should NOT resend current note when loading conversation with existing messages', () => {
     const app = createMockApp();
-    const manager = new FileContextManager(
-      app,
-      containerEl as any,
-      inputEl,
-      createMockCallbacks()
-    );
+    const manager = new FileContextManager(app, containerEl as any, inputEl, createMockCallbacks());
 
     // When loading a conversation that already has messages, the current note
     // should be marked as already sent to avoid re-sending context
@@ -269,12 +269,7 @@ describe('FileContextManager', () => {
 
   it('should send current note when loading empty conversation', () => {
     const app = createMockApp();
-    const manager = new FileContextManager(
-      app,
-      containerEl as any,
-      inputEl,
-      createMockCallbacks()
-    );
+    const manager = new FileContextManager(app, containerEl as any, inputEl, createMockCallbacks());
 
     // When loading a conversation with no messages, the current note
     // should be sent with the first message
@@ -287,20 +282,15 @@ describe('FileContextManager', () => {
 
   it('renders current note chip and removes on click', () => {
     const app = createMockApp();
-    const manager = new FileContextManager(
-      app,
-      containerEl as any,
-      inputEl,
-      createMockCallbacks()
-    );
+    const manager = new FileContextManager(app, containerEl as any, inputEl, createMockCallbacks());
 
     manager.setCurrentNote('notes/chip.md');
 
-    const indicator = findByClass(containerEl, 'claudian-file-indicator');
+    const indicator = findByClass(containerEl, 'cortex-file-indicator');
     expect(indicator).toBeDefined();
     expect(indicator?.style.display).toBe('flex');
 
-    const removeEl = findByClass(containerEl, 'claudian-file-chip-remove');
+    const removeEl = findByClass(containerEl, 'cortex-file-chip-remove');
     expect(removeEl).toBeDefined();
 
     removeEl!.click();
@@ -325,13 +315,13 @@ describe('FileContextManager', () => {
       app,
       containerEl as any,
       inputEl,
-      createMockCallbacks({ excludedTags: ['private'] })
+      createMockCallbacks({ excludedTags: ['private'] }),
     );
 
     manager.autoAttachActiveFile();
     expect(manager.getCurrentNotePath()).toBeNull();
 
-    app.workspace.getActiveFile = jest.fn(() => createMockTFile('notes/public.md'));
+    app.workspace.getActiveFile = vi.fn(() => createMockTFile('notes/public.md'));
     manager.autoAttachActiveFile();
     expect(manager.getCurrentNotePath()).toBe('notes/public.md');
 
@@ -342,22 +332,17 @@ describe('FileContextManager', () => {
     const app = createMockApp({
       files: ['clipping/file.md'],
     });
-    const manager = new FileContextManager(
-      app,
-      containerEl as any,
-      inputEl,
-      createMockCallbacks()
-    );
+    const manager = new FileContextManager(app, containerEl as any, inputEl, createMockCallbacks());
 
     inputEl.value = '@file';
     inputEl.selectionStart = 5;
     inputEl.selectionEnd = 5;
     manager.handleInputChange();
 
-    const pathEl = findByClass(containerEl, 'claudian-mention-path');
+    const pathEl = findByClass(containerEl, 'cortex-mention-path');
     expect(pathEl?.textContent).toBe('clipping/file.md');
 
-    manager.handleMentionKeydown({ key: 'Enter', preventDefault: jest.fn() } as any);
+    manager.handleMentionKeydown({ key: 'Enter', preventDefault: vi.fn() } as any);
 
     expect(inputEl.value).toBe('@file.md ');
     const attached = (manager as any).state.getAttachedFiles();
@@ -372,7 +357,7 @@ describe('FileContextManager', () => {
       app,
       containerEl as any,
       inputEl,
-      createMockCallbacks({ contextPaths: ['/external'] })
+      createMockCallbacks({ contextPaths: ['/external'] }),
     );
 
     const contextFiles: ContextPathFile[] = [
@@ -391,10 +376,10 @@ describe('FileContextManager', () => {
     inputEl.selectionEnd = 13;
     manager.handleInputChange();
 
-    const nameEls = findAllByClass(containerEl, 'claudian-mention-name-context');
+    const nameEls = findAllByClass(containerEl, 'cortex-mention-name-context');
     expect(nameEls[0]?.textContent).toBe('src/app.md');
 
-    manager.handleMentionKeydown({ key: 'Enter', preventDefault: jest.fn() } as any);
+    manager.handleMentionKeydown({ key: 'Enter', preventDefault: vi.fn() } as any);
 
     expect(inputEl.value).toBe('@external/src/app.md ');
     const attached = (manager as any).state.getAttachedFiles();

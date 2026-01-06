@@ -1,4 +1,4 @@
-# Claudian
+# Cortex
 
 ![Preview](Preview.png)
 
@@ -12,7 +12,7 @@ An Obsidian plugin that embeds Claude Agent (using Claude Agent SDK) as a sideba
 - **Inline Edit**: Edit selected text or insert content at cursor position directly in notes with word-level diff preview and read-only tool access for context.
 - **Slash Commands**: Create reusable prompt templates triggered by `/command`, with argument placeholders, `@file` references, and optional inline bash substitutions.
 - **Instruction Mode (`#`)**: Add refined custom instructions to your system prompt directly from the chat input, with review/edit in a modal.
-- **Skills**: Extend Claudian with reusable capability modules that are automatically invoked based on context, compatible with Claude Code's skill format.
+- **Skills**: Extend Cortex with reusable capability modules that are automatically invoked based on context, compatible with Claude Code's skill format.
 - **MCP Support**: Connect external tools and data sources via Model Context Protocol servers (stdio, SSE, HTTP) with context-saving mode and `@`-mention activation.
 - **Advanced Model Control**: Select between Haiku, Sonnet, and Opus, configure custom models via environment variables, and fine-tune thinking budget. Monitor context window usage with a real-time gauge.
 - **Plan Mode**: Toggle read-only exploration with Shift+Tab before implementation. Agent explores codebase, presents a plan, then implements after approval.
@@ -23,47 +23,47 @@ An Obsidian plugin that embeds Claude Agent (using Claude Agent SDK) as a sideba
 - [Claude Code CLI](https://code.claude.com/docs/en/overview) installed
 - Obsidian v1.8.9+
 - Claude subscription/API or Custom model provider that supports anthropic API format (Openrouter, Kimi, GLM, DeepSeek, etc.)
-- Desktop only (macOS, Linux, Windows)
+- **macOS only** (Linux and Windows support may be added in future releases)
 
 ## Installation
 
 ### From GitHub Release (recommended)
 
-1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/YishenTu/claudian/releases/latest)
-2. Create a folder called `claudian` in your vault's plugins folder:
+1. Download `main.js`, `manifest.json`, and `styles.css` from the [latest release](https://github.com/ShravanSunder/obsidian-cortex/releases/latest)
+2. Create a folder called `cortex` in your vault's plugins folder:
    ```
-   /path/to/vault/.obsidian/plugins/claudian/
+   /path/to/vault/.obsidian/plugins/cortex/
    ```
-3. Copy the downloaded files into the `claudian` folder
+3. Copy the downloaded files into the `cortex` folder
 4. Enable the plugin in Obsidian:
-   - Settings → Community plugins → Enable "Claudian"
+   - Settings → Community plugins → Enable "Cortex"
 
 ### From source (development)
 
 1. Clone this repository into your vault's plugins folder:
    ```bash
    cd /path/to/vault/.obsidian/plugins
-   git clone https://github.com/YishenTu/claudian.git
-   cd claudian
+   git clone https://github.com/ShravanSunder/obsidian-cortex.git
+   cd obsidian-cortex
    ```
 
 2. Install dependencies and build:
    ```bash
-   npm install
-   npm run build
+   pnpm install
+   pnpm run build
    ```
 
 3. Enable the plugin in Obsidian:
-   - Settings → Community plugins → Enable "Claudian"
+   - Settings → Community plugins → Enable "Cortex"
 
 ### Development
 
 ```bash
 # Watch mode
-npm run dev
+pnpm run dev
 
 # Production build
-npm run build
+pnpm run build
 ```
 
 ## Usage
@@ -185,7 +185,7 @@ Copy the path and paste it into **Settings → Advanced → Claude CLI path**.
 PATH=/Users/you/.volta/bin
 ```
 
-**Still having issues?** Please [open a GitHub issue](https://github.com/YishenTu/claudian/issues) with your platform, Claude CLI path (from `which`/`where` output), and the error message.
+**Still having issues?** Please [open a GitHub issue](https://github.com/ShravanSunder/obsidian-cortex/issues) with your platform, Claude CLI path (from `which`/`where` output), and the error message.
 
 ## Privacy & Data Use
 
@@ -195,8 +195,8 @@ PATH=/Users/you/.volta/bin
   - `vault/.claude/mcp.json` - MCP server configurations (Claude Code compatible)
   - `vault/.claude/commands/*.md` - Slash commands as Markdown files
   - `vault/.claude/sessions/*.jsonl` - Chat sessions (one file per conversation)
-  - `.obsidian/plugins/claudian/data.json` - Machine state (active conversation, model tracking)
-  - `.claudian-cache/images/` - Image cache (SHA-256 deduplicated)
+  - `.obsidian/plugins/cortex/data.json` - Machine state (active conversation, model tracking)
+  - `.cortex-cache/images/` - Image cache (SHA-256 deduplicated)
 - **Migration**: Existing users are automatically migrated from the old single-file format on first load. Migration will be removed in v2.0.
 - **Commands & file access**: The plugin can read/write files and execute Bash commands within the vault directory; Safe mode approvals and the blocklist apply, and paths are constrained to the vault via `realpath`.
 - **User controls**: You can edit the blocked-command list, switch Safe/YOLO modes, clear history, delete caches, and remove API keys; disabling the plugin stops all remote calls.
@@ -208,7 +208,7 @@ PATH=/Users/you/.volta/bin
 src/
 ├── main.ts                      # Plugin entry point
 ├── core/                        # Core infrastructure
-│   ├── agent/                   # Claude Agent SDK wrapper (ClaudianService)
+│   ├── agent/                   # Claude Agent SDK wrapper (CortexService)
 │   ├── hooks/                   # PreToolUse/PostToolUse hooks
 │   ├── images/                  # Image caching and loading
 │   ├── mcp/                     # MCP server config management (McpServerManager)
@@ -222,7 +222,7 @@ src/
 │   ├── chat/                    # Main chat view with modular controllers
 │   ├── inline-edit/             # Inline edit service
 │   ├── mcp/                     # MCP @-mention detection and connection testing
-│   └── settings/                # Settings tab (ClaudianSettings)
+│   └── settings/                # Settings tab (CortexSettings)
 ├── ui/                          # UI components
 │   ├── components/              # Input toolbar, file/image context, dropdowns, AskUserQuestion panel
 │   ├── modals/                  # Approval, inline edit, instruction, MCP modals

@@ -1,4 +1,4 @@
-/** Claudian slash command core - barrel export. */
+/** Cortex slash command core - barrel export. */
 
 export {
   type BashExpansionOptions,

@@ -33,9 +33,12 @@ describe('AsyncSubagentManager', () => {
 
   it('moves to error when Task tool_result parsing fails', () => {
     const { manager, updates } = createManager();
-    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
-    manager.createAsyncSubagent('task-parse-fail', { description: 'No id', run_in_background: true });
+    manager.createAsyncSubagent('task-parse-fail', {
+      description: 'No id',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-parse-fail', 'no agent id present');
 
     expect(manager.getByTaskId('task-parse-fail')).toBeUndefined();
@@ -48,7 +51,10 @@ describe('AsyncSubagentManager', () => {
   it('moves to error when Task tool_result itself is an error', () => {
     const { manager, updates } = createManager();
 
-    manager.createAsyncSubagent('task-error', { description: 'Will fail', run_in_background: true });
+    manager.createAsyncSubagent('task-error', {
+      description: 'Will fail',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-error', 'launch failed', true);
 
     expect(manager.getByTaskId('task-error')).toBeUndefined();
@@ -60,7 +66,10 @@ describe('AsyncSubagentManager', () => {
   it('stays running when AgentOutputTool reports not_ready', () => {
     const { manager } = createManager();
 
-    manager.createAsyncSubagent('task-running', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-running', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-running', JSON.stringify({ agent_id: 'agent-abc' }));
 
     const toolCall: ToolCallInfo = {
@@ -75,7 +84,7 @@ describe('AsyncSubagentManager', () => {
     const stillRunning = manager.handleAgentOutputToolResult(
       'output-not-ready',
       JSON.stringify({ retrieval_status: 'not_ready', agents: {} }),
-      false
+      false,
     );
 
     expect(stillRunning?.asyncStatus).toBe('running');
@@ -86,13 +95,19 @@ describe('AsyncSubagentManager', () => {
   it('ignores unrelated tool_result when async subagent is active', () => {
     const { manager } = createManager();
 
-    manager.createAsyncSubagent('task-standalone', { description: 'Background', run_in_background: true });
-    manager.handleTaskToolResult('task-standalone', JSON.stringify({ agent_id: 'agent-standalone' }));
+    manager.createAsyncSubagent('task-standalone', {
+      description: 'Background',
+      run_in_background: true,
+    });
+    manager.handleTaskToolResult(
+      'task-standalone',
+      JSON.stringify({ agent_id: 'agent-standalone' }),
+    );
 
     const unrelated = manager.handleAgentOutputToolResult(
       'non-agent-output',
       'regular tool output',
-      false
+      false,
     );
 
     expect(unrelated).toBeUndefined();
@@ -103,7 +118,10 @@ describe('AsyncSubagentManager', () => {
   it('finalizes to completed when AgentOutputTool succeeds and extracts result', () => {
     const { manager, updates } = createManager();
 
-    manager.createAsyncSubagent('task-complete', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-complete', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-complete', JSON.stringify({ agent_id: 'agent-complete' }));
 
     const toolCall: ToolCallInfo = {
@@ -121,7 +139,7 @@ describe('AsyncSubagentManager', () => {
         retrieval_status: 'success',
         agents: { 'agent-complete': { status: 'completed', result: 'done!' } },
       }),
-      false
+      false,
     );
 
     expect(completed?.asyncStatus).toBe('completed');
@@ -134,8 +152,14 @@ describe('AsyncSubagentManager', () => {
   it('marks pending and running async subagents as orphaned', () => {
     const { manager } = createManager();
 
-    manager.createAsyncSubagent('pending-task', { description: 'Pending task', run_in_background: true });
-    manager.createAsyncSubagent('running-task', { description: 'Running task', run_in_background: true });
+    manager.createAsyncSubagent('pending-task', {
+      description: 'Pending task',
+      run_in_background: true,
+    });
+    manager.createAsyncSubagent('running-task', {
+      description: 'Running task',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('running-task', JSON.stringify({ agent_id: 'agent-running' }));
 
     const orphaned = manager.orphanAllActive();
@@ -192,7 +216,10 @@ describe('AsyncSubagentManager', () => {
 
   it('returns undefined on invalid AgentOutputTool state transition', () => {
     const { manager } = createManager();
-    manager.createAsyncSubagent('task-done', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-done', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-done', JSON.stringify({ agent_id: 'agent-done' }));
 
     manager.handleAgentOutputToolUse({
@@ -207,13 +234,20 @@ describe('AsyncSubagentManager', () => {
     const sub = manager.getByAgentId('agent-done')!;
     sub.asyncStatus = 'completed';
 
-    const res = manager.handleAgentOutputToolResult('output-any', '{"retrieval_status":"success"}', false);
+    const res = manager.handleAgentOutputToolResult(
+      'output-any',
+      '{"retrieval_status":"success"}',
+      false,
+    );
     expect(res).toBeUndefined();
   });
 
   it('treats plain text not_ready as still running', () => {
     const { manager } = createManager();
-    manager.createAsyncSubagent('task-plain', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-plain', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-plain', JSON.stringify({ agent_id: 'agent-plain' }));
 
     const toolCall: ToolCallInfo = {
@@ -231,7 +265,10 @@ describe('AsyncSubagentManager', () => {
 
   it('extracts first agent result when agentId is missing', () => {
     const { manager } = createManager();
-    manager.createAsyncSubagent('task-first', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-first', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-first', JSON.stringify({ agent_id: 'agent-first' }));
 
     const toolCall: ToolCallInfo = {
@@ -245,8 +282,11 @@ describe('AsyncSubagentManager', () => {
 
     const completed = manager.handleAgentOutputToolResult(
       'output-first',
-      JSON.stringify({ retrieval_status: 'success', agents: { other: { status: 'completed', result: 'ok' } } }),
-      false
+      JSON.stringify({
+        retrieval_status: 'success',
+        agents: { other: { status: 'completed', result: 'ok' } },
+      }),
+      false,
     );
 
     expect(completed?.result).toBe('ok');
@@ -254,7 +294,10 @@ describe('AsyncSubagentManager', () => {
 
   it('infers agentId from AgentOutputTool result when not linked', () => {
     const { manager } = createManager();
-    manager.createAsyncSubagent('task-infer', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-infer', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.handleTaskToolResult('task-infer', JSON.stringify({ agent_id: 'agent-infer' }));
 
     const result = JSON.stringify({
@@ -282,8 +325,12 @@ describe('AsyncSubagentManager', () => {
 
     expect((manager as any).isStillRunningResult('   ', false)).toBe(false);
     expect((manager as any).isStillRunningResult('whatever', true)).toBe(false);
-    expect((manager as any).isStillRunningResult(JSON.stringify({ retrieval_status: 'success' }), false)).toBe(false);
-    expect((manager as any).isStillRunningResult(JSON.stringify({ retrieval_status: 'unknown' }), false)).toBe(false);
+    expect(
+      (manager as any).isStillRunningResult(JSON.stringify({ retrieval_status: 'success' }), false),
+    ).toBe(false);
+    expect(
+      (manager as any).isStillRunningResult(JSON.stringify({ retrieval_status: 'unknown' }), false),
+    ).toBe(false);
     expect((manager as any).isStillRunningResult('plain output', false)).toBe(false);
   });
 
@@ -318,12 +365,16 @@ describe('AsyncSubagentManager', () => {
   it('parses agent id from multiple JSON shapes', () => {
     const { manager } = createManager();
     expect((manager as any).parseAgentId(JSON.stringify({ agentId: 'camel' }))).toBe('camel');
-    expect((manager as any).parseAgentId(JSON.stringify({ data: { agent_id: 'nested' } }))).toBe('nested');
+    expect((manager as any).parseAgentId(JSON.stringify({ data: { agent_id: 'nested' } }))).toBe(
+      'nested',
+    );
     expect((manager as any).parseAgentId(JSON.stringify({ id: 'idfield' }))).toBe('idfield');
 
     // Use escaped keys to bypass regex and exercise JSON parse path
     expect((manager as any).parseAgentId('{"agent\\u005fid":"escaped"}')).toBe('escaped');
-    expect((manager as any).parseAgentId('{"data": {"agent\\u005fid": "nested2"}}')).toBe('nested2');
+    expect((manager as any).parseAgentId('{"data": {"agent\\u005fid": "nested2"}}')).toBe(
+      'nested2',
+    );
 
     // Returns null when no agent_id found
     expect((manager as any).parseAgentId('{"foo": "bar"}')).toBeNull();
@@ -331,7 +382,10 @@ describe('AsyncSubagentManager', () => {
 
   it('clears all state', () => {
     const { manager } = createManager();
-    manager.createAsyncSubagent('task-clear', { description: 'Background', run_in_background: true });
+    manager.createAsyncSubagent('task-clear', {
+      description: 'Background',
+      run_in_background: true,
+    });
     manager.clear();
     expect(manager.getAllActive()).toHaveLength(0);
   });

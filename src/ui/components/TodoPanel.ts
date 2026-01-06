@@ -58,23 +58,25 @@ export class TodoPanel {
    */
   private createPanel(): void {
     if (!this.containerEl) {
-      console.warn('[TodoPanel] Cannot create panel - containerEl not set. Was mount() called correctly?');
+      console.warn(
+        '[TodoPanel] Cannot create panel - containerEl not set. Was mount() called correctly?',
+      );
       return;
     }
 
     // Create panel element (no border/background - seamless)
     this.panelEl = document.createElement('div');
-    this.panelEl.className = 'claudian-todo-panel';
+    this.panelEl.className = 'cortex-todo-panel';
 
     // Todo container
     this.todoContainerEl = document.createElement('div');
-    this.todoContainerEl.className = 'claudian-todo-panel-todos';
+    this.todoContainerEl.className = 'cortex-todo-panel-todos';
     this.todoContainerEl.style.display = 'none';
     this.panelEl.appendChild(this.todoContainerEl);
 
     // Todo header (collapsed view)
     this.todoHeaderEl = document.createElement('div');
-    this.todoHeaderEl.className = 'claudian-todo-panel-header';
+    this.todoHeaderEl.className = 'cortex-todo-panel-header';
     this.todoHeaderEl.setAttribute('tabindex', '0');
     this.todoHeaderEl.setAttribute('role', 'button');
 
@@ -92,7 +94,7 @@ export class TodoPanel {
 
     // Todo content (expanded list)
     this.todoContentEl = document.createElement('div');
-    this.todoContentEl.className = 'claudian-todo-panel-content';
+    this.todoContentEl.className = 'cortex-todo-panel-content';
     this.todoContentEl.style.display = 'none';
     this.todoContainerEl.appendChild(this.todoContentEl);
 
@@ -127,9 +129,9 @@ export class TodoPanel {
     this.todoContainerEl.style.display = 'block';
 
     // Count completed and find current task
-    const completedCount = todos.filter(t => t.status === 'completed').length;
+    const completedCount = todos.filter((t) => t.status === 'completed').length;
     const totalCount = todos.length;
-    const currentTask = todos.find(t => t.status === 'in_progress');
+    const currentTask = todos.find((t) => t.status === 'in_progress');
 
     // Update header
     this.renderHeader(completedCount, totalCount, currentTask);
@@ -146,27 +148,31 @@ export class TodoPanel {
   /**
    * Render the collapsed header.
    */
-  private renderHeader(completedCount: number, totalCount: number, currentTask: TodoItem | undefined): void {
+  private renderHeader(
+    completedCount: number,
+    totalCount: number,
+    currentTask: TodoItem | undefined,
+  ): void {
     if (!this.todoHeaderEl) return;
 
     this.todoHeaderEl.empty();
 
     // List icon
     const icon = document.createElement('span');
-    icon.className = 'claudian-todo-panel-icon';
+    icon.className = 'cortex-todo-panel-icon';
     setIcon(icon, 'list-checks');
     this.todoHeaderEl.appendChild(icon);
 
     // Label
     const label = document.createElement('span');
-    label.className = 'claudian-todo-panel-label';
+    label.className = 'cortex-todo-panel-label';
     label.textContent = `Tasks (${completedCount}/${totalCount})`;
     this.todoHeaderEl.appendChild(label);
 
     // Current task (only when collapsed)
     if (!this.isExpanded && currentTask) {
       const current = document.createElement('span');
-      current.className = 'claudian-todo-panel-current';
+      current.className = 'cortex-todo-panel-current';
       current.textContent = currentTask.activeForm;
       this.todoHeaderEl.appendChild(current);
     }
@@ -182,16 +188,16 @@ export class TodoPanel {
 
     for (const todo of todos) {
       const itemEl = document.createElement('div');
-      itemEl.className = `claudian-todo-item claudian-todo-${todo.status}`;
+      itemEl.className = `cortex-todo-item cortex-todo-${todo.status}`;
 
       const statusIcon = document.createElement('div');
-      statusIcon.className = 'claudian-todo-status-icon';
+      statusIcon.className = 'cortex-todo-status-icon';
       statusIcon.setAttribute('aria-hidden', 'true');
       setIcon(statusIcon, this.getStatusIcon(todo.status));
       itemEl.appendChild(statusIcon);
 
       const text = document.createElement('div');
-      text.className = 'claudian-todo-text';
+      text.className = 'cortex-todo-text';
       text.textContent = todo.status === 'in_progress' ? todo.activeForm : todo.content;
       itemEl.appendChild(text);
 
@@ -233,9 +239,9 @@ export class TodoPanel {
 
     // Re-render header to update current task visibility
     if (this.currentTodos && this.currentTodos.length > 0) {
-      const completedCount = this.currentTodos.filter(t => t.status === 'completed').length;
+      const completedCount = this.currentTodos.filter((t) => t.status === 'completed').length;
       const totalCount = this.currentTodos.length;
-      const currentTask = this.currentTodos.find(t => t.status === 'in_progress');
+      const currentTask = this.currentTodos.find((t) => t.status === 'in_progress');
       this.renderHeader(completedCount, totalCount, currentTask);
       this.updateAriaLabel(completedCount, totalCount);
     }
@@ -252,7 +258,7 @@ export class TodoPanel {
     const action = this.isExpanded ? 'Collapse' : 'Expand';
     this.todoHeaderEl.setAttribute(
       'aria-label',
-      `${action} task list - ${completedCount} of ${totalCount} completed`
+      `${action} task list - ${completedCount} of ${totalCount} completed`,
     );
     this.todoHeaderEl.setAttribute('aria-expanded', String(this.isExpanded));
   }

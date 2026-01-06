@@ -1,5 +1,5 @@
 /**
- * Claudian - Image cache management
+ * Cortex - Image cache management
  *
  * Handles caching of pasted/dropped images with content-addressed storage.
  * Images are stored with SHA-256 hash filenames for deduplication.
@@ -7,13 +7,13 @@
 
 import { createHash } from 'crypto';
 import * as fs from 'fs';
-import type { App } from 'obsidian';
 import * as path from 'path';
+import type { App } from 'obsidian';
 
 import { getVaultPath } from '../../utils/path';
 import type { ImageMediaType } from '../types';
 
-export const IMAGE_CACHE_DIR = '.claudian-cache/images';
+export const IMAGE_CACHE_DIR = '.cortex-cache/images';
 
 /** Ensures the cache directory exists and returns its absolute path. */
 export function ensureImageCacheDir(app: App): string | null {
@@ -29,7 +29,7 @@ export function saveImageToCache(
   app: App,
   buffer: Buffer,
   mediaType: ImageMediaType,
-  preferredName?: string
+  preferredName?: string,
 ): { relPath: string; absPath: string } | null {
   const cacheDir = ensureImageCacheDir(app);
   if (!cacheDir) return null;

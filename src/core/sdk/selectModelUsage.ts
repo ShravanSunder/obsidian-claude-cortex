@@ -13,7 +13,7 @@ import type { ModelUsageInfo } from '../types';
 export function selectModelUsage(
   usageByModel: Record<string, ModelUsageInfo>,
   messageModel?: string,
-  intendedModel?: string
+  intendedModel?: string,
 ): { modelName: string; usage: ModelUsageInfo } | null {
   const entries = Object.entries(usageByModel);
   if (entries.length === 0) return null;

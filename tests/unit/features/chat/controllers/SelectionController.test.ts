@@ -5,9 +5,9 @@
 import { SelectionController } from '@/features/chat/controllers/SelectionController';
 import { hideSelectionHighlight, showSelectionHighlight } from '@/ui';
 
-jest.mock('@/ui', () => ({
-  showSelectionHighlight: jest.fn(),
-  hideSelectionHighlight: jest.fn(),
+vi.mock('@/ui', () => ({
+  showSelectionHighlight: vi.fn(),
+  hideSelectionHighlight: vi.fn(),
 }));
 
 function createMockIndicator() {
@@ -27,28 +27,28 @@ describe('SelectionController', () => {
   let originalDocument: any;
 
   beforeEach(() => {
-    jest.useFakeTimers();
-    (showSelectionHighlight as jest.Mock).mockClear();
-    (hideSelectionHighlight as jest.Mock).mockClear();
+    vi.useFakeTimers();
+    (showSelectionHighlight as import('vitest').Mock).mockClear();
+    (hideSelectionHighlight as import('vitest').Mock).mockClear();
 
     indicatorEl = createMockIndicator();
     inputEl = {};
 
     editorView = { id: 'editor-view' };
     editor = {
-      getSelection: jest.fn().mockReturnValue('selected text'),
-      getCursor: jest.fn((which: 'from' | 'to') => {
+      getSelection: vi.fn().mockReturnValue('selected text'),
+      getCursor: vi.fn((which: 'from' | 'to') => {
         if (which === 'from') return { line: 0, ch: 0 };
         return { line: 0, ch: 4 };
       }),
-      posToOffset: jest.fn((pos: { line: number; ch: number }) => pos.line * 100 + pos.ch),
+      posToOffset: vi.fn((pos: { line: number; ch: number }) => pos.line * 100 + pos.ch),
       cm: editorView,
     };
 
     const view = { editor, file: { path: 'notes/test.md' } };
     app = {
       workspace: {
-        getActiveViewOfType: jest.fn().mockReturnValue(view),
+        getActiveViewOfType: vi.fn().mockReturnValue(view),
       },
     };
 
@@ -60,13 +60,13 @@ describe('SelectionController', () => {
 
   afterEach(() => {
     controller.stop();
-    jest.useRealTimers();
+    vi.useRealTimers();
     (global as any).document = originalDocument;
   });
 
   it('captures selection and updates indicator', () => {
     controller.start();
-    jest.advanceTimersByTime(250);
+    vi.advanceTimersByTime(250);
 
     expect(controller.hasSelection()).toBe(true);
     expect(controller.getContext()).toEqual({
@@ -85,12 +85,12 @@ describe('SelectionController', () => {
 
   it('clears selection when selection is removed and input is not focused', () => {
     controller.start();
-    jest.advanceTimersByTime(250);
+    vi.advanceTimersByTime(250);
 
     editor.getSelection.mockReturnValue('');
     (global as any).document.activeElement = null;
 
-    jest.advanceTimersByTime(250);
+    vi.advanceTimersByTime(250);
 
     expect(controller.hasSelection()).toBe(false);
     expect(indicatorEl.style.display).toBe('none');

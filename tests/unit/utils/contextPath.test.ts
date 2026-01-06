@@ -71,7 +71,11 @@ describe('contextPath utilities', () => {
       });
 
       it('should detect with multiple existing paths', () => {
-        const result = findConflictingPath('/workspace/project', ['/other', '/workspace', '/another']);
+        const result = findConflictingPath('/workspace/project', [
+          '/other',
+          '/workspace',
+          '/another',
+        ]);
         expect(result).toEqual({ path: '/workspace', type: 'parent' });
       });
 

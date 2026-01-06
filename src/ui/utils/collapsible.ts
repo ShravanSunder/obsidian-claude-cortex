@@ -1,5 +1,5 @@
 /**
- * Claudian - Shared collapsible utility
+ * Cortex - Shared collapsible utility
  *
  * Provides reusable expand/collapse behavior for UI components.
  * Handles click, keyboard (Enter/Space), ARIA attributes, and CSS classes.
@@ -41,7 +41,7 @@ export function setupCollapsible(
   headerEl: HTMLElement,
   contentEl: HTMLElement,
   state: CollapsibleState,
-  options: CollapsibleOptions = {}
+  options: CollapsibleOptions = {},
 ): void {
   const { initiallyExpanded = false, onToggle, baseAriaLabel } = options;
 
@@ -101,7 +101,7 @@ export function collapseElement(
   wrapperEl: HTMLElement,
   headerEl: HTMLElement,
   contentEl: HTMLElement,
-  state: CollapsibleState
+  state: CollapsibleState,
 ): void {
   state.isExpanded = false;
   wrapperEl.removeClass('expanded');

@@ -1,8 +1,8 @@
 /* Inline Edit (CM6 decorations) */
 
 /* Selection highlight (shared by inline edit and chat) */
-.cm-line .claudian-selection-highlight,
-.claudian-selection-highlight {
+.cm-line .cortex-selection-highlight,
+.cortex-selection-highlight {
   background: var(--text-selection) !important;
   border-radius: 2px;
   padding: 3px 0;
@@ -11,12 +11,12 @@
 
 /* CM6 widget container - ensure transparent background */
 .cm-widgetBuffer,
-.cm-line:has(.claudian-inline-input-container) {
+.cm-line:has(.cortex-inline-input-container) {
   background: transparent !important;
 }
 
 /* Input container - fully transparent */
-.claudian-inline-input-container {
+.cortex-inline-input-container {
   display: flex;
   flex-direction: column;
   gap: 0;
@@ -25,7 +25,7 @@
 }
 
 /* Input wrapper - contains input and spinner */
-.claudian-inline-input-wrap {
+.cortex-inline-input-wrap {
   flex: 1;
   position: relative;
   background: transparent !important;
@@ -33,7 +33,7 @@
 }
 
 /* Input - fully transparent */
-.claudian-inline-input {
+.cortex-inline-input {
   width: 100%;
   padding: 4px 30px 4px 8px;
   border-width: 1px !important;
@@ -46,22 +46,22 @@
   font-size: var(--font-ui-small, 13px) !important;
 }
 
-.claudian-inline-input:focus,
-.claudian-inline-input:focus-visible {
+.cortex-inline-input:focus,
+.cortex-inline-input:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
 
-.claudian-inline-input::placeholder {
+.cortex-inline-input::placeholder {
   color: var(--text-faint);
 }
 
-.claudian-inline-input:disabled {
+.cortex-inline-input:disabled {
   opacity: 0.6;
 }
 
 /* Spinner - inside input box on right */
-.claudian-inline-spinner {
+.cortex-inline-spinner {
   position: absolute;
   right: 8px;
   top: 50%;
@@ -69,14 +69,14 @@
   height: 14px;
   margin-top: -7px;
   border: 2px solid var(--background-modifier-border);
-  border-top-color: #D97757;
+  border-top-color: #d97757;
   border-radius: 50%;
   box-sizing: border-box;
-  animation: claudian-inline-spin 0.8s linear infinite;
+  animation: cortex-inline-spin 0.8s linear infinite;
 }
 
 /* Agent reply - shown when agent asks clarifying question */
-.claudian-inline-agent-reply {
+.cortex-inline-agent-reply {
   padding: 8px;
   margin-bottom: 4px;
   background: transparent;
@@ -93,7 +93,7 @@
 }
 
 /* Inline Diff - replaces selection in place */
-.claudian-inline-diff-replace {
+.cortex-inline-diff-replace {
   /* Inherit all font properties from document */
   font-size: inherit;
   font-family: inherit;
@@ -102,26 +102,26 @@
 }
 
 /* Deleted text - red strikethrough */
-.claudian-diff-del {
+.cortex-diff-del {
   background: rgba(255, 80, 80, 0.2);
   text-decoration: line-through;
   color: var(--text-muted);
 }
 
 /* Inserted text - green background */
-.claudian-diff-ins {
+.cortex-diff-ins {
   background: rgba(80, 200, 80, 0.2);
 }
 
 /* Accept/Reject buttons inline with diff */
-.claudian-inline-diff-buttons {
+.cortex-inline-diff-buttons {
   display: inline-flex;
   gap: 8px;
   margin-left: 6px;
   background: none !important;
 }
 
-.claudian-inline-diff-btn {
+.cortex-inline-diff-btn {
   padding: 4px 6px;
   border: none !important;
   background: none !important;
@@ -131,10 +131,10 @@
   cursor: pointer;
 }
 
-.claudian-inline-diff-btn.reject {
+.cortex-inline-diff-btn.reject {
   color: var(--color-red);
 }
 
-.claudian-inline-diff-btn.accept {
+.cortex-inline-diff-btn.accept {
   color: var(--color-green);
 }

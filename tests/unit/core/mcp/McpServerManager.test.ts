@@ -1,8 +1,8 @@
 import { McpServerManager } from '@/core/mcp';
-import type { ClaudianMcpServer } from '@/core/types';
+import type { CortexMcpServer } from '@/core/types';
 
 describe('McpServerManager.getDisallowedMcpTools', () => {
-  const createManager = async (servers: ClaudianMcpServer[]) => {
+  const createManager = async (servers: CortexMcpServer[]) => {
     const manager = new McpServerManager({
       load: async () => servers,
     });

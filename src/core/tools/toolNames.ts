@@ -55,11 +55,7 @@ export const FILE_TOOLS = [
 ] as const;
 export type FileToolName = (typeof FILE_TOOLS)[number];
 
-export const MCP_TOOLS = [
-  TOOL_LIST_MCP_RESOURCES,
-  TOOL_READ_MCP_RESOURCE,
-  TOOL_MCP,
-] as const;
+export const MCP_TOOLS = [TOOL_LIST_MCP_RESOURCES, TOOL_READ_MCP_RESOURCE, TOOL_MCP] as const;
 export type McpToolName = (typeof MCP_TOOLS)[number];
 
 export const READ_ONLY_TOOLS = [

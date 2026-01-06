@@ -12,8 +12,8 @@ import {
 } from '@/ui/renderers/ToolCallRenderer';
 
 // Mock obsidian
-jest.mock('obsidian', () => ({
-  setIcon: jest.fn(),
+vi.mock('obsidian', () => ({
+  setIcon: vi.fn(),
 }));
 
 // Create mock HTML element with Obsidian-like methods
@@ -37,11 +37,17 @@ function createMockElement(tag = 'div'): any {
     set className(value: string) {
       classes.clear();
       if (value) {
-        value.split(' ').filter(Boolean).forEach(c => classes.add(c));
+        value
+          .split(' ')
+          .filter(Boolean)
+          .forEach((c) => classes.add(c));
       }
     },
     addClass: (cls: string) => {
-      cls.split(' ').filter(Boolean).forEach(c => classes.add(c));
+      cls
+        .split(' ')
+        .filter(Boolean)
+        .forEach((c) => classes.add(c));
       return element;
     },
     removeClass: (cls: string) => {
@@ -75,7 +81,7 @@ function createMockElement(tag = 'div'): any {
     createDiv: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement('div');
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -84,7 +90,7 @@ function createMockElement(tag = 'div'): any {
     createSpan: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement('span');
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -116,7 +122,7 @@ function createToolCall(overrides: Partial<ToolCallInfo> = {}): ToolCallInfo {
 
 describe('ToolCallRenderer', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('renderToolCall', () => {
@@ -328,7 +334,7 @@ describe('ToolCallRenderer', () => {
       toolCall.result = 'Success';
       updateToolCallResult('tool-1', toolCall, toolCallElements);
 
-      const statusEl = toolEl.querySelector('.claudian-tool-status');
+      const statusEl = toolEl.querySelector('.cortex-tool-status');
       expect(statusEl?.hasClass('status-completed')).toBe(true);
     });
   });
@@ -346,14 +352,14 @@ describe('ToolCallRenderer', () => {
       expect(keydownHandlers.length).toBeGreaterThan(0);
 
       // Simulate Enter key
-      const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+      const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
       keydownHandlers[0](enterEvent);
 
       expect(enterEvent.preventDefault).toHaveBeenCalled();
       expect(toolEl.hasClass('expanded')).toBe(true);
 
       // Simulate Space key to collapse
-      const spaceEvent = { key: ' ', preventDefault: jest.fn() };
+      const spaceEvent = { key: ' ', preventDefault: vi.fn() };
       keydownHandlers[0](spaceEvent);
 
       expect(spaceEvent.preventDefault).toHaveBeenCalled();
@@ -371,7 +377,7 @@ describe('ToolCallRenderer', () => {
       expect(keydownHandlers.length).toBeGreaterThan(0);
 
       // Simulate Enter key
-      const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+      const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
       keydownHandlers[0](enterEvent);
 
       expect(enterEvent.preventDefault).toHaveBeenCalled();
@@ -389,7 +395,7 @@ describe('ToolCallRenderer', () => {
       const keydownHandlers = header._eventListeners.get('keydown') || [];
 
       // Simulate Tab key (should not toggle)
-      const tabEvent = { key: 'Tab', preventDefault: jest.fn() };
+      const tabEvent = { key: 'Tab', preventDefault: vi.fn() };
       keydownHandlers[0](tabEvent);
 
       expect(tabEvent.preventDefault).not.toHaveBeenCalled();

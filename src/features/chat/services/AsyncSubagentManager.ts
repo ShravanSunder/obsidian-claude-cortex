@@ -1,5 +1,5 @@
 /**
- * Claudian - Async subagent lifecycle manager
+ * Cortex - Async subagent lifecycle manager
  *
  * Manages background Task tool execution using a two-tool transaction model:
  * Task tool_use → agent_id → AgentOutputTool → completed/error/orphaned.
@@ -33,10 +33,7 @@ export class AsyncSubagentManager {
   }
 
   /** Creates an async subagent in pending state. */
-  public createAsyncSubagent(
-    taskToolId: string,
-    taskInput: Record<string, unknown>
-  ): SubagentInfo {
+  public createAsyncSubagent(taskToolId: string, taskInput: Record<string, unknown>): SubagentInfo {
     const description = (taskInput.description as string) || 'Background task';
 
     const subagent: SubagentInfo = {
@@ -116,7 +113,7 @@ export class AsyncSubagentManager {
   public handleAgentOutputToolResult(
     toolId: string,
     result: string,
-    isError: boolean
+    isError: boolean,
   ): SubagentInfo | undefined {
     let agentId = this.outputToolIdToAgentId.get(toolId);
     let subagent = agentId ? this.activeAsyncSubagents.get(agentId) : undefined;
@@ -202,10 +199,11 @@ export class AsyncSubagentManager {
       }
 
       if (hasAgents) {
-        const agentStatuses = Object.values(parsed.agents as Record<string, any>)
-          .map((a: any) => (a && typeof a.status === 'string') ? a.status.toLowerCase() : '');
-        const anyRunning = agentStatuses.some(s =>
-          s === 'running' || s === 'pending' || s === 'not_ready'
+        const agentStatuses = Object.values(parsed.agents as Record<string, any>).map((a: any) =>
+          a && typeof a.status === 'string' ? a.status.toLowerCase() : '',
+        );
+        const anyRunning = agentStatuses.some(
+          (s) => s === 'running' || s === 'pending' || s === 'not_ready',
         );
         if (anyRunning) return true;
         return false;
@@ -271,7 +269,6 @@ export class AsyncSubagentManager {
           return JSON.stringify(firstAgent, null, 2);
         }
       }
-
     } catch {
       // Not JSON, return as-is
     }
@@ -348,28 +345,22 @@ export class AsyncSubagentManager {
 
   /** Gets all active async subagents (pending + running). */
   public getAllActive(): SubagentInfo[] {
-    return [
-      ...this.pendingAsyncSubagents.values(),
-      ...this.activeAsyncSubagents.values(),
-    ];
+    return [...this.pendingAsyncSubagents.values(), ...this.activeAsyncSubagents.values()];
   }
 
   /** Checks if there are any active async subagents. */
   public hasActiveAsync(): boolean {
-    return (
-      this.pendingAsyncSubagents.size > 0 ||
-      this.activeAsyncSubagents.size > 0
-    );
+    return this.pendingAsyncSubagents.size > 0 || this.activeAsyncSubagents.size > 0;
   }
 
   /** Parses agent_id from Task tool_result. */
   private parseAgentId(result: string): string | null {
     const regexPatterns = [
-      /"agent_id"\s*:\s*"([^"]+)"/,        // JSON style: "agent_id": "value"
-      /"agentId"\s*:\s*"([^"]+)"/,          // camelCase JSON
-      /agent_id[=:]\s*"?([a-zA-Z0-9_-]+)"?/i,  // Flexible format
-      /agentId[=:]\s*"?([a-zA-Z0-9_-]+)"?/i,   // camelCase flexible
-      /\b([a-f0-9]{8})\b/,                  // Short hex ID (8 chars)
+      /"agent_id"\s*:\s*"([^"]+)"/, // JSON style: "agent_id": "value"
+      /"agentId"\s*:\s*"([^"]+)"/, // camelCase JSON
+      /agent_id[=:]\s*"?([a-zA-Z0-9_-]+)"?/i, // Flexible format
+      /agentId[=:]\s*"?([a-zA-Z0-9_-]+)"?/i, // camelCase flexible
+      /\b([a-f0-9]{8})\b/, // Short hex ID (8 chars)
     ];
 
     for (const pattern of regexPatterns) {

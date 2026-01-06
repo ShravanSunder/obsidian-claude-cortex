@@ -2,16 +2,17 @@
  * Tests for InlineEditService - Inline text editing with Claude
  */
 
+import * as fs from 'fs';
 // eslint-disable-next-line jest/no-mocks-import
 import {
   getLastOptions,
   resetMockMessages,
+  setMockError,
   setMockMessages,
 } from '@test/__mocks__/claude-agent-sdk';
-import * as fs from 'fs';
 
 // Mock fs module
-jest.mock('fs');
+vi.mock('fs');
 
 // Now import after all mocks are set up
 import { getPathFromToolInput } from '@/core/tools/toolInput';
@@ -34,8 +35,8 @@ function createMockPlugin(settings = {}) {
         },
       },
     },
-    getActiveEnvironmentVariables: jest.fn().mockReturnValue(''),
-    getResolvedClaudeCliPath: jest.fn().mockReturnValue('/fake/claude'),
+    getActiveEnvironmentVariables: vi.fn().mockReturnValue(''),
+    getResolvedClaudeCliPath: vi.fn().mockReturnValue('/fake/claude'),
   } as any;
 }
 
@@ -44,12 +45,11 @@ describe('InlineEditService', () => {
   let mockPlugin: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     resetMockMessages();
     mockPlugin = createMockPlugin();
     service = new InlineEditService(mockPlugin);
   });
-
 
   describe('vault restriction hook', () => {
     beforeEach(() => {
@@ -58,9 +58,9 @@ describe('InlineEditService', () => {
         const pathModule = require('path');
         return pathModule.resolve(p);
       };
-      (fs.realpathSync as any) = jest.fn(normalizePath);
+      (fs.realpathSync as any) = vi.fn(normalizePath);
       if (fs.realpathSync) {
-        (fs.realpathSync as any).native = jest.fn(normalizePath);
+        (fs.realpathSync as any).native = vi.fn(normalizePath);
       }
     });
 
@@ -69,7 +69,7 @@ describe('InlineEditService', () => {
       const res = await hook.hooks[0](
         { tool_name: 'Read', tool_input: { file_path: '/etc/passwd' } },
         'tool-1',
-        {}
+        {},
       );
 
       expect(res.continue).toBe(false);
@@ -81,7 +81,7 @@ describe('InlineEditService', () => {
       const res = await hook.hooks[0](
         { tool_name: 'Read', tool_input: { file_path: '/test/vault/path/notes/a.md' } },
         'tool-2',
-        {}
+        {},
       );
 
       expect(res.continue).toBe(true);
@@ -92,7 +92,7 @@ describe('InlineEditService', () => {
       const res = await hook.hooks[0](
         { tool_name: 'Glob', tool_input: { pattern: '../**/*.md' } },
         'tool-3',
-        {}
+        {},
       );
 
       expect(res.continue).toBe(false);
@@ -293,7 +293,7 @@ describe('InlineEditService', () => {
 
   describe('editText', () => {
     beforeEach(() => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
     });
 
     it('should return error when vault path cannot be determined', async () => {
@@ -444,7 +444,7 @@ describe('InlineEditService', () => {
 
   describe('continueConversation', () => {
     beforeEach(() => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
     });
 
     it('should return error when no active conversation', async () => {
@@ -601,7 +601,7 @@ describe('InlineEditService', () => {
 
   describe('cancel', () => {
     it('should abort ongoing request', async () => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
@@ -765,16 +765,13 @@ describe('InlineEditService', () => {
 
   describe('error handling', () => {
     beforeEach(() => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
     });
 
     it('should surface SDK query errors', async () => {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const sdk = require('@anthropic-ai/claude-agent-sdk');
-      const spy = jest.spyOn(sdk, 'query').mockImplementation(() => {
-        throw new Error('boom');
-      });
-      const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
+      // Use mock SDK error mechanism
+      setMockError(new Error('boom'));
+      const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
       try {
         const result = await service.editText({
@@ -789,7 +786,7 @@ describe('InlineEditService', () => {
         expect(errorSpy).toHaveBeenCalled();
       } finally {
         errorSpy.mockRestore();
-        spy.mockRestore();
+        setMockError(null);
       }
     });
 
@@ -1151,7 +1148,7 @@ describe('InlineEditService', () => {
 
   describe('editText with cursor mode', () => {
     beforeEach(() => {
-      (fs.existsSync as jest.Mock).mockReturnValue(true);
+      (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
     });
 
     it('should handle cursor mode request', async () => {
@@ -1186,7 +1183,14 @@ describe('InlineEditService', () => {
         { type: 'system', subtype: 'init', session_id: 'inbetween-session' },
         {
           type: 'assistant',
-          message: { content: [{ type: 'text', text: '<insertion>## Description\n\nNew section content</insertion>' }] },
+          message: {
+            content: [
+              {
+                type: 'text',
+                text: '<insertion>## Description\n\nNew section content</insertion>',
+              },
+            ],
+          },
         },
         { type: 'result' },
       ]);

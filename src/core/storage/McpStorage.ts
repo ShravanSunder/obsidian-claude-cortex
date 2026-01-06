@@ -2,7 +2,7 @@
  * McpStorage - Handles .claude/mcp.json read/write
  *
  * MCP server configurations are stored in Claude Code-compatible format
- * with optional Claudian-specific metadata in _claudian field.
+ * with optional Cortex-specific metadata in _claudian field.
  *
  * File format:
  * {
@@ -18,8 +18,8 @@
  */
 
 import type {
-  ClaudianMcpConfigFile,
-  ClaudianMcpServer,
+  CortexMcpConfigFile,
+  CortexMcpServer,
   McpServerConfig,
   ParsedMcpConfig,
 } from '../types';
@@ -33,25 +33,25 @@ export class McpStorage {
   constructor(private adapter: VaultFileAdapter) {}
 
   /** Load MCP servers from .claude/mcp.json. */
-  async load(): Promise<ClaudianMcpServer[]> {
+  async load(): Promise<CortexMcpServer[]> {
     try {
       if (!(await this.adapter.exists(MCP_CONFIG_PATH))) {
         return [];
       }
 
       const content = await this.adapter.read(MCP_CONFIG_PATH);
-      const file = JSON.parse(content) as ClaudianMcpConfigFile;
+      const file = JSON.parse(content) as CortexMcpConfigFile;
 
       if (!file.mcpServers || typeof file.mcpServers !== 'object') {
         return [];
       }
 
       const claudianMeta = file._claudian?.servers ?? {};
-      const servers: ClaudianMcpServer[] = [];
+      const servers: CortexMcpServer[] = [];
 
       for (const [name, config] of Object.entries(file.mcpServers)) {
         if (!isValidMcpServerConfig(config)) {
-          console.warn(`[Claudian] Invalid MCP server config for "${name}", skipping`);
+          console.warn(`[Cortex] Invalid MCP server config for "${name}", skipping`);
           continue;
         }
 
@@ -74,24 +74,29 @@ export class McpStorage {
 
       return servers;
     } catch (error) {
-      console.error('[Claudian] Failed to load MCP config:', error);
+      console.error('[Cortex] Failed to load MCP config:', error);
       return [];
     }
   }
 
   /** Save MCP servers to .claude/mcp.json. */
-  async save(servers: ClaudianMcpServer[]): Promise<void> {
+  async save(servers: CortexMcpServer[]): Promise<void> {
     try {
       const mcpServers: Record<string, McpServerConfig> = {};
       const claudianServers: Record<
         string,
-        { enabled?: boolean; contextSaving?: boolean; disabledTools?: string[]; description?: string }
+        {
+          enabled?: boolean;
+          contextSaving?: boolean;
+          disabledTools?: string[];
+          description?: string;
+        }
       > = {};
 
       for (const server of servers) {
         mcpServers[server.name] = server.config;
 
-        // Only store Claudian metadata if different from defaults
+        // Only store Cortex metadata if different from defaults
         const meta: {
           enabled?: boolean;
           contextSaving?: boolean;
@@ -157,7 +162,7 @@ export class McpStorage {
       const content = JSON.stringify(file, null, 2);
       await this.adapter.write(MCP_CONFIG_PATH, content);
     } catch (error) {
-      console.error('[Claudian] Failed to save MCP config:', error);
+      console.error('[Cortex] Failed to save MCP config:', error);
       throw error;
     }
   }

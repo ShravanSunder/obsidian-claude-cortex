@@ -8,7 +8,7 @@ import { type ChildProcess, spawn } from 'child_process';
 import * as http from 'http';
 import * as https from 'https';
 
-import type { ClaudianMcpServer } from '../../core/types';
+import type { CortexMcpServer } from '../../core/types';
 import { getMcpServerType } from '../../core/types';
 import { getEnhancedPath } from '../../utils/env';
 import {
@@ -36,7 +36,7 @@ export interface McpTestResult {
 }
 
 /** Test an MCP server connection and retrieve its tools. */
-export async function testMcpServer(server: ClaudianMcpServer): Promise<McpTestResult> {
+export async function testMcpServer(server: CortexMcpServer): Promise<McpTestResult> {
   const type = getMcpServerType(server.config);
 
   try {
@@ -57,8 +57,12 @@ export async function testMcpServer(server: ClaudianMcpServer): Promise<McpTestR
 }
 
 /** Test a stdio MCP server. */
-async function testStdioServer(server: ClaudianMcpServer): Promise<McpTestResult> {
-  const config = server.config as { command: string; args?: string[]; env?: Record<string, string> };
+async function testStdioServer(server: CortexMcpServer): Promise<McpTestResult> {
+  const config = server.config as {
+    command: string;
+    args?: string[];
+    env?: Record<string, string>;
+  };
   const { cmd, args } = parseCommand(config.command, config.args);
 
   return new Promise((resolve) => {
@@ -182,11 +186,15 @@ async function testStdioServer(server: ClaudianMcpServer): Promise<McpTestResult
                 }
 
                 const tools = (msg.result?.tools || []).map(
-                  (t: { name: string; description?: string; inputSchema?: Record<string, unknown> }) => ({
+                  (t: {
+                    name: string;
+                    description?: string;
+                    inputSchema?: Record<string, unknown>;
+                  }) => ({
                     name: t.name,
                     description: t.description,
                     inputSchema: t.inputSchema,
-                  })
+                  }),
                 );
                 resolve({
                   success: true,
@@ -251,7 +259,7 @@ async function testStdioServer(server: ClaudianMcpServer): Promise<McpTestResult
         params: {
           protocolVersion: '2024-11-05',
           capabilities: {},
-          clientInfo: { name: 'claudian-tester', version: '1.0.0' },
+          clientInfo: { name: 'cortex-tester', version: '1.0.0' },
         },
       };
 
@@ -272,7 +280,7 @@ async function testStdioServer(server: ClaudianMcpServer): Promise<McpTestResult
 function httpRequest(
   url: URL,
   headers: Record<string, string>,
-  body: string
+  body: string,
 ): Promise<{ statusCode: number; data: string }> {
   return new Promise((resolve, reject) => {
     const isHttps = url.protocol === 'https:';
@@ -297,7 +305,7 @@ function httpRequest(
         res.on('end', () => {
           resolve({ statusCode: res.statusCode || 0, data });
         });
-      }
+      },
     );
 
     req.on('error', reject);
@@ -307,7 +315,7 @@ function httpRequest(
 }
 
 /** Test an HTTP MCP server. */
-async function testHttpServer(server: ClaudianMcpServer): Promise<McpTestResult> {
+async function testHttpServer(server: CortexMcpServer): Promise<McpTestResult> {
   const config = server.config as { url: string; headers?: Record<string, string> };
 
   return new Promise((resolve) => {
@@ -337,7 +345,7 @@ async function testHttpServer(server: ClaudianMcpServer): Promise<McpTestResult>
           params: {
             protocolVersion: '2024-11-05',
             capabilities: {},
-            clientInfo: { name: 'claudian-tester', version: '1.0.0' },
+            clientInfo: { name: 'cortex-tester', version: '1.0.0' },
           },
         });
 
@@ -409,7 +417,7 @@ async function testHttpServer(server: ClaudianMcpServer): Promise<McpTestResult>
               name: t.name,
               description: t.description,
               inputSchema: t.inputSchema,
-            })
+            }),
           );
 
           resolve({
@@ -441,7 +449,7 @@ async function testHttpServer(server: ClaudianMcpServer): Promise<McpTestResult>
 }
 
 /** Test an SSE MCP server. */
-async function testSseServer(server: ClaudianMcpServer): Promise<McpTestResult> {
+async function testSseServer(server: CortexMcpServer): Promise<McpTestResult> {
   const config = server.config as { url: string; headers?: Record<string, string> };
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10000);
@@ -519,7 +527,7 @@ async function testSseServer(server: ClaudianMcpServer): Promise<McpTestResult> 
       params: {
         protocolVersion: '2024-11-05',
         capabilities: {},
-        clientInfo: { name: 'claudian-tester', version: '1.0.0' },
+        clientInfo: { name: 'cortex-tester', version: '1.0.0' },
       },
     };
 
@@ -550,27 +558,38 @@ async function testSseServer(server: ClaudianMcpServer): Promise<McpTestResult> 
       };
     }
 
-    const serverInfo = (initResponse as { result?: { serverInfo?: { name?: string; version?: string } } })
-      .result;
+    const serverInfo = (
+      initResponse as { result?: { serverInfo?: { name?: string; version?: string } } }
+    ).result;
 
     const serverName = serverInfo?.serverInfo?.name;
     const serverVersion = serverInfo?.serverInfo?.version;
 
     // Send initialized notification
-    await postJsonRpc(postUrl, config.headers ?? {}, {
-      jsonrpc: '2.0',
-      method: 'notifications/initialized',
-    }, postOptions).catch(() => {});
+    await postJsonRpc(
+      postUrl,
+      config.headers ?? {},
+      {
+        jsonrpc: '2.0',
+        method: 'notifications/initialized',
+      },
+      postOptions,
+    ).catch(() => {});
 
     // Request tools list
     const toolsResponsePromise = waitForRpcResponse(pending, 2, 8000);
     toolsResponsePromise.catch(() => {});
-    await postJsonRpc(postUrl, config.headers ?? {}, {
-      jsonrpc: '2.0',
-      id: 2,
-      method: 'tools/list',
-      params: {},
-    }, postOptions);
+    await postJsonRpc(
+      postUrl,
+      config.headers ?? {},
+      {
+        jsonrpc: '2.0',
+        id: 2,
+        method: 'tools/list',
+        params: {},
+      },
+      postOptions,
+    );
 
     let tools: McpTool[] = [];
     try {
@@ -583,7 +602,7 @@ async function testSseServer(server: ClaudianMcpServer): Promise<McpTestResult> 
             name: t.name,
             description: t.description,
             inputSchema: t.inputSchema,
-          })
+          }),
         );
       }
     } catch {

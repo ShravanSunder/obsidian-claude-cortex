@@ -294,7 +294,7 @@ export class ChatState {
 
   set currentTodos(value: TodoItem[] | null) {
     // Normalize empty arrays to null for consistency
-    const normalizedValue = (value && value.length > 0) ? value : null;
+    const normalizedValue = value && value.length > 0 ? value : null;
     this.state.currentTodos = normalizedValue;
     this.callbacks.onTodosChanged?.(normalizedValue);
   }
@@ -336,9 +336,9 @@ export class ChatState {
 
   /** Gets persisted messages (strips image data). */
   getPersistedMessages(): ChatMessage[] {
-    return this.state.messages.map(msg => ({
+    return this.state.messages.map((msg) => ({
       ...msg,
-      images: msg.images?.map(img => {
+      images: msg.images?.map((img) => {
         const { data, ...rest } = img;
         return { ...rest };
       }),

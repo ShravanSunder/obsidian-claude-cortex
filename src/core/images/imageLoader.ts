@@ -5,8 +5,8 @@
  */
 
 import * as fs from 'fs';
-import type { App } from 'obsidian';
 import * as path from 'path';
+import type { App } from 'obsidian';
 
 import { getVaultPath, normalizePathForFilesystem } from '../../utils/path';
 import type { ImageAttachment } from '../types';
@@ -36,7 +36,7 @@ function readFileBase64(absPath: string): string | null {
 export function readImageAttachmentBase64(
   app: App,
   image: ImageAttachment,
-  vaultPath?: string | null
+  vaultPath?: string | null,
 ): string | null {
   if (image.cachePath) {
     const cached = readCachedImageBase64(app, image.cachePath);
@@ -57,7 +57,7 @@ export function readImageAttachmentBase64(
 export function ensureImageAttachmentBase64(
   app: App,
   image: ImageAttachment,
-  vaultPath?: string | null
+  vaultPath?: string | null,
 ): string | null {
   if (image.data) return image.data;
   const base64 = readImageAttachmentBase64(app, image, vaultPath);
@@ -74,7 +74,7 @@ export function toImageDataUri(mediaType: string, base64: string): string {
 export function getImageAttachmentDataUri(
   app: App,
   image: ImageAttachment,
-  vaultPath?: string | null
+  vaultPath?: string | null,
 ): string | null {
   const base64 = ensureImageAttachmentBase64(app, image, vaultPath);
   if (!base64) return null;
@@ -84,7 +84,7 @@ export function getImageAttachmentDataUri(
 export async function hydrateImagesData(
   app: App,
   images?: ImageAttachment[],
-  vaultPath?: string | null
+  vaultPath?: string | null,
 ): Promise<ImageAttachment[] | undefined> {
   if (!images || images.length === 0) return undefined;
 

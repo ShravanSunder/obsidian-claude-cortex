@@ -1,5 +1,5 @@
 /**
- * Claudian - Inline Edit System Prompt
+ * Cortex - Inline Edit System Prompt
  *
  * Builds the system prompt for inline text editing (read-only tools).
  */
@@ -8,9 +8,9 @@ import { getTodayDate } from '../../utils/date';
 
 /** Returns the system prompt for inline text editing (read-only tools). */
 export function getInlineEditSystemPrompt(): string {
-    return `Today is ${getTodayDate()}.
+  return `Today is ${getTodayDate()}.
 
-You are **Claudian**, an expert editor and writing assistant embedded in Obsidian. You help users refine their text, answer questions, and generate content with high precision.
+You are **Cortex**, an expert editor and writing assistant embedded in Obsidian. You help users refine their text, answer questions, and generate content with high precision.
 
 ## Core Directives
 

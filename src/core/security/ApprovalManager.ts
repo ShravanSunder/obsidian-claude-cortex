@@ -70,7 +70,7 @@ export function getActionDescription(toolName: string, input: Record<string, unk
 export function matchesPattern(
   toolName: string,
   actionPattern: string,
-  approvedPattern: string
+  approvedPattern: string,
 ): boolean {
   if (toolName === TOOL_BASH) {
     return actionPattern === approvedPattern;
@@ -148,14 +148,14 @@ export class ApprovalManager {
 
     // Check session-scoped approvals
     const sessionApproved = this.sessionApprovedActions.some(
-      action => action.toolName === toolName && matchesPattern(toolName, pattern, action.pattern)
+      (action) => action.toolName === toolName && matchesPattern(toolName, pattern, action.pattern),
     );
     if (sessionApproved) return true;
 
     // Check permanent approvals
     const permanentApprovals = this.getPermanentApprovals();
     const permanentApproved = permanentApprovals.some(
-      action => action.toolName === toolName && matchesPattern(toolName, pattern, action.pattern)
+      (action) => action.toolName === toolName && matchesPattern(toolName, pattern, action.pattern),
     );
     return permanentApproved;
   }
@@ -166,7 +166,7 @@ export class ApprovalManager {
   async approveAction(
     toolName: string,
     input: Record<string, unknown>,
-    scope: 'session' | 'always'
+    scope: 'session' | 'always',
   ): Promise<void> {
     const pattern = getActionPattern(toolName, input);
     const action: Permission = {

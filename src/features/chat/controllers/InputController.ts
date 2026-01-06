@@ -8,13 +8,13 @@
 import type { Component } from 'obsidian';
 import { Notice } from 'obsidian';
 
-import type { ExitPlanModeDecision } from '../../../core/agent/ClaudianService';
+import type { ExitPlanModeDecision } from '../../../core/agent/CortexService';
 import type { SlashCommandManager } from '../../../core/commands';
 import { isCommandBlocked } from '../../../core/security/BlocklistChecker';
 import { TOOL_BASH } from '../../../core/tools/toolNames';
 import type { AskUserQuestionInput, ChatMessage, ImageAttachment } from '../../../core/types';
 import { getBashToolBlockedCommands } from '../../../core/types';
-import type ClaudianPlugin from '../../../main';
+import type CortexPlugin from '../../../main';
 import {
   ApprovalModal,
   type FileContextManager,
@@ -39,12 +39,11 @@ import type { ConversationController } from './ConversationController';
 import type { SelectionController } from './SelectionController';
 import type { StreamController } from './StreamController';
 
-const PLAN_MODE_REQUEST_PREFIX =
-  'User requested plan mode. Call EnterPlanMode before responding.';
+const PLAN_MODE_REQUEST_PREFIX = 'User requested plan mode. Call EnterPlanMode before responding.';
 
 /** Dependencies for InputController. */
 export interface InputControllerDeps {
-  plugin: ClaudianPlugin;
+  plugin: CortexPlugin;
   state: ChatState;
   renderer: MessageRenderer;
   streamController: StreamController;
@@ -102,7 +101,14 @@ export class InputController {
     content?: string;
     promptPrefix?: string;
   }): Promise<void> {
-    const { plugin, state, renderer, streamController, selectionController, conversationController } = this.deps;
+    const {
+      plugin,
+      state,
+      renderer,
+      streamController,
+      selectionController,
+      conversationController,
+    } = this.deps;
     const inputEl = this.deps.getInputEl();
     const imageContextManager = this.deps.getImageContextManager();
     const fileContextManager = this.deps.getFileContextManager();
@@ -175,7 +181,7 @@ export class InputController {
       const detected = slashCommandManager.detectCommand(content);
       if (detected) {
         const cmd = plugin.settings.slashCommands.find(
-          c => c.name.toLowerCase() === detected.commandName.toLowerCase()
+          (c) => c.name.toLowerCase() === detected.commandName.toLowerCase(),
         );
         if (cmd) {
           const result = await slashCommandManager.expandCommand(cmd, detected.args, {
@@ -185,7 +191,7 @@ export class InputController {
                 isCommandBlocked(
                   bashCommand,
                   getBashToolBlockedCommands(plugin.settings.blockedCommands),
-                  plugin.settings.enableBlocklist
+                  plugin.settings.enableBlocklist,
                 ),
               requestApproval:
                 plugin.settings.permissionMode !== 'yolo'
@@ -218,12 +224,14 @@ export class InputController {
     }
 
     const currentNotePath = fileContextManager?.getCurrentNotePath() || null;
-    const shouldSendCurrentNote = fileContextManager?.shouldSendCurrentNote(currentNotePath) ?? false;
+    const shouldSendCurrentNote =
+      fileContextManager?.shouldSendCurrentNote(currentNotePath) ?? false;
 
     const editorContextOverride = options?.editorContextOverride;
-    const editorContext = editorContextOverride !== undefined
-      ? editorContextOverride
-      : selectionController.getContext();
+    const editorContext =
+      editorContextOverride !== undefined
+        ? editorContextOverride
+        : selectionController.getContext();
 
     // Wrap query in XML tag
     let promptToSend = `<query>\n${content}\n</query>`;
@@ -270,7 +278,7 @@ export class InputController {
     };
     state.addMessage(assistantMsg);
     const msgEl = renderer.addMessage(assistantMsg);
-    const contentEl = msgEl.querySelector('.claudian-message-content') as HTMLElement;
+    const contentEl = msgEl.querySelector('.cortex-message-content') as HTMLElement;
 
     state.toolCallElements.clear();
     state.currentContentEl = contentEl;
@@ -297,7 +305,12 @@ export class InputController {
 
     let wasInterrupted = false;
     try {
-      for await (const chunk of plugin.agentService.query(promptToSend, imagesForMessage, state.messages, queryOptions)) {
+      for await (const chunk of plugin.agentService.query(
+        promptToSend,
+        imagesForMessage,
+        state.messages,
+        queryOptions,
+      )) {
         if (state.cancelRequested) {
           wasInterrupted = true;
           break;
@@ -309,7 +322,9 @@ export class InputController {
       await streamController.appendText(`\n\n**Error:** ${errorMsg}`);
     } finally {
       if (wasInterrupted) {
-        await streamController.appendText('\n\n<span class="claudian-interrupted">Interrupted</span> <span class="claudian-interrupted-hint">· What should Claudian do instead?</span>');
+        await streamController.appendText(
+          '\n\n<span class="cortex-interrupted">Interrupted</span> <span class="cortex-interrupted-hint">· What should Cortex do instead?</span>',
+        );
       }
       streamController.hideThinkingIndicator();
       state.isStreaming = false;
@@ -454,7 +469,14 @@ export class InputController {
 
   /** Internal: sends message with plan mode options. */
   private async sendMessageWithPlanMode(options?: PlanModeSendOptions): Promise<void> {
-    const { plugin, state, renderer, streamController, selectionController, conversationController } = this.deps;
+    const {
+      plugin,
+      state,
+      renderer,
+      streamController,
+      selectionController,
+      conversationController,
+    } = this.deps;
     const inputEl = this.deps.getInputEl();
     const imageContextManager = this.deps.getImageContextManager();
     const fileContextManager = this.deps.getFileContextManager();
@@ -555,7 +577,7 @@ ${content}
     };
     state.addMessage(assistantMsg);
     const msgEl = renderer.addMessage(assistantMsg);
-    const contentEl = msgEl.querySelector('.claudian-message-content') as HTMLElement;
+    const contentEl = msgEl.querySelector('.cortex-message-content') as HTMLElement;
 
     state.toolCallElements.clear();
     state.currentContentEl = contentEl;
@@ -581,7 +603,12 @@ ${content}
 
     let wasInterrupted = false;
     try {
-      for await (const chunk of plugin.agentService.query(promptToSend, imagesForMessage, state.messages, queryOptions)) {
+      for await (const chunk of plugin.agentService.query(
+        promptToSend,
+        imagesForMessage,
+        state.messages,
+        queryOptions,
+      )) {
         if (state.cancelRequested) {
           wasInterrupted = true;
           break;
@@ -593,7 +620,9 @@ ${content}
       await streamController.appendText(`\n\n**Error:** ${errorMsg}`);
     } finally {
       if (wasInterrupted) {
-        await streamController.appendText('\n\n<span class="claudian-interrupted">Plan mode interrupted</span>');
+        await streamController.appendText(
+          '\n\n<span class="cortex-interrupted">Plan mode interrupted</span>',
+        );
         plugin.agentService.setCurrentPlanFilePath(null);
       }
       streamController.hideThinkingIndicator();
@@ -626,9 +655,7 @@ ${content}
 
     if (state.queuedMessage) {
       const rawContent = state.queuedMessage.content.trim();
-      const preview = rawContent.length > 40
-        ? rawContent.slice(0, 40) + '...'
-        : rawContent;
+      const preview = rawContent.length > 40 ? rawContent.slice(0, 40) + '...' : rawContent;
       const hasImages = (state.queuedMessage.images?.length ?? 0) > 0;
       let display = preview;
 
@@ -661,10 +688,7 @@ ${content}
 
     const isPlanMode = this.deps.plugin.settings.permissionMode === 'plan';
     if (isPlanMode) {
-      setTimeout(
-        () => this.sendMessageWithPlanMode({ content, images, editorContext, hidden }),
-        0
-      );
+      setTimeout(() => this.sendMessageWithPlanMode({ content, images, editorContext, hidden }), 0);
       return;
     }
 
@@ -674,7 +698,10 @@ ${content}
       this.deps.getImageContextManager()?.setImages(images);
     }
 
-    setTimeout(() => this.sendMessage({ editorContextOverride: editorContext, hidden, promptPrefix }), 0);
+    setTimeout(
+      () => this.sendMessage({ editorContextOverride: editorContext, hidden, promptPrefix }),
+      0,
+    );
   }
 
   // ============================================
@@ -694,8 +721,8 @@ ${content}
     }
 
     // Find first user and assistant messages by role (not by index)
-    const firstUserMsg = state.messages.find(m => m.role === 'user');
-    const firstAssistantMsg = state.messages.find(m => m.role === 'assistant');
+    const firstUserMsg = state.messages.find((m) => m.role === 'user');
+    const firstAssistantMsg = state.messages.find((m) => m.role === 'assistant');
 
     if (!firstUserMsg || !firstAssistantMsg) {
       return;
@@ -704,11 +731,13 @@ ${content}
     const userContent = firstUserMsg.displayContent || firstUserMsg.content;
 
     // Extract text from assistant response
-    const assistantText = firstAssistantMsg.content ||
+    const assistantText =
+      firstAssistantMsg.content ||
       firstAssistantMsg.contentBlocks
         ?.filter((b): b is { type: 'text'; content: string } => b.type === 'text')
-        .map(b => b.content)
-        .join('\n') || '';
+        .map((b) => b.content)
+        .join('\n') ||
+      '';
 
     // Set immediate fallback title
     const fallbackTitle = conversationController.generateFallbackTitle(userContent);
@@ -727,17 +756,16 @@ ${content}
     }
 
     // Mark as pending only when we're actually starting generation
-    await plugin.updateConversation(state.currentConversationId, { titleGenerationStatus: 'pending' });
+    await plugin.updateConversation(state.currentConversationId, {
+      titleGenerationStatus: 'pending',
+    });
     conversationController.updateHistoryDropdown();
 
     const convId = state.currentConversationId;
     const expectedTitle = displayTitle; // Store to check if user renamed during generation
 
-    titleService.generateTitle(
-      convId,
-      userContent,
-      assistantText,
-      async (conversationId, result) => {
+    titleService
+      .generateTitle(convId, userContent, assistantText, async (conversationId, result) => {
         // Check if conversation still exists and user hasn't manually renamed
         const currentConv = plugin.getConversationById(conversationId);
         if (!currentConv) return;
@@ -757,11 +785,14 @@ ${content}
           await plugin.updateConversation(conversationId, { titleGenerationStatus: undefined });
         }
         conversationController.updateHistoryDropdown();
-      }
-    ).catch((error) => {
-      // Log unexpected errors (callback errors are already handled by safeCallback)
-      console.error('[InputController] Title generation failed:', error instanceof Error ? error.message : error);
-    });
+      })
+      .catch((error) => {
+        // Log unexpected errors (callback errors are already handled by safeCallback)
+        console.error(
+          '[InputController] Title generation failed:',
+          error instanceof Error ? error.message : error,
+        );
+      });
   }
 
   // ============================================
@@ -795,53 +826,49 @@ ${content}
     let wasCancelled = false;
 
     try {
-      modal = new InstructionModal(
-        plugin.app,
-        rawInstruction,
-        {
-          onAccept: async (finalInstruction) => {
-            const currentPrompt = plugin.settings.systemPrompt;
-            plugin.settings.systemPrompt = appendMarkdownSnippet(currentPrompt, finalInstruction);
-            await plugin.saveSettings();
+      modal = new InstructionModal(plugin.app, rawInstruction, {
+        onAccept: async (finalInstruction) => {
+          const currentPrompt = plugin.settings.systemPrompt;
+          plugin.settings.systemPrompt = appendMarkdownSnippet(currentPrompt, finalInstruction);
+          await plugin.saveSettings();
 
-            new Notice('Instruction added to custom system prompt');
-            instructionModeManager?.clear();
-          },
-          onReject: () => {
-            wasCancelled = true;
-            instructionRefineService.cancel();
-            instructionModeManager?.clear();
-          },
-          onClarificationSubmit: async (response) => {
-            const result = await instructionRefineService.continueConversation(response);
+          new Notice('Instruction added to custom system prompt');
+          instructionModeManager?.clear();
+        },
+        onReject: () => {
+          wasCancelled = true;
+          instructionRefineService.cancel();
+          instructionModeManager?.clear();
+        },
+        onClarificationSubmit: async (response) => {
+          const result = await instructionRefineService.continueConversation(response);
 
-            if (wasCancelled) {
-              return;
-            }
-
-            if (!result.success) {
-              if (result.error === 'Cancelled') {
-                return;
-              }
-              new Notice(result.error || 'Failed to process response');
-              modal?.showError(result.error || 'Failed to process response');
-              return;
-            }
-
-            if (result.clarification) {
-              modal?.showClarification(result.clarification);
-            } else if (result.refinedInstruction) {
-              modal?.showConfirmation(result.refinedInstruction);
-            }
+          if (wasCancelled) {
+            return;
           }
-        }
-      );
+
+          if (!result.success) {
+            if (result.error === 'Cancelled') {
+              return;
+            }
+            new Notice(result.error || 'Failed to process response');
+            modal?.showError(result.error || 'Failed to process response');
+            return;
+          }
+
+          if (result.clarification) {
+            modal?.showClarification(result.clarification);
+          } else if (result.refinedInstruction) {
+            modal?.showConfirmation(result.refinedInstruction);
+          }
+        },
+      });
       modal.open();
 
       instructionRefineService.resetConversation();
       const result = await instructionRefineService.refineInstruction(
         rawInstruction,
-        existingPrompt
+        existingPrompt,
       );
 
       if (wasCancelled) {
@@ -884,7 +911,7 @@ ${content}
   async handleApprovalRequest(
     toolName: string,
     input: Record<string, unknown>,
-    description: string
+    description: string,
   ): Promise<'allow' | 'allow-always' | 'deny' | 'cancel'> {
     const { plugin } = this.deps;
     return new Promise((resolve) => {
@@ -904,17 +931,19 @@ ${content}
         { command },
         description,
         (decision) => resolve(decision === 'allow' || decision === 'allow-always'),
-        { showAlwaysAllow: false, title: 'Inline bash execution' }
+        { showAlwaysAllow: false, title: 'Inline bash execution' },
       );
       modal.open();
     });
   }
 
   /** Handles AskUserQuestion tool calls by showing a floating panel. */
-  async handleAskUserQuestion(input: AskUserQuestionInput): Promise<Record<string, string | string[]> | null> {
+  async handleAskUserQuestion(
+    input: AskUserQuestionInput,
+  ): Promise<Record<string, string | string[]> | null> {
     const { plugin } = this.deps;
 
-    // Get the container element (the claudian view container)
+    // Get the container element (the cortex view container)
     const messagesEl = this.deps.getMessagesEl();
     const containerEl = messagesEl.parentElement;
     if (!containerEl) {
@@ -932,7 +961,7 @@ ${content}
   async handleExitPlanMode(planContent: string): Promise<ExitPlanModeDecision> {
     const { state, renderer, conversationController, streamController } = this.deps;
 
-    // Get the container element (the claudian view container)
+    // Get the container element (the cortex view container)
     const messagesEl = this.deps.getMessagesEl();
     const containerEl = messagesEl.parentElement;
     if (!containerEl) {
@@ -962,10 +991,10 @@ ${content}
     // Render the plan content with special styling
     const lastMsgEl = messagesEl.lastElementChild;
     if (lastMsgEl) {
-      lastMsgEl.classList.add('claudian-message-plan');
-      const contentEl = lastMsgEl.querySelector('.claudian-message-content') as HTMLElement;
+      lastMsgEl.classList.add('cortex-message-plan');
+      const contentEl = lastMsgEl.querySelector('.cortex-message-content') as HTMLElement;
       if (contentEl) {
-        const textEl = contentEl.createDiv({ cls: 'claudian-text-block' });
+        const textEl = contentEl.createDiv({ cls: 'cortex-text-block' });
         await renderer.renderContent(textEl, planContent);
         // Update currentContentEl to point to the plan message's content.
         // This ensures that if revision is selected and the stream continues,
@@ -1006,7 +1035,7 @@ ${content}
   /** Shows approval panel and handles the decision. */
   private async showApprovalPanelAndHandleDecision(
     planContent: string,
-    containerEl: HTMLElement
+    containerEl: HTMLElement,
   ): Promise<ExitPlanModeDecision> {
     const { plugin, state, conversationController } = this.deps;
 
@@ -1015,7 +1044,7 @@ ${content}
       plugin.app,
       containerEl,
       planContent,
-      this.deps.getComponent()
+      this.deps.getComponent(),
     );
 
     // Clear pending plan content after any decision
@@ -1039,7 +1068,7 @@ ${content}
       // Auto-send implementation prompt (hidden from UI)
       setTimeout(
         () => this.sendMessage({ hidden: true, content: 'Please implement the approved plan.' }),
-        100
+        100,
       );
       return { decision: 'approve' };
     } else if (result.decision === 'approve_new_session') {
@@ -1067,7 +1096,7 @@ ${content}
       // Auto-send implementation prompt (hidden from UI)
       setTimeout(
         () => this.sendMessage({ hidden: true, content: 'Please implement the approved plan.' }),
-        100
+        100,
       );
       return { decision: 'approve_new_session' };
     } else if (result.decision === 'revise') {
@@ -1080,7 +1109,7 @@ ${content}
       // Auto-send feedback as hidden plan mode message (indicator already shows it)
       setTimeout(
         () => this.sendMessageWithPlanMode({ content: result.feedback, hidden: true, images: [] }),
-        100
+        100,
       );
       return { decision: 'revise', feedback: result.feedback };
     } else {
@@ -1104,7 +1133,7 @@ ${content}
   /** Adds an approval indicator message to the chat. */
   private addApprovalIndicator(
     type: 'approve' | 'approve_new_session' | 'revise',
-    feedback?: string
+    feedback?: string,
   ): void {
     const { state, renderer } = this.deps;
 

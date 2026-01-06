@@ -1,5 +1,5 @@
 /**
- * Claudian - Environment Utilities
+ * Cortex - Environment Utilities
  *
  * Environment variable parsing, model configuration, and PATH enhancement for GUI apps.
  */
@@ -117,7 +117,7 @@ function getExtraBinaryPaths(): string[] {
     // Unix paths
     const paths = [
       '/usr/local/bin',
-      '/opt/homebrew/bin',  // macOS ARM Homebrew
+      '/opt/homebrew/bin', // macOS ARM Homebrew
       '/usr/bin',
       '/bin',
     ];
@@ -200,7 +200,7 @@ export function findNodeDirectory(): string | null {
 export function cliPathRequiresNode(cliPath: string): boolean {
   const jsExtensions = ['.js', '.mjs', '.cjs', '.ts', '.tsx', '.jsx'];
   const lower = cliPath.toLowerCase();
-  if (jsExtensions.some(ext => lower.endsWith(ext))) {
+  if (jsExtensions.some((ext) => lower.endsWith(ext))) {
     return true;
   }
 
@@ -247,7 +247,7 @@ export function cliPathRequiresNode(cliPath: string): boolean {
  *                  where npm globals are installed alongside node.
  */
 export function getEnhancedPath(additionalPaths?: string, cliPath?: string): string {
-  const extraPaths = getExtraBinaryPaths().filter(p => p); // Filter out empty
+  const extraPaths = getExtraBinaryPaths().filter((p) => p); // Filter out empty
   const currentPath = process.env.PATH || '';
 
   // Build path segments: additional (user config) > CLI dir (if has node) > node dir (fallback) > extra paths > current PATH
@@ -297,7 +297,7 @@ export function getEnhancedPath(additionalPaths?: string, cliPath?: string): str
 
   // Deduplicate while preserving order
   const seen = new Set<string>();
-  const unique = segments.filter(p => {
+  const unique = segments.filter((p) => {
     const normalized = isWindows ? p.toLowerCase() : p;
     if (seen.has(normalized)) return false;
     seen.add(normalized);
@@ -319,8 +319,10 @@ export function parseEnvironmentVariables(input: string): Record<string, string>
       const key = trimmed.substring(0, eqIndex).trim();
       let value = trimmed.substring(eqIndex + 1).trim();
       // Strip surrounding quotes (single or double)
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
       if (key) {
@@ -332,7 +334,9 @@ export function parseEnvironmentVariables(input: string): Record<string, string>
 }
 
 /** Extracts model options from ANTHROPIC_* environment variables, deduplicated by value. */
-export function getModelsFromEnvironment(envVars: Record<string, string>): { value: string; label: string; description: string }[] {
+export function getModelsFromEnvironment(
+  envVars: Record<string, string>,
+): { value: string; label: string; description: string }[] {
   const modelMap = new Map<string, { types: string[]; label: string }>();
 
   const modelEnvEntries: { type: string; envKey: string }[] = [
@@ -347,7 +351,7 @@ export function getModelsFromEnvironment(envVars: Record<string, string>): { val
     if (modelValue) {
       const label = modelValue.includes('/')
         ? modelValue.split('/').pop() || modelValue
-        : modelValue.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+        : modelValue.replace(/-/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
       if (!modelMap.has(modelValue)) {
         modelMap.set(modelValue, { types: [type], label });
@@ -358,24 +362,29 @@ export function getModelsFromEnvironment(envVars: Record<string, string>): { val
   }
 
   const models: { value: string; label: string; description: string }[] = [];
-  const typePriority = { 'model': 4, 'haiku': 3, 'sonnet': 2, 'opus': 1 };
+  const typePriority = { model: 4, haiku: 3, sonnet: 2, opus: 1 };
 
   const sortedEntries = Array.from(modelMap.entries()).sort(([, aInfo], [, bInfo]) => {
-    const aPriority = Math.max(...aInfo.types.map(t => typePriority[t as keyof typeof typePriority] || 0));
-    const bPriority = Math.max(...bInfo.types.map(t => typePriority[t as keyof typeof typePriority] || 0));
+    const aPriority = Math.max(
+      ...aInfo.types.map((t) => typePriority[t as keyof typeof typePriority] || 0),
+    );
+    const bPriority = Math.max(
+      ...bInfo.types.map((t) => typePriority[t as keyof typeof typePriority] || 0),
+    );
     return bPriority - aPriority;
   });
 
   for (const [modelValue, info] of sortedEntries) {
-    const sortedTypes = info.types.sort((a, b) =>
-      (typePriority[b as keyof typeof typePriority] || 0) -
-      (typePriority[a as keyof typeof typePriority] || 0)
+    const sortedTypes = info.types.sort(
+      (a, b) =>
+        (typePriority[b as keyof typeof typePriority] || 0) -
+        (typePriority[a as keyof typeof typePriority] || 0),
     );
 
     models.push({
       value: modelValue,
       label: info.label,
-      description: `Custom model (${sortedTypes.join(', ')})`
+      description: `Custom model (${sortedTypes.join(', ')})`,
     });
   }
 

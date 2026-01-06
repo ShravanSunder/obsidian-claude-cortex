@@ -1,5 +1,5 @@
 /**
- * Claudian - MCP Settings Manager
+ * Cortex - MCP Settings Manager
  *
  * Component for managing MCP servers in the settings tab.
  * Displays server list with status indicators and action buttons.
@@ -8,20 +8,20 @@
 import { Notice, setIcon } from 'obsidian';
 
 import { McpStorage } from '../../core/storage';
-import type { ClaudianMcpServer, McpServerConfig, McpServerType } from '../../core/types';
+import type { CortexMcpServer, McpServerConfig, McpServerType } from '../../core/types';
 import { DEFAULT_MCP_SERVER, getMcpServerType } from '../../core/types';
 import { testMcpServer } from '../../features/mcp/McpTester';
-import type ClaudianPlugin from '../../main';
+import type CortexPlugin from '../../main';
 import { McpServerModal } from '../modals/McpServerModal';
 import { McpTestModal } from '../modals/McpTestModal';
 
 /** Component for managing MCP servers in settings tab. */
 export class McpSettingsManager {
   private containerEl: HTMLElement;
-  private plugin: ClaudianPlugin;
-  private servers: ClaudianMcpServer[] = [];
+  private plugin: CortexPlugin;
+  private servers: CortexMcpServer[] = [];
 
-  constructor(containerEl: HTMLElement, plugin: ClaudianPlugin) {
+  constructor(containerEl: HTMLElement, plugin: CortexPlugin) {
     this.containerEl = containerEl;
     this.plugin = plugin;
     this.loadAndRender();
@@ -36,37 +36,37 @@ export class McpSettingsManager {
     this.containerEl.empty();
 
     // Header with Add dropdown
-    const headerEl = this.containerEl.createDiv({ cls: 'claudian-mcp-header' });
-    headerEl.createSpan({ text: 'MCP Servers', cls: 'claudian-mcp-label' });
+    const headerEl = this.containerEl.createDiv({ cls: 'cortex-mcp-header' });
+    headerEl.createSpan({ text: 'MCP Servers', cls: 'cortex-mcp-label' });
 
     // Add button with dropdown
-    const addContainer = headerEl.createDiv({ cls: 'claudian-mcp-add-container' });
+    const addContainer = headerEl.createDiv({ cls: 'cortex-mcp-add-container' });
     const addBtn = addContainer.createEl('button', {
-      cls: 'claudian-settings-action-btn',
+      cls: 'cortex-settings-action-btn',
       attr: { 'aria-label': 'Add' },
     });
     setIcon(addBtn, 'plus');
 
-    const dropdown = addContainer.createDiv({ cls: 'claudian-mcp-add-dropdown' });
+    const dropdown = addContainer.createDiv({ cls: 'cortex-mcp-add-dropdown' });
 
-    const stdioOption = dropdown.createDiv({ cls: 'claudian-mcp-add-option' });
-    setIcon(stdioOption.createSpan({ cls: 'claudian-mcp-add-option-icon' }), 'terminal');
+    const stdioOption = dropdown.createDiv({ cls: 'cortex-mcp-add-option' });
+    setIcon(stdioOption.createSpan({ cls: 'cortex-mcp-add-option-icon' }), 'terminal');
     stdioOption.createSpan({ text: 'stdio (local command)' });
     stdioOption.addEventListener('click', () => {
       dropdown.removeClass('is-visible');
       this.openModal(null, 'stdio');
     });
 
-    const httpOption = dropdown.createDiv({ cls: 'claudian-mcp-add-option' });
-    setIcon(httpOption.createSpan({ cls: 'claudian-mcp-add-option-icon' }), 'globe');
+    const httpOption = dropdown.createDiv({ cls: 'cortex-mcp-add-option' });
+    setIcon(httpOption.createSpan({ cls: 'cortex-mcp-add-option-icon' }), 'globe');
     httpOption.createSpan({ text: 'http / sse (remote)' });
     httpOption.addEventListener('click', () => {
       dropdown.removeClass('is-visible');
       this.openModal(null, 'http');
     });
 
-    const importOption = dropdown.createDiv({ cls: 'claudian-mcp-add-option' });
-    setIcon(importOption.createSpan({ cls: 'claudian-mcp-add-option-icon' }), 'clipboard-paste');
+    const importOption = dropdown.createDiv({ cls: 'cortex-mcp-add-option' });
+    setIcon(importOption.createSpan({ cls: 'cortex-mcp-add-option-icon' }), 'clipboard-paste');
     importOption.createSpan({ text: 'Import from clipboard' });
     importOption.addEventListener('click', () => {
       dropdown.removeClass('is-visible');
@@ -86,53 +86,51 @@ export class McpSettingsManager {
 
     // Empty state
     if (this.servers.length === 0) {
-      const emptyEl = this.containerEl.createDiv({ cls: 'claudian-mcp-empty' });
+      const emptyEl = this.containerEl.createDiv({ cls: 'cortex-mcp-empty' });
       emptyEl.setText('No MCP servers configured. Click "Add" to add one.');
       return;
     }
 
     // Server list
-    const listEl = this.containerEl.createDiv({ cls: 'claudian-mcp-list' });
+    const listEl = this.containerEl.createDiv({ cls: 'cortex-mcp-list' });
     for (const server of this.servers) {
       this.renderServerItem(listEl, server);
     }
   }
 
-  private renderServerItem(listEl: HTMLElement, server: ClaudianMcpServer) {
-    const itemEl = listEl.createDiv({ cls: 'claudian-mcp-item' });
+  private renderServerItem(listEl: HTMLElement, server: CortexMcpServer) {
+    const itemEl = listEl.createDiv({ cls: 'cortex-mcp-item' });
     if (!server.enabled) {
-      itemEl.addClass('claudian-mcp-item-disabled');
+      itemEl.addClass('cortex-mcp-item-disabled');
     }
 
     // Status indicator (colored dot)
-    const statusEl = itemEl.createDiv({ cls: 'claudian-mcp-status' });
-    statusEl.addClass(
-      server.enabled ? 'claudian-mcp-status-enabled' : 'claudian-mcp-status-disabled'
-    );
+    const statusEl = itemEl.createDiv({ cls: 'cortex-mcp-status' });
+    statusEl.addClass(server.enabled ? 'cortex-mcp-status-enabled' : 'cortex-mcp-status-disabled');
 
     // Info section
-    const infoEl = itemEl.createDiv({ cls: 'claudian-mcp-info' });
+    const infoEl = itemEl.createDiv({ cls: 'cortex-mcp-info' });
 
     // Name row with badges
-    const nameRow = infoEl.createDiv({ cls: 'claudian-mcp-name-row' });
+    const nameRow = infoEl.createDiv({ cls: 'cortex-mcp-name-row' });
 
-    const nameEl = nameRow.createSpan({ cls: 'claudian-mcp-name' });
+    const nameEl = nameRow.createSpan({ cls: 'cortex-mcp-name' });
     nameEl.setText(server.name);
 
     // Type badge
     const serverType = getMcpServerType(server.config);
-    const typeEl = nameRow.createSpan({ cls: 'claudian-mcp-type-badge' });
+    const typeEl = nameRow.createSpan({ cls: 'cortex-mcp-type-badge' });
     typeEl.setText(serverType);
 
     // Context-saving badge
     if (server.contextSaving) {
-      const csEl = nameRow.createSpan({ cls: 'claudian-mcp-context-saving-badge' });
+      const csEl = nameRow.createSpan({ cls: 'cortex-mcp-context-saving-badge' });
       csEl.setText('@');
       csEl.setAttribute('title', 'Context-saving: mention with @' + server.name + ' to enable');
     }
 
     // Description or command preview
-    const previewEl = infoEl.createDiv({ cls: 'claudian-mcp-preview' });
+    const previewEl = infoEl.createDiv({ cls: 'cortex-mcp-preview' });
     if (server.description) {
       previewEl.setText(server.description);
     } else {
@@ -140,11 +138,11 @@ export class McpSettingsManager {
     }
 
     // Actions
-    const actionsEl = itemEl.createDiv({ cls: 'claudian-mcp-actions' });
+    const actionsEl = itemEl.createDiv({ cls: 'cortex-mcp-actions' });
 
     // Verify button (shows tools)
     const testBtn = actionsEl.createEl('button', {
-      cls: 'claudian-mcp-action-btn',
+      cls: 'cortex-mcp-action-btn',
       attr: { 'aria-label': 'Verify (show tools)' },
     });
     setIcon(testBtn, 'zap');
@@ -152,7 +150,7 @@ export class McpSettingsManager {
 
     // Enable/disable toggle button
     const toggleBtn = actionsEl.createEl('button', {
-      cls: 'claudian-mcp-action-btn',
+      cls: 'cortex-mcp-action-btn',
       attr: { 'aria-label': server.enabled ? 'Disable' : 'Enable' },
     });
     setIcon(toggleBtn, server.enabled ? 'toggle-right' : 'toggle-left');
@@ -160,7 +158,7 @@ export class McpSettingsManager {
 
     // Edit button
     const editBtn = actionsEl.createEl('button', {
-      cls: 'claudian-mcp-action-btn',
+      cls: 'cortex-mcp-action-btn',
       attr: { 'aria-label': 'Edit' },
     });
     setIcon(editBtn, 'pencil');
@@ -168,14 +166,14 @@ export class McpSettingsManager {
 
     // Delete button
     const deleteBtn = actionsEl.createEl('button', {
-      cls: 'claudian-mcp-action-btn claudian-mcp-delete-btn',
+      cls: 'cortex-mcp-action-btn cortex-mcp-delete-btn',
       attr: { 'aria-label': 'Delete' },
     });
     setIcon(deleteBtn, 'trash-2');
     deleteBtn.addEventListener('click', () => this.deleteServer(server));
   }
 
-  private async testServer(server: ClaudianMcpServer) {
+  private async testServer(server: CortexMcpServer) {
     const modal = new McpTestModal(
       this.plugin.app,
       server.name,
@@ -185,7 +183,7 @@ export class McpSettingsManager {
       },
       async (disabledTools) => {
         await this.updateAllDisabledTools(server, disabledTools);
-      }
+      },
     );
     modal.open();
 
@@ -202,8 +200,8 @@ export class McpSettingsManager {
    * Rolls back on save failure; warns on reload failure (since save succeeded).
    */
   private async updateServerDisabledTools(
-    server: ClaudianMcpServer,
-    newDisabledTools: string[] | undefined
+    server: CortexMcpServer,
+    newDisabledTools: string[] | undefined,
   ): Promise<void> {
     const previous = server.disabledTools ? [...server.disabledTools] : undefined;
     server.disabledTools = newDisabledTools;
@@ -219,16 +217,12 @@ export class McpSettingsManager {
       await this.plugin.agentService.reloadMcpServers();
     } catch (error) {
       // Save succeeded but reload failed - don't rollback since disk has correct state
-      console.warn('[Claudian] MCP reload failed after save:', error);
+      console.warn('[Cortex] MCP reload failed after save:', error);
       new Notice('Setting saved but reload failed. Changes will apply on next session.');
     }
   }
 
-  private async updateDisabledTool(
-    server: ClaudianMcpServer,
-    toolName: string,
-    enabled: boolean
-  ) {
+  private async updateDisabledTool(server: CortexMcpServer, toolName: string, enabled: boolean) {
     const disabledTools = new Set(server.disabledTools ?? []);
     if (enabled) {
       disabledTools.delete(toolName);
@@ -237,18 +231,18 @@ export class McpSettingsManager {
     }
     await this.updateServerDisabledTools(
       server,
-      disabledTools.size > 0 ? Array.from(disabledTools) : undefined
+      disabledTools.size > 0 ? Array.from(disabledTools) : undefined,
     );
   }
 
-  private async updateAllDisabledTools(server: ClaudianMcpServer, disabledTools: string[]) {
+  private async updateAllDisabledTools(server: CortexMcpServer, disabledTools: string[]) {
     await this.updateServerDisabledTools(
       server,
-      disabledTools.length > 0 ? disabledTools : undefined
+      disabledTools.length > 0 ? disabledTools : undefined,
     );
   }
 
-  private getServerPreview(server: ClaudianMcpServer, type: McpServerType): string {
+  private getServerPreview(server: CortexMcpServer, type: McpServerType): string {
     if (type === 'stdio') {
       const config = server.config as { command: string; args?: string[] };
       const args = config.args?.join(' ') || '';
@@ -259,7 +253,7 @@ export class McpSettingsManager {
     }
   }
 
-  private openModal(existing: ClaudianMcpServer | null, initialType?: McpServerType) {
+  private openModal(existing: CortexMcpServer | null, initialType?: McpServerType) {
     const modal = new McpServerModal(
       this.plugin.app,
       this.plugin,
@@ -267,7 +261,7 @@ export class McpSettingsManager {
       async (server) => {
         await this.saveServer(server, existing);
       },
-      initialType
+      initialType,
     );
     modal.open();
   }
@@ -298,7 +292,7 @@ export class McpSettingsManager {
             await this.saveServer(savedServer, null);
           },
           type,
-          server  // Pre-fill with parsed config
+          server, // Pre-fill with parsed config
         );
         modal.open();
         if (parsed.needsName) {
@@ -314,7 +308,7 @@ export class McpSettingsManager {
     }
   }
 
-  private async saveServer(server: ClaudianMcpServer, existing: ClaudianMcpServer | null) {
+  private async saveServer(server: CortexMcpServer, existing: CortexMcpServer | null) {
     if (existing) {
       // Update existing server
       const index = this.servers.findIndex((s) => s.name === existing.name);
@@ -342,7 +336,9 @@ export class McpSettingsManager {
     await this.plugin.storage.mcp.save(this.servers);
     await this.plugin.agentService.reloadMcpServers();
     this.render();
-    new Notice(existing ? `MCP server "${server.name}" updated` : `MCP server "${server.name}" added`);
+    new Notice(
+      existing ? `MCP server "${server.name}" updated` : `MCP server "${server.name}" added`,
+    );
   }
 
   private async importServers(servers: Array<{ name: string; config: McpServerConfig }>) {
@@ -387,7 +383,7 @@ export class McpSettingsManager {
     new Notice(message);
   }
 
-  private async toggleServer(server: ClaudianMcpServer) {
+  private async toggleServer(server: CortexMcpServer) {
     server.enabled = !server.enabled;
     await this.plugin.storage.mcp.save(this.servers);
     await this.plugin.agentService.reloadMcpServers();
@@ -395,7 +391,7 @@ export class McpSettingsManager {
     new Notice(`MCP server "${server.name}" ${server.enabled ? 'enabled' : 'disabled'}`);
   }
 
-  private async deleteServer(server: ClaudianMcpServer) {
+  private async deleteServer(server: CortexMcpServer) {
     if (!confirm(`Delete MCP server "${server.name}"?`)) {
       return;
     }

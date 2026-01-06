@@ -6,36 +6,34 @@
  * - Diff replaces the selected text visually (like VS Code/Cursor)
  */
 
-import type { App, Editor} from 'obsidian';
-import { MarkdownView, Notice } from 'obsidian';
 import * as path from 'path';
+import type { App, Editor } from 'obsidian';
+import { MarkdownView, Notice } from 'obsidian';
 
 import { SlashCommandManager } from '../../core/commands';
 import { isCommandBlocked } from '../../core/security/BlocklistChecker';
 import { TOOL_BASH } from '../../core/tools/toolNames';
 import { getBashToolBlockedCommands } from '../../core/types';
-import { type InlineEditMode, InlineEditService } from '../../features/inline-edit/InlineEditService';
-import type ClaudianPlugin from '../../main';
-import { type CursorContext } from '../../utils/editor';
+import {
+  type InlineEditMode,
+  InlineEditService,
+} from '../../features/inline-edit/InlineEditService';
+import type CortexPlugin from '../../main';
+import type { CursorContext } from '../../utils/editor';
 import { escapeHtml, normalizeInsertionText } from '../../utils/inlineEdit';
 import { getVaultPath, isPathWithinVault, normalizePathForFilesystem } from '../../utils/path';
 import { formatSlashCommandWarnings } from '../../utils/slashCommand';
-import { MentionDropdownController } from '../components/file-context/mention/MentionDropdownController';
 import { hideSelectionHighlight, showSelectionHighlight } from '../components/SelectionHighlight';
 import { SlashCommandDropdown } from '../components/SlashCommandDropdown';
+import { MentionDropdownController } from '../components/file-context/mention/MentionDropdownController';
 import { ApprovalModal } from './ApprovalModal';
 
 export type InlineEditContext =
   | { mode: 'selection'; selectedText: string }
   | { mode: 'cursor'; cursorContext: CursorContext };
-import { RangeSetBuilder,StateEffect, StateField } from '@codemirror/state';
-import type {
-  DecorationSet} from '@codemirror/view';
-import {
-  Decoration,
-  EditorView,
-  WidgetType,
-} from '@codemirror/view';
+import { RangeSetBuilder, StateEffect, StateField } from '@codemirror/state';
+import type { DecorationSet } from '@codemirror/view';
+import { Decoration, EditorView, WidgetType } from '@codemirror/view';
 
 // State effects
 const showInlineEdit = StateEffect.define<{
@@ -63,26 +61,29 @@ let activeController: InlineEditController | null = null;
 
 // Diff widget that replaces the selection
 class DiffWidget extends WidgetType {
-  constructor(private diffHtml: string, private controller: InlineEditController) {
+  constructor(
+    private diffHtml: string,
+    private controller: InlineEditController,
+  ) {
     super();
   }
   toDOM(): HTMLElement {
     const span = document.createElement('span');
-    span.className = 'claudian-inline-diff-replace';
+    span.className = 'cortex-inline-diff-replace';
     span.innerHTML = this.diffHtml;
 
     // Add accept/reject buttons
     const btns = document.createElement('span');
-    btns.className = 'claudian-inline-diff-buttons';
+    btns.className = 'cortex-inline-diff-buttons';
 
     const rejectBtn = document.createElement('button');
-    rejectBtn.className = 'claudian-inline-diff-btn reject';
+    rejectBtn.className = 'cortex-inline-diff-btn reject';
     rejectBtn.textContent = '✕';
     rejectBtn.title = 'Reject (Esc)';
     rejectBtn.onclick = () => this.controller.reject();
 
     const acceptBtn = document.createElement('button');
-    acceptBtn.className = 'claudian-inline-diff-btn accept';
+    acceptBtn.className = 'cortex-inline-diff-btn accept';
     acceptBtn.textContent = '✓';
     acceptBtn.title = 'Accept (Enter)';
     acceptBtn.onclick = () => this.controller.accept();
@@ -127,26 +128,38 @@ const inlineEditField = StateField.define<DecorationSet>({
         const builder = new RangeSetBuilder<Decoration>();
         // Input widget: block above line for selection/inline mode, inline for inbetween mode
         const isInbetween = e.value.isInbetween ?? false;
-        builder.add(e.value.inputPos, e.value.inputPos, Decoration.widget({
-          widget: new InputWidget(e.value.widget),
-          block: !isInbetween,
-          side: isInbetween ? 1 : -1,
-        }));
+        builder.add(
+          e.value.inputPos,
+          e.value.inputPos,
+          Decoration.widget({
+            widget: new InputWidget(e.value.widget),
+            block: !isInbetween,
+            side: isInbetween ? 1 : -1,
+          }),
+        );
         deco = builder.finish();
       } else if (e.is(showDiff)) {
         const builder = new RangeSetBuilder<Decoration>();
         // Replace selection with diff widget
-        builder.add(e.value.from, e.value.to, Decoration.replace({
-          widget: new DiffWidget(e.value.diffHtml, e.value.widget),
-        }));
+        builder.add(
+          e.value.from,
+          e.value.to,
+          Decoration.replace({
+            widget: new DiffWidget(e.value.diffHtml, e.value.widget),
+          }),
+        );
         deco = builder.finish();
       } else if (e.is(showInsertion)) {
         const builder = new RangeSetBuilder<Decoration>();
         // Insert widget at cursor position (Decoration.widget for point insertion)
-        builder.add(e.value.pos, e.value.pos, Decoration.widget({
-          widget: new DiffWidget(e.value.diffHtml, e.value.widget),
-          side: 1, // Display after the position
-        }));
+        builder.add(
+          e.value.pos,
+          e.value.pos,
+          Decoration.widget({
+            widget: new DiffWidget(e.value.diffHtml, e.value.widget),
+            side: 1, // Display after the position
+          }),
+        );
         deco = builder.finish();
       } else if (e.is(hideInlineEdit)) {
         deco = Decoration.none;
@@ -160,43 +173,52 @@ const inlineEditField = StateField.define<DecorationSet>({
 const installedEditors = new WeakSet<EditorView>();
 
 // Simple diff
-interface DiffOp { type: 'equal' | 'insert' | 'delete'; text: string; }
+interface DiffOp {
+  type: 'equal' | 'insert' | 'delete';
+  text: string;
+}
 
 function computeDiff(oldText: string, newText: string): DiffOp[] {
   const oldWords = oldText.split(/(\s+)/);
   const newWords = newText.split(/(\s+)/);
-  const m = oldWords.length, n = newWords.length;
-  const dp: number[][] = Array(m + 1).fill(null).map(() => Array(n + 1).fill(0));
+  const m = oldWords.length,
+    n = newWords.length;
+  const dp: number[][] = Array(m + 1)
+    .fill(null)
+    .map(() => Array(n + 1).fill(0));
 
   for (let i = 1; i <= m; i++) {
     for (let j = 1; j <= n; j++) {
-      dp[i][j] = oldWords[i-1] === newWords[j-1]
-        ? dp[i-1][j-1] + 1
-        : Math.max(dp[i-1][j], dp[i][j-1]);
+      dp[i][j] =
+        oldWords[i - 1] === newWords[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
     }
   }
 
   const ops: DiffOp[] = [];
-  let i = m, j = n;
+  let i = m,
+    j = n;
   const temp: DiffOp[] = [];
 
   while (i > 0 || j > 0) {
-    if (i > 0 && j > 0 && oldWords[i-1] === newWords[j-1]) {
-      temp.push({ type: 'equal', text: oldWords[i-1] });
-      i--; j--;
-    } else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
-      temp.push({ type: 'insert', text: newWords[j-1] });
+    if (i > 0 && j > 0 && oldWords[i - 1] === newWords[j - 1]) {
+      temp.push({ type: 'equal', text: oldWords[i - 1] });
+      i--;
+      j--;
+    } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
+      temp.push({ type: 'insert', text: newWords[j - 1] });
       j--;
     } else {
-      temp.push({ type: 'delete', text: oldWords[i-1] });
+      temp.push({ type: 'delete', text: oldWords[i - 1] });
       i--;
     }
   }
 
   temp.reverse();
   for (const op of temp) {
-    if (ops.length > 0 && ops[ops.length-1].type === op.type) {
-      ops[ops.length-1].text += op.text;
+    if (ops.length > 0 && ops[ops.length - 1].type === op.type) {
+      ops[ops.length - 1].text += op.text;
     } else {
       ops.push({ ...op });
     }
@@ -205,14 +227,19 @@ function computeDiff(oldText: string, newText: string): DiffOp[] {
 }
 
 function diffToHtml(ops: DiffOp[]): string {
-  return ops.map(op => {
-    const escaped = escapeHtml(op.text);
-    switch (op.type) {
-      case 'delete': return `<span class="claudian-diff-del">${escaped}</span>`;
-      case 'insert': return `<span class="claudian-diff-ins">${escaped}</span>`;
-      default: return escaped;
-    }
-  }).join('');
+  return ops
+    .map((op) => {
+      const escaped = escapeHtml(op.text);
+      switch (op.type) {
+        case 'delete':
+          return `<span class="cortex-diff-del">${escaped}</span>`;
+        case 'insert':
+          return `<span class="cortex-diff-ins">${escaped}</span>`;
+        default:
+          return escaped;
+      }
+    })
+    .join('');
 }
 
 export type InlineEditDecision = 'accept' | 'edit' | 'reject';
@@ -222,9 +249,9 @@ export class InlineEditModal {
 
   constructor(
     private app: App,
-    private plugin: ClaudianPlugin,
+    private plugin: CortexPlugin,
     private editContext: InlineEditContext,
-    private notePath: string
+    private notePath: string,
   ) {}
 
   async openAndWait(): Promise<{ decision: InlineEditDecision; editedText?: string }> {
@@ -249,7 +276,7 @@ export class InlineEditModal {
         editor,
         this.editContext,
         this.notePath,
-        resolve
+        resolve,
       );
       activeController = this.controller;
       this.controller.show();
@@ -267,13 +294,13 @@ class InlineEditController {
   private selFrom: number;
   private selTo: number;
   private selectedText: string;
-  private startLine: number = 0; // 1-indexed
+  private startLine = 0; // 1-indexed
   private mode: InlineEditMode;
   private cursorContext: CursorContext | null = null;
   private inlineEditService: InlineEditService;
   private escHandler: ((e: KeyboardEvent) => void) | null = null;
   private selectionListener: ((e: Event) => void) | null = null;
-  private isConversing = false;  // True when agent asked clarification
+  private isConversing = false; // True when agent asked clarification
   private slashCommandManager: SlashCommandManager | null = null;
   private slashCommandDropdown: SlashCommandDropdown | null = null;
   private mentionDropdown: MentionDropdownController | null = null;
@@ -281,12 +308,12 @@ class InlineEditController {
 
   constructor(
     private app: App,
-    private plugin: ClaudianPlugin,
+    private plugin: CortexPlugin,
     private editorView: EditorView,
     private editor: Editor,
     editContext: InlineEditContext,
     private notePath: string,
-    private resolve: (result: { decision: InlineEditDecision; editedText?: string }) => void
+    private resolve: (result: { decision: InlineEditDecision; editedText?: string }) => void,
   ) {
     this.inlineEditService = new InlineEditService(plugin);
     this.mode = editContext.mode;
@@ -397,31 +424,32 @@ class InlineEditController {
 
   createInputDOM(): HTMLElement {
     const container = document.createElement('div');
-    container.className = 'claudian-inline-input-container';
+    container.className = 'cortex-inline-input-container';
     this.containerEl = container;
 
     // Agent reply area (hidden initially)
     this.agentReplyEl = document.createElement('div');
-    this.agentReplyEl.className = 'claudian-inline-agent-reply';
+    this.agentReplyEl.className = 'cortex-inline-agent-reply';
     this.agentReplyEl.style.display = 'none';
     container.appendChild(this.agentReplyEl);
 
     // Input wrapper
     const inputWrap = document.createElement('div');
-    inputWrap.className = 'claudian-inline-input-wrap';
+    inputWrap.className = 'cortex-inline-input-wrap';
     container.appendChild(inputWrap);
 
     // Input
     this.inputEl = document.createElement('input');
     this.inputEl.type = 'text';
-    this.inputEl.className = 'claudian-inline-input';
-    this.inputEl.placeholder = this.mode === 'cursor' ? 'Insert instructions...' : 'Edit instructions...';
+    this.inputEl.className = 'cortex-inline-input';
+    this.inputEl.placeholder =
+      this.mode === 'cursor' ? 'Insert instructions...' : 'Edit instructions...';
     this.inputEl.spellcheck = false;
     inputWrap.appendChild(this.inputEl);
 
     // Spinner - inside input wrapper, positioned absolutely
     this.spinnerEl = document.createElement('div');
-    this.spinnerEl.className = 'claudian-inline-spinner';
+    this.spinnerEl.className = 'cortex-inline-spinner';
     this.spinnerEl.style.display = 'none';
     inputWrap.appendChild(this.spinnerEl);
 
@@ -441,7 +469,7 @@ class InlineEditController {
           onHide: () => {},
           getCommands: () => this.plugin.settings.slashCommands,
         },
-        { fixed: true }
+        { fixed: true },
       );
     }
 
@@ -466,7 +494,7 @@ class InlineEditController {
         },
         normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath),
       },
-      { fixed: true }
+      { fixed: true },
     );
 
     // Events
@@ -489,7 +517,7 @@ class InlineEditController {
       const detected = this.slashCommandManager.detectCommand(userMessage);
       if (detected) {
         const cmd = this.plugin.settings.slashCommands.find(
-          c => c.name.toLowerCase() === detected.commandName.toLowerCase()
+          (c) => c.name.toLowerCase() === detected.commandName.toLowerCase(),
         );
         if (cmd) {
           const expansion = await this.slashCommandManager.expandCommand(cmd, detected.args, {
@@ -499,7 +527,7 @@ class InlineEditController {
                 isCommandBlocked(
                   bashCommand,
                   getBashToolBlockedCommands(this.plugin.settings.blockedCommands),
-                  this.plugin.settings.enableBlocklist
+                  this.plugin.settings.enableBlocklist,
                 ),
               requestApproval:
                 this.plugin.settings.permissionMode !== 'yolo'
@@ -644,7 +672,7 @@ class InlineEditController {
 
     // For insertion, it's all new text (no deletions)
     const escaped = escapeHtml(trimmedText);
-    const diffHtml = `<span class="claudian-diff-ins">${escaped}</span>`;
+    const diffHtml = `<span class="cortex-diff-ins">${escaped}</span>`;
 
     // Use showInsertion effect (Decoration.widget) for point insertion
     this.editorView.dispatch({
@@ -785,7 +813,7 @@ class InlineEditController {
         { command },
         description,
         (decision) => resolve(decision === 'allow' || decision === 'allow-always'),
-        { showAlwaysAllow: false, title: 'Inline bash execution' }
+        { showAlwaysAllow: false, title: 'Inline bash execution' },
       );
       modal.open();
     });

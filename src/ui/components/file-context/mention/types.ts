@@ -43,7 +43,7 @@ export interface ContextPathEntry {
 export function createContextPathEntry(
   contextRoot: string,
   folderName: string,
-  displayName: string
+  displayName: string,
 ): ContextPathEntry {
   return {
     contextRoot,

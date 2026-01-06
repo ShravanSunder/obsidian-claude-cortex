@@ -72,7 +72,7 @@ export class FileContextState {
   setMentionedMcpServers(mentions: Set<string>): boolean {
     const changed =
       mentions.size !== this.mentionedMcpServers.size ||
-      [...mentions].some(name => !this.mentionedMcpServers.has(name));
+      [...mentions].some((name) => !this.mentionedMcpServers.has(name));
 
     if (changed) {
       this.mentionedMcpServers = new Set(mentions);

@@ -4,20 +4,20 @@ describe('registerFileLinkHandler', () => {
   it('opens data-href target when present', () => {
     const app = {
       workspace: {
-        openLinkText: jest.fn(),
+        openLinkText: vi.fn(),
       },
     };
 
     const link: any = {
       dataset: { href: 'note#section' },
-      getAttribute: jest.fn().mockReturnValue('note'),
-      closest: jest.fn(),
+      getAttribute: vi.fn().mockReturnValue('note'),
+      closest: vi.fn(),
     };
     link.closest.mockReturnValue(link);
 
     const event = {
       target: link,
-      preventDefault: jest.fn(),
+      preventDefault: vi.fn(),
     } as any;
 
     const component = {
@@ -35,20 +35,20 @@ describe('registerFileLinkHandler', () => {
   it('falls back to href when data-href is missing', () => {
     const app = {
       workspace: {
-        openLinkText: jest.fn(),
+        openLinkText: vi.fn(),
       },
     };
 
     const link: any = {
       dataset: {},
-      getAttribute: jest.fn().mockReturnValue('note^block'),
-      closest: jest.fn(),
+      getAttribute: vi.fn().mockReturnValue('note^block'),
+      closest: vi.fn(),
     };
     link.closest.mockReturnValue(link);
 
     const event = {
       target: link,
-      preventDefault: jest.fn(),
+      preventDefault: vi.fn(),
     } as any;
 
     const component = {

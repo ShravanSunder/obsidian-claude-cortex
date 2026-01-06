@@ -48,7 +48,10 @@ class MockElement {
   createDiv(options: { cls?: string; text?: string } = {}): MockElement {
     const el = new MockElement('div');
     if (options.cls) {
-      options.cls.split(/\s+/).filter(Boolean).forEach((cls) => el.classList.add(cls));
+      options.cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((cls) => el.classList.add(cls));
     }
     if (options.text) {
       el.textContent = options.text;
@@ -60,7 +63,10 @@ class MockElement {
   createSpan(options: { cls?: string; text?: string } = {}): MockElement {
     const el = new MockElement('span');
     if (options.cls) {
-      options.cls.split(/\s+/).filter(Boolean).forEach((cls) => el.classList.add(cls));
+      options.cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((cls) => el.classList.add(cls));
     }
     if (options.text) {
       el.textContent = options.text;
@@ -71,11 +77,14 @@ class MockElement {
 
   createEl(
     tag: string,
-    options: { cls?: string; text?: string; attr?: Record<string, string> } = {}
+    options: { cls?: string; text?: string; attr?: Record<string, string> } = {},
   ): MockElement {
     const el = new MockElement(tag);
     if (options.cls) {
-      options.cls.split(/\s+/).filter(Boolean).forEach((cls) => el.classList.add(cls));
+      options.cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((cls) => el.classList.add(cls));
     }
     if (options.text) {
       el.textContent = options.text;
@@ -144,8 +153,8 @@ function createKeyEvent(key: string, options: { shiftKey?: boolean } = {}) {
     type: 'keydown',
     key,
     shiftKey: options.shiftKey ?? false,
-    preventDefault: jest.fn(),
-    stopPropagation: jest.fn(),
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
   } as any;
 }
 
@@ -155,8 +164,8 @@ describe('ApprovalModal - global keyboard navigation', () => {
     const mockDocument = createMockDocument();
     (global as any).document = mockDocument;
 
-    const modal = new ApprovalModal({} as any, 'Tool', {}, 'Desc', jest.fn());
-    (modal as any).setTitle = jest.fn();
+    const modal = new ApprovalModal({} as any, 'Tool', {}, 'Desc', vi.fn());
+    (modal as any).setTitle = vi.fn();
     (modal as any).contentEl = new MockElement('div');
 
     ApprovalModal.prototype.onOpen.call(modal);
@@ -177,7 +186,7 @@ describe('ApprovalModal - global keyboard navigation', () => {
   });
 
   it('resolves cancel when closed without decision', () => {
-    const resolve = jest.fn();
+    const resolve = vi.fn();
     const modal = new ApprovalModal({} as any, 'Tool', {}, 'Desc', resolve);
     (modal as any).contentEl = new MockElement('div');
 

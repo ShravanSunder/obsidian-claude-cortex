@@ -1,27 +1,27 @@
 /**
- * Claudian - Slash command settings
+ * Cortex - Slash command settings
  *
  * Settings UI for managing slash commands with create/edit/delete/import/export.
  */
 
-import type { App} from 'obsidian';
-import { Modal, Notice, setIcon, Setting } from 'obsidian';
+import type { App } from 'obsidian';
+import { Modal, Notice, Setting, setIcon } from 'obsidian';
 
 import type { SlashCommand } from '../../core/types';
-import type ClaudianPlugin from '../../main';
+import type CortexPlugin from '../../main';
 import { parseSlashCommandContent } from '../../utils/slashCommand';
 
 /** Modal for creating/editing slash commands. */
 export class SlashCommandModal extends Modal {
-  private plugin: ClaudianPlugin;
+  private plugin: CortexPlugin;
   private existingCmd: SlashCommand | null;
   private onSave: (cmd: SlashCommand) => void;
 
   constructor(
     app: App,
-    plugin: ClaudianPlugin,
+    plugin: CortexPlugin,
     existingCmd: SlashCommand | null,
-    onSave: (cmd: SlashCommand) => void
+    onSave: (cmd: SlashCommand) => void,
   ) {
     super(app);
     this.plugin = plugin;
@@ -31,7 +31,7 @@ export class SlashCommandModal extends Modal {
 
   onOpen() {
     this.setTitle(this.existingCmd ? 'Edit Slash Command' : 'Add Slash Command');
-    this.modalEl.addClass('claudian-slash-modal');
+    this.modalEl.addClass('cortex-slash-modal');
 
     const { contentEl } = this;
 
@@ -44,16 +44,15 @@ export class SlashCommandModal extends Modal {
     new Setting(contentEl)
       .setName('Command name')
       .setDesc('The name used after / (e.g., "review" for /review)')
-      .addText(text => {
+      .addText((text) => {
         nameInput = text.inputEl;
-        text.setValue(this.existingCmd?.name || '')
-          .setPlaceholder('review-code');
+        text.setValue(this.existingCmd?.name || '').setPlaceholder('review-code');
       });
 
     new Setting(contentEl)
       .setName('Description')
       .setDesc('Optional description shown in dropdown')
-      .addText(text => {
+      .addText((text) => {
         descInput = text.inputEl;
         text.setValue(this.existingCmd?.description || '');
       });
@@ -61,7 +60,7 @@ export class SlashCommandModal extends Modal {
     new Setting(contentEl)
       .setName('Argument hint')
       .setDesc('Placeholder text for arguments (e.g., "[file] [focus]")')
-      .addText(text => {
+      .addText((text) => {
         hintInput = text.inputEl;
         text.setValue(this.existingCmd?.argumentHint || '');
       });
@@ -69,16 +68,15 @@ export class SlashCommandModal extends Modal {
     new Setting(contentEl)
       .setName('Model override')
       .setDesc('Optional model to use for this command')
-      .addText(text => {
+      .addText((text) => {
         modelInput = text.inputEl;
-        text.setValue(this.existingCmd?.model || '')
-          .setPlaceholder('claude-sonnet-4-5');
+        text.setValue(this.existingCmd?.model || '').setPlaceholder('claude-sonnet-4-5');
       });
 
     new Setting(contentEl)
       .setName('Allowed tools')
       .setDesc('Comma-separated list of tools to allow (empty = all)')
-      .addText(text => {
+      .addText((text) => {
         toolsInput = text.inputEl;
         text.setValue(this.existingCmd?.allowedTools?.join(', ') || '');
       });
@@ -88,7 +86,7 @@ export class SlashCommandModal extends Modal {
       .setDesc('Use $ARGUMENTS, $1, $2, @file, !`bash`');
 
     const contentArea = contentEl.createEl('textarea', {
-      cls: 'claudian-slash-content-area',
+      cls: 'cortex-slash-content-area',
       attr: {
         rows: '10',
         placeholder: 'Review this code for:\n$ARGUMENTS\n\n@$1',
@@ -100,17 +98,17 @@ export class SlashCommandModal extends Modal {
     contentArea.value = initialContent;
 
     // Button container
-    const buttonContainer = contentEl.createDiv({ cls: 'claudian-slash-modal-buttons' });
+    const buttonContainer = contentEl.createDiv({ cls: 'cortex-slash-modal-buttons' });
 
     const cancelBtn = buttonContainer.createEl('button', {
       text: 'Cancel',
-      cls: 'claudian-cancel-btn',
+      cls: 'cortex-cancel-btn',
     });
     cancelBtn.addEventListener('click', () => this.close());
 
     const saveBtn = buttonContainer.createEl('button', {
       text: 'Save',
-      cls: 'claudian-save-btn',
+      cls: 'cortex-save-btn',
     });
     saveBtn.addEventListener('click', async () => {
       const name = nameInput.value.trim();
@@ -127,14 +125,15 @@ export class SlashCommandModal extends Modal {
 
       // Validate name (alphanumeric, hyphens, underscores, slashes only for nested commands)
       if (!/^[a-zA-Z0-9_/-]+$/.test(name)) {
-        new Notice('Command name can only contain letters, numbers, hyphens, underscores, and slashes');
+        new Notice(
+          'Command name can only contain letters, numbers, hyphens, underscores, and slashes',
+        );
         return;
       }
 
       // Check for duplicate names in current in-memory commands (excluding current command if editing)
       const existing = this.plugin.settings.slashCommands.find(
-        c => c.name.toLowerCase() === name.toLowerCase() &&
-             c.id !== this.existingCmd?.id
+        (c) => c.name.toLowerCase() === name.toLowerCase() && c.id !== this.existingCmd?.id,
       );
       if (existing) {
         new Notice(`A command named "/${name}" already exists`);
@@ -145,13 +144,18 @@ export class SlashCommandModal extends Modal {
       const promptContent = parsed.promptContent;
 
       const cmd: SlashCommand = {
-        id: this.existingCmd?.id || `cmd-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
+        id:
+          this.existingCmd?.id ||
+          `cmd-${Date.now()}-${Math.random().toString(36).substring(2, 11)}`,
         name,
         description: descInput.value.trim() || parsed.description || undefined,
         argumentHint: hintInput.value.trim() || parsed.argumentHint || undefined,
         model: modelInput.value.trim() || parsed.model || undefined,
         allowedTools: toolsInput.value.trim()
-          ? toolsInput.value.split(',').map(s => s.trim()).filter(Boolean)
+          ? toolsInput.value
+              .split(',')
+              .map((s) => s.trim())
+              .filter(Boolean)
           : parsed.allowedTools && parsed.allowedTools.length > 0
             ? parsed.allowedTools
             : undefined,
@@ -180,9 +184,9 @@ export class SlashCommandModal extends Modal {
 /** Component for managing slash commands in settings. */
 export class SlashCommandSettings {
   private containerEl: HTMLElement;
-  private plugin: ClaudianPlugin;
+  private plugin: CortexPlugin;
 
-  constructor(containerEl: HTMLElement, plugin: ClaudianPlugin) {
+  constructor(containerEl: HTMLElement, plugin: CortexPlugin) {
     this.containerEl = containerEl;
     this.plugin = plugin;
     this.render();
@@ -192,27 +196,27 @@ export class SlashCommandSettings {
     this.containerEl.empty();
 
     // Header with add button
-    const headerEl = this.containerEl.createDiv({ cls: 'claudian-slash-header' });
-    headerEl.createSpan({ text: 'Slash Commands', cls: 'claudian-slash-label' });
+    const headerEl = this.containerEl.createDiv({ cls: 'cortex-slash-header' });
+    headerEl.createSpan({ text: 'Slash Commands', cls: 'cortex-slash-label' });
 
-    const actionsEl = headerEl.createDiv({ cls: 'claudian-slash-header-actions' });
+    const actionsEl = headerEl.createDiv({ cls: 'cortex-slash-header-actions' });
 
     const importBtn = actionsEl.createEl('button', {
-      cls: 'claudian-settings-action-btn',
+      cls: 'cortex-settings-action-btn',
       attr: { 'aria-label': 'Import' },
     });
     setIcon(importBtn, 'download');
     importBtn.addEventListener('click', () => this.importCommands());
 
     const exportBtn = actionsEl.createEl('button', {
-      cls: 'claudian-settings-action-btn',
+      cls: 'cortex-settings-action-btn',
       attr: { 'aria-label': 'Export' },
     });
     setIcon(exportBtn, 'upload');
     exportBtn.addEventListener('click', () => this.exportCommands());
 
     const addBtn = actionsEl.createEl('button', {
-      cls: 'claudian-settings-action-btn',
+      cls: 'cortex-settings-action-btn',
       attr: { 'aria-label': 'Add' },
     });
     setIcon(addBtn, 'plus');
@@ -221,12 +225,12 @@ export class SlashCommandSettings {
     const commands = this.plugin.settings.slashCommands;
 
     if (commands.length === 0) {
-      const emptyEl = this.containerEl.createDiv({ cls: 'claudian-slash-empty-state' });
+      const emptyEl = this.containerEl.createDiv({ cls: 'cortex-slash-empty-state' });
       emptyEl.setText('No slash commands configured. Click "Add" to create one.');
       return;
     }
 
-    const listEl = this.containerEl.createDiv({ cls: 'claudian-slash-list' });
+    const listEl = this.containerEl.createDiv({ cls: 'cortex-slash-list' });
 
     for (const cmd of commands) {
       this.renderCommandItem(listEl, cmd);
@@ -234,36 +238,36 @@ export class SlashCommandSettings {
   }
 
   private renderCommandItem(listEl: HTMLElement, cmd: SlashCommand): void {
-    const itemEl = listEl.createDiv({ cls: 'claudian-slash-item-settings' });
+    const itemEl = listEl.createDiv({ cls: 'cortex-slash-item-settings' });
 
-    const infoEl = itemEl.createDiv({ cls: 'claudian-slash-info' });
+    const infoEl = itemEl.createDiv({ cls: 'cortex-slash-info' });
 
-    const headerRow = infoEl.createDiv({ cls: 'claudian-slash-item-header' });
+    const headerRow = infoEl.createDiv({ cls: 'cortex-slash-item-header' });
 
-    const nameEl = headerRow.createSpan({ cls: 'claudian-slash-item-name' });
+    const nameEl = headerRow.createSpan({ cls: 'cortex-slash-item-name' });
     nameEl.setText(`/${cmd.name}`);
 
     if (cmd.argumentHint) {
-      const hintEl = headerRow.createSpan({ cls: 'claudian-slash-item-hint' });
+      const hintEl = headerRow.createSpan({ cls: 'cortex-slash-item-hint' });
       hintEl.setText(cmd.argumentHint);
     }
 
     if (cmd.description) {
-      const descEl = infoEl.createDiv({ cls: 'claudian-slash-item-desc' });
+      const descEl = infoEl.createDiv({ cls: 'cortex-slash-item-desc' });
       descEl.setText(cmd.description);
     }
 
-    const actionsEl = itemEl.createDiv({ cls: 'claudian-slash-item-actions' });
+    const actionsEl = itemEl.createDiv({ cls: 'cortex-slash-item-actions' });
 
     const editBtn = actionsEl.createEl('button', {
-      cls: 'claudian-settings-action-btn',
+      cls: 'cortex-settings-action-btn',
       attr: { 'aria-label': 'Edit' },
     });
     setIcon(editBtn, 'pencil');
     editBtn.addEventListener('click', () => this.openCommandModal(cmd));
 
     const deleteBtn = actionsEl.createEl('button', {
-      cls: 'claudian-settings-action-btn claudian-settings-delete-btn',
+      cls: 'cortex-settings-action-btn cortex-settings-delete-btn',
       attr: { 'aria-label': 'Delete' },
     });
     setIcon(deleteBtn, 'trash-2');
@@ -273,14 +277,9 @@ export class SlashCommandSettings {
   }
 
   private openCommandModal(existingCmd: SlashCommand | null): void {
-    const modal = new SlashCommandModal(
-      this.plugin.app,
-      this.plugin,
-      existingCmd,
-      async (cmd) => {
-        await this.saveCommand(cmd, existingCmd);
-      }
-    );
+    const modal = new SlashCommandModal(this.plugin.app, this.plugin, existingCmd, async (cmd) => {
+      await this.saveCommand(cmd, existingCmd);
+    });
     modal.open();
   }
 
@@ -329,7 +328,7 @@ export class SlashCommandSettings {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = 'claudian-slash-commands.json';
+    a.download = 'cortex-slash-commands.json';
     a.click();
     URL.revokeObjectURL(url);
     new Notice(`Exported ${commands.length} slash command(s)`);
@@ -353,7 +352,7 @@ export class SlashCommandSettings {
 
         // Reload current commands to check for duplicates
         const existingCommands = await this.plugin.storage.commands.loadAll();
-        const existingNames = new Set(existingCommands.map(c => c.name.toLowerCase()));
+        const existingNames = new Set(existingCommands.map((c) => c.name.toLowerCase()));
 
         let imported = 0;
         for (const cmd of commands) {
@@ -380,7 +379,9 @@ export class SlashCommandSettings {
           }
 
           if (Array.isArray(cmd.allowedTools)) {
-            cmd.allowedTools = cmd.allowedTools.filter((t) => typeof t === 'string' && t.trim().length > 0);
+            cmd.allowedTools = cmd.allowedTools.filter(
+              (t) => typeof t === 'string' && t.trim().length > 0,
+            );
             if (cmd.allowedTools.length === 0) {
               cmd.allowedTools = undefined;
             }

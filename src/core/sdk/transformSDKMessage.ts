@@ -2,7 +2,7 @@
  * SDK Message Transformer
  *
  * Transforms Claude Agent SDK messages into StreamChunks for the UI.
- * Extracted from ClaudianService for better testability and separation of concerns.
+ * Extracted from CortexService for better testability and separation of concerns.
  *
  * SDK Message Types:
  * - 'system' - init, status, etc.
@@ -34,7 +34,7 @@ export interface TransformOptions {
  */
 export function* transformSDKMessage(
   message: SDKMessage,
-  options?: TransformOptions
+  options?: TransformOptions,
 ): Generator<TransformEvent> {
   // Capture parent_tool_use_id for subagent routing
   // null = main agent, non-null = subagent context
@@ -84,9 +84,10 @@ export function* transformSDKMessage(
         yield {
           type: 'tool_result',
           id: message.parent_tool_use_id,
-          content: typeof message.tool_use_result === 'string'
-            ? message.tool_use_result
-            : JSON.stringify(message.tool_use_result, null, 2),
+          content:
+            typeof message.tool_use_result === 'string'
+              ? message.tool_use_result
+              : JSON.stringify(message.tool_use_result, null, 2),
           isError: false,
           parentToolUseId,
         };
@@ -98,9 +99,10 @@ export function* transformSDKMessage(
             yield {
               type: 'tool_result',
               id: block.tool_use_id || message.parent_tool_use_id || '',
-              content: typeof block.content === 'string'
-                ? block.content
-                : JSON.stringify(block.content, null, 2),
+              content:
+                typeof block.content === 'string'
+                  ? block.content
+                  : JSON.stringify(block.content, null, 2),
               isError: block.is_error || false,
               parentToolUseId,
             };
@@ -120,7 +122,10 @@ export function* transformSDKMessage(
           input: event.content_block.input || {},
           parentToolUseId,
         };
-      } else if (event?.type === 'content_block_start' && event.content_block?.type === 'thinking') {
+      } else if (
+        event?.type === 'content_block_start' &&
+        event.content_block?.type === 'thinking'
+      ) {
         if (event.content_block.thinking) {
           yield { type: 'thinking', content: event.content_block.thinking, parentToolUseId };
         }
@@ -152,7 +157,10 @@ export function* transformSDKMessage(
           const cacheCreationInputTokens = usage.cacheCreationInputTokens ?? 0;
           const cacheReadInputTokens = usage.cacheReadInputTokens ?? 0;
           const contextTokens = inputTokens + cacheCreationInputTokens + cacheReadInputTokens;
-          const percentage = Math.min(100, Math.max(0, Math.round((contextTokens / usage.contextWindow!) * 100)));
+          const percentage = Math.min(
+            100,
+            Math.max(0, Math.round((contextTokens / usage.contextWindow!) * 100)),
+          );
 
           const usageInfo: UsageInfo = {
             model: modelName,

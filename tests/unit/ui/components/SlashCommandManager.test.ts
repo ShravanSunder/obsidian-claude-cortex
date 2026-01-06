@@ -7,13 +7,13 @@ import { parseSlashCommandContent } from '@/utils/slashCommand';
 function createMockApp(files: Record<string, string>) {
   return {
     vault: {
-      getAbstractFileByPath: jest.fn((p: string) => {
+      getAbstractFileByPath: vi.fn((p: string) => {
         if (!(p in files)) {
           return null;
         }
         return new (TFile as any)(p);
       }),
-      read: jest.fn(async (file: TFile) => files[file.path] ?? ''),
+      read: vi.fn(async (file: TFile) => files[file.path] ?? ''),
     },
   } as any;
 }
@@ -30,8 +30,14 @@ describe('SlashCommandManager', () => {
       ];
       manager.setCommands(commands);
 
-      expect(manager.detectCommand('/test one two')).toEqual({ commandName: 'test', args: 'one two' });
-      expect(manager.detectCommand('   /review-code  a   b ')).toEqual({ commandName: 'review-code', args: 'a   b' });
+      expect(manager.detectCommand('/test one two')).toEqual({
+        commandName: 'test',
+        args: 'one two',
+      });
+      expect(manager.detectCommand('   /review-code  a   b ')).toEqual({
+        commandName: 'review-code',
+        args: 'a   b',
+      });
       expect(manager.detectCommand('/unknown arg')).toBeNull();
     });
   });
@@ -72,7 +78,9 @@ describe('SlashCommandManager', () => {
       };
 
       const result = await manager.expandCommand(command, 'one "two words"');
-      expect(result.expandedPrompt).toBe('All: one "two words"\nFirst: one\nSecond: two words\nThird:');
+      expect(result.expandedPrompt).toBe(
+        'All: one "two words"\nFirst: one\nSecond: two words\nThird:',
+      );
     });
 
     it('should resolve @file references with boundary rules', async () => {
@@ -105,7 +113,7 @@ describe('SlashCommandManager', () => {
         'foo.md': '!`echo injected`',
       });
 
-      const bashRunner = jest.fn(async () => 'SHOULD_NOT_RUN');
+      const bashRunner = vi.fn(async () => 'SHOULD_NOT_RUN');
       const manager = new SlashCommandManager(app, '/vault', { bashRunner });
 
       const command: SlashCommand = {
@@ -121,7 +129,7 @@ describe('SlashCommandManager', () => {
 
     it('should block inline bash before execution', async () => {
       const app = createMockApp({});
-      const bashRunner = jest.fn(async () => 'OUT');
+      const bashRunner = vi.fn(async () => 'OUT');
       const manager = new SlashCommandManager(app, '/vault', { bashRunner });
 
       const command: SlashCommand = {
@@ -144,7 +152,7 @@ describe('SlashCommandManager', () => {
 
     it('should require approval for inline bash when configured', async () => {
       const app = createMockApp({});
-      const bashRunner = jest.fn(async () => 'OUT');
+      const bashRunner = vi.fn(async () => 'OUT');
       const manager = new SlashCommandManager(app, '/vault', { bashRunner });
 
       const command: SlashCommand = {
@@ -173,4 +181,3 @@ describe('SlashCommandManager', () => {
     });
   });
 });
-

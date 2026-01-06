@@ -1,13 +1,13 @@
 /**
- * Claudian - File context manager
+ * Cortex - File context manager
  *
  * Manages current note chip and @ mention dropdown.
  * Also handles MCP server @-mentions for context-saving mode.
  */
 
+import * as path from 'path';
 import type { App, EventRef } from 'obsidian';
 import { Notice, TFile } from 'obsidian';
-import * as path from 'path';
 
 import type { McpService } from '../../features/mcp/McpService';
 import { getVaultPath, isPathWithinVault, normalizePathForFilesystem } from '../../utils/path';
@@ -47,7 +47,7 @@ export class FileContextManager {
     app: App,
     containerEl: HTMLElement,
     inputEl: HTMLTextAreaElement,
-    callbacks: FileContextCallbacks
+    callbacks: FileContextCallbacks,
   ) {
     this.app = app;
     this.containerEl = containerEl;
@@ -74,25 +74,23 @@ export class FileContextManager {
         try {
           await this.app.workspace.getLeaf().openFile(file);
         } catch (error) {
-          new Notice(`Failed to open file: ${error instanceof Error ? error.message : String(error)}`);
+          new Notice(
+            `Failed to open file: ${error instanceof Error ? error.message : String(error)}`,
+          );
         }
       },
     });
 
-    this.mentionDropdown = new MentionDropdownController(
-      this.containerEl,
-      this.inputEl,
-      {
-        onAttachFile: (filePath) => this.state.attachFile(filePath),
-        onMcpMentionChange: (servers) => this.onMcpMentionChange?.(servers),
-        getMentionedMcpServers: () => this.state.getMentionedMcpServers(),
-        setMentionedMcpServers: (mentions) => this.state.setMentionedMcpServers(mentions),
-        addMentionedMcpServer: (name) => this.state.addMentionedMcpServer(name),
-        getContextPaths: () => this.callbacks.getContextPaths?.() || [],
-        getCachedMarkdownFiles: () => this.fileCache.getFiles(),
-        normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath),
-      }
-    );
+    this.mentionDropdown = new MentionDropdownController(this.containerEl, this.inputEl, {
+      onAttachFile: (filePath) => this.state.attachFile(filePath),
+      onMcpMentionChange: (servers) => this.onMcpMentionChange?.(servers),
+      getMentionedMcpServers: () => this.state.getMentionedMcpServers(),
+      setMentionedMcpServers: (mentions) => this.state.setMentionedMcpServers(mentions),
+      addMentionedMcpServer: (name) => this.state.addMentionedMcpServer(name),
+      getContextPaths: () => this.callbacks.getContextPaths?.() || [],
+      getCachedMarkdownFiles: () => this.fileCache.getFiles(),
+      normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath),
+    });
 
     this.deleteEventRef = this.app.vault.on('delete', (file) => {
       if (file instanceof TFile) this.handleFileDeleted(file.path);
@@ -347,9 +345,9 @@ export class FileContextManager {
     }
 
     if (cache.tags) {
-      fileTags.push(...cache.tags.map(t => t.tag.replace(/^#/, '')));
+      fileTags.push(...cache.tags.map((t) => t.tag.replace(/^#/, '')));
     }
 
-    return fileTags.some(tag => excludedTags.includes(tag));
+    return fileTags.some((tag) => excludedTags.includes(tag));
   }
 }

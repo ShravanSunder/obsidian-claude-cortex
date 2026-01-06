@@ -1,5 +1,5 @@
 /**
- * Claudian - Instruction refine service
+ * Cortex - Instruction refine service
  *
  * Lightweight Claude query service for refining user instructions.
  * Uses read-only tools and parses <instruction> tags from response.
@@ -11,7 +11,7 @@ import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
 import { buildRefineSystemPrompt } from '../../../core/prompts/instructionRefine';
 import { TOOL_GLOB, TOOL_GREP, TOOL_READ } from '../../../core/tools/toolNames';
 import { type InstructionRefineResult, THINKING_BUDGETS } from '../../../core/types';
-import type ClaudianPlugin from '../../../main';
+import type CortexPlugin from '../../../main';
 import { getEnhancedPath, parseEnvironmentVariables } from '../../../utils/env';
 import { getVaultPath, isPathWithinVault as isPathWithinVaultUtil } from '../../../utils/path';
 
@@ -22,12 +22,12 @@ export type RefineProgressCallback = (update: InstructionRefineResult) => void;
 
 /** Service for refining user instructions with Claude. */
 export class InstructionRefineService {
-  private plugin: ClaudianPlugin;
+  private plugin: CortexPlugin;
   private abortController: AbortController | null = null;
   private sessionId: string | null = null;
-  private existingInstructions: string = '';
+  private existingInstructions = '';
 
-  constructor(plugin: ClaudianPlugin) {
+  constructor(plugin: CortexPlugin) {
     this.plugin = plugin;
   }
 
@@ -40,7 +40,7 @@ export class InstructionRefineService {
   async refineInstruction(
     rawInstruction: string,
     existingInstructions: string,
-    onProgress?: RefineProgressCallback
+    onProgress?: RefineProgressCallback,
   ): Promise<InstructionRefineResult> {
     this.sessionId = null;
     this.existingInstructions = existingInstructions;
@@ -51,7 +51,7 @@ export class InstructionRefineService {
   /** Continues conversation with a follow-up message (for clarifications). */
   async continueConversation(
     message: string,
-    onProgress?: RefineProgressCallback
+    onProgress?: RefineProgressCallback,
   ): Promise<InstructionRefineResult> {
     if (!this.sessionId) {
       return { success: false, error: 'No active conversation to continue' };
@@ -69,7 +69,7 @@ export class InstructionRefineService {
 
   private async sendMessage(
     prompt: string,
-    onProgress?: RefineProgressCallback
+    onProgress?: RefineProgressCallback,
   ): Promise<InstructionRefineResult> {
     const vaultPath = getVaultPath(this.plugin.app);
     if (!vaultPath) {
@@ -101,10 +101,7 @@ export class InstructionRefineService {
       permissionMode: 'bypassPermissions',
       allowDangerouslySkipPermissions: true,
       hooks: {
-        PreToolUse: [
-          this.createReadOnlyHook(),
-          this.createVaultRestrictionHook(vaultPath),
-        ],
+        PreToolUse: [this.createReadOnlyHook(), this.createVaultRestrictionHook(vaultPath)],
       },
     };
 
@@ -113,7 +110,7 @@ export class InstructionRefineService {
     }
 
     const budgetSetting = this.plugin.settings.thinkingBudget;
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === budgetSetting);
+    const budgetConfig = THINKING_BUDGETS.find((b) => b.value === budgetSetting);
     if (budgetConfig && budgetConfig.tokens > 0) {
       options.maxThinkingTokens = budgetConfig.tokens;
     }
@@ -169,14 +166,19 @@ export class InstructionRefineService {
   }
 
   /** Extracts text content from SDK message. */
-  private extractTextFromMessage(message: { type: string; message?: { content?: Array<{ type: string; text?: string }> } }): string {
+  private extractTextFromMessage(message: {
+    type: string;
+    message?: { content?: Array<{ type: string; text?: string }> };
+  }): string {
     if (message.type !== 'assistant' || !message.message?.content) {
       return '';
     }
 
     return message.message.content
-      .filter((block): block is { type: 'text'; text: string } => block.type === 'text' && !!block.text)
-      .map(block => block.text)
+      .filter(
+        (block): block is { type: 'text'; text: string } => block.type === 'text' && !!block.text,
+      )
+      .map((block) => block.text)
       .join('');
   }
 
@@ -191,7 +193,7 @@ export class InstructionRefineService {
           };
           const toolName = input.tool_name;
 
-          if (READ_ONLY_TOOLS.includes(toolName as typeof READ_ONLY_TOOLS[number])) {
+          if (READ_ONLY_TOOLS.includes(toolName as (typeof READ_ONLY_TOOLS)[number])) {
             return { continue: true };
           }
 
@@ -224,8 +226,8 @@ export class InstructionRefineService {
           if (toolName === 'Read' || toolName === 'Glob' || toolName === 'Grep') {
             const filePath =
               toolName === 'Read'
-                ? ((toolInput.file_path as string) || '')
-                : (((toolInput.path as string) || (toolInput.pattern as string)) || '');
+                ? (toolInput.file_path as string) || ''
+                : (toolInput.path as string) || (toolInput.pattern as string) || '';
             if (filePath && !isPathWithinVaultUtil(filePath, vaultPath)) {
               return {
                 continue: false,

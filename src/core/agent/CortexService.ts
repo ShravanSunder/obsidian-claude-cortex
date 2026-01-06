@@ -1,42 +1,49 @@
 /**
- * Claudian - Claude Agent SDK wrapper
+ * Cortex - Claude Agent SDK wrapper
  *
  * Handles communication with Claude via the Agent SDK. Manages streaming,
  * session persistence, permission modes, and security hooks.
  */
 
-import type { CanUseTool, Options, PermissionResult, Query, SDKUserMessage } from '@anthropic-ai/claude-agent-sdk';
-import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
 import * as os from 'os';
 import * as path from 'path';
+import type {
+  CanUseTool,
+  Options,
+  PermissionResult,
+  Query,
+  SDKUserMessage,
+} from '@anthropic-ai/claude-agent-sdk';
+import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
 
-import type ClaudianPlugin from '../../main';
+import type CortexPlugin from '../../main';
 import { stripCurrentNotePrefix } from '../../utils/context';
 import { getEnhancedPath, parseEnvironmentVariables } from '../../utils/env';
 import {
+  type PathAccessType,
   getPathAccessType,
   getVaultPath,
   normalizePathForFilesystem,
-  type PathAccessType,
 } from '../../utils/path';
 import { buildContextFromHistory, getLastUserMessage } from '../../utils/session';
 import {
+  type DiffContentEntry,
+  type FileEditPostCallback,
   createBlocklistHook,
   createFileHashPostHook,
   createFileHashPreHook,
   createVaultRestrictionHook,
-  type DiffContentEntry,
-  type FileEditPostCallback,
 } from '../hooks';
 import { hydrateImagesData } from '../images/imageLoader';
 import type { McpServerManager } from '../mcp';
 import { buildSystemPrompt } from '../prompts/mainAgent';
 import { isSessionInitEvent, isStreamChunk, transformSDKMessage } from '../sdk';
+import { ApprovalManager, getActionDescription } from '../security';
 import {
-  ApprovalManager,
-  getActionDescription,
-} from '../security';
-import { TOOL_ASK_USER_QUESTION, TOOL_ENTER_PLAN_MODE, TOOL_EXIT_PLAN_MODE } from '../tools/toolNames';
+  TOOL_ASK_USER_QUESTION,
+  TOOL_ENTER_PLAN_MODE,
+  TOOL_EXIT_PLAN_MODE,
+} from '../tools/toolNames';
 import type {
   AskUserQuestionCallback,
   AskUserQuestionInput,
@@ -86,12 +93,12 @@ function createMessageChannel<T>(): MessageChannel<T> {
               if (closed) {
                 return { value: undefined as T, done: true };
               }
-              return new Promise(resolve => {
+              return new Promise((resolve) => {
                 resolver = resolve;
               });
-            }
+            },
           };
-        }
+        },
       };
     },
     close() {
@@ -99,7 +106,7 @@ function createMessageChannel<T>(): MessageChannel<T> {
       if (resolver) {
         resolver({ value: undefined as T, done: true });
       }
-    }
+    },
   };
 }
 
@@ -205,7 +212,7 @@ class DiffStore {
 export type ApprovalCallback = (
   toolName: string,
   input: Record<string, unknown>,
-  description: string
+  description: string,
 ) => Promise<'allow' | 'allow-always' | 'deny' | 'cancel'>;
 
 /** Options for query execution with optional overrides. */
@@ -234,8 +241,8 @@ export type ExitPlanModeCallback = (planContent: string) => Promise<ExitPlanMode
 export type EnterPlanModeCallback = () => Promise<void>;
 
 /** Service for interacting with Claude via the Agent SDK. */
-export class ClaudianService {
-  private plugin: ClaudianPlugin;
+export class CortexService {
+  private plugin: CortexPlugin;
   private abortController: AbortController | null = null;
   private approvalCallback: ApprovalCallback | null = null;
   private askUserQuestionCallback: AskUserQuestionCallback | null = null;
@@ -273,14 +280,12 @@ export class ClaudianService {
   // Store AskUserQuestion answers by tool_use_id
   private askUserQuestionAnswers = new Map<string, Record<string, string | string[]>>();
 
-  constructor(plugin: ClaudianPlugin, mcpManager: McpServerManager) {
+  constructor(plugin: CortexPlugin, mcpManager: McpServerManager) {
     this.plugin = plugin;
     this.mcpManager = mcpManager;
 
     // Initialize approval manager with access to persistent approvals
-    this.approvalManager = new ApprovalManager(
-      () => this.plugin.settings.permissions
-    );
+    this.approvalManager = new ApprovalManager(() => this.plugin.settings.permissions);
 
     // Set up persistence callback for permanent approvals
     this.approvalManager.setPersistCallback(async (action: Permission) => {
@@ -328,7 +333,11 @@ export class ClaudianService {
     }
   }
 
-  private async doPreWarm(vaultPath: string, cliPath: string, resumeSessionId?: string): Promise<void> {
+  private async doPreWarm(
+    vaultPath: string,
+    cliPath: string,
+    resumeSessionId?: string,
+  ): Promise<void> {
     try {
       await this.startPersistentQuery(vaultPath, cliPath, resumeSessionId);
     } catch {
@@ -341,7 +350,11 @@ export class ClaudianService {
    * Starts a persistent query with a message generator that keeps the subprocess alive.
    * The subprocess remains running until explicitly closed.
    */
-  private async startPersistentQuery(cwd: string, cliPath: string, resumeSessionId?: string): Promise<void> {
+  private async startPersistentQuery(
+    cwd: string,
+    cliPath: string,
+    resumeSessionId?: string,
+  ): Promise<void> {
     this.vaultPath = cwd;
     this.messageChannel = createMessageChannel<SDKUserMessage>();
     this.queryAbortController = new AbortController();
@@ -359,9 +372,13 @@ export class ClaudianService {
     await this.persistentQuery.setModel(model);
     this.currentModel = model;
 
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === this.plugin.settings.thinkingBudget);
-    this.currentThinkingTokens = budgetConfig && budgetConfig.tokens > 0 ? budgetConfig.tokens : null;
-    this.currentPermissionMode = this.plugin.settings.permissionMode === 'yolo' ? 'bypassPermissions' : 'default';
+    const budgetConfig = THINKING_BUDGETS.find(
+      (b) => b.value === this.plugin.settings.thinkingBudget,
+    );
+    this.currentThinkingTokens =
+      budgetConfig && budgetConfig.tokens > 0 ? budgetConfig.tokens : null;
+    this.currentPermissionMode =
+      this.plugin.settings.permissionMode === 'yolo' ? 'bypassPermissions' : 'default';
     this.currentMcpServersKey = null;
   }
 
@@ -400,7 +417,7 @@ export class ClaudianService {
       cwd,
       this.diffStore.getOriginalContents(),
       this.diffStore.getPendingDiffData(),
-      postCallback
+      postCallback,
     );
 
     // Build system prompt (base version - context-specific parts added per-message)
@@ -447,7 +464,9 @@ export class ClaudianService {
     }
 
     // Thinking budget
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === this.plugin.settings.thinkingBudget);
+    const budgetConfig = THINKING_BUDGETS.find(
+      (b) => b.value === this.plugin.settings.thinkingBudget,
+    );
     if (budgetConfig && budgetConfig.tokens > 0) {
       options.maxThinkingTokens = budgetConfig.tokens;
     }
@@ -480,7 +499,7 @@ export class ClaudianService {
 
         // Transform SDK message to stream chunks
         for (const event of transformSDKMessage(message, {
-          intendedModel: this.plugin.settings.model
+          intendedModel: this.plugin.settings.model,
         })) {
           if (isSessionInitEvent(event)) {
             this.sessionManager.captureSession(event.sessionId);
@@ -497,10 +516,11 @@ export class ClaudianService {
       }
     } catch (error) {
       // AbortError is expected when we intentionally close the query (new conversation, cleanup, etc.)
-      const isAbortError = error instanceof Error &&
+      const isAbortError =
+        error instanceof Error &&
         (error.name === 'AbortError' || error.message.includes('aborted'));
       if (!isAbortError) {
-        console.error('[Claudian] Response consumer error:', error);
+        console.error('[Cortex] Response consumer error:', error);
         this.notifyResponseError(error instanceof Error ? error : new Error(String(error)));
       }
     } finally {
@@ -586,7 +606,7 @@ export class ClaudianService {
     prompt: string,
     images?: ImageAttachment[],
     conversationHistory?: ChatMessage[],
-    queryOptions?: QueryOptions
+    queryOptions?: QueryOptions,
   ): AsyncGenerator<StreamChunk> {
     const vaultPath = getVaultPath(this.plugin.app);
     if (!vaultPath) {
@@ -611,7 +631,8 @@ export class ClaudianService {
         const sessionId = this.sessionManager.getSessionId();
         await this.startPersistentQuery(vaultPath, resolvedClaudePath, sessionId ?? undefined);
       } catch (error) {
-        const msg = error instanceof Error ? error.message : 'Unknown error starting persistent query';
+        const msg =
+          error instanceof Error ? error.message : 'Unknown error starting persistent query';
         yield { type: 'error', content: msg };
         return;
       }
@@ -628,7 +649,11 @@ export class ClaudianService {
 
     // After interruption, session is broken - rebuild context proactively
     let queryPrompt = prompt;
-    if (this.sessionManager.wasInterrupted() && conversationHistory && conversationHistory.length > 0) {
+    if (
+      this.sessionManager.wasInterrupted() &&
+      conversationHistory &&
+      conversationHistory.length > 0
+    ) {
       const historyContext = buildContextFromHistory(conversationHistory);
       if (historyContext) {
         queryPrompt = `${historyContext}\n\nUser: ${prompt}`;
@@ -638,15 +663,16 @@ export class ClaudianService {
     }
 
     // Rebuild history if no session exists but we have conversation history
-    const noSessionButHasHistory = !this.sessionManager.getSessionId() &&
-      conversationHistory && conversationHistory.length > 0;
+    const noSessionButHasHistory =
+      !this.sessionManager.getSessionId() && conversationHistory && conversationHistory.length > 0;
 
     if (noSessionButHasHistory) {
       if (conversationHistory && conversationHistory.length > 0) {
         const historyContext = buildContextFromHistory(conversationHistory);
         const lastUserMessage = getLastUserMessage(conversationHistory);
         const actualPrompt = stripCurrentNotePrefix(prompt);
-        const shouldAppendPrompt = !lastUserMessage || lastUserMessage.content.trim() !== actualPrompt.trim();
+        const shouldAppendPrompt =
+          !lastUserMessage || lastUserMessage.content.trim() !== actualPrompt.trim();
         queryPrompt = historyContext
           ? shouldAppendPrompt
             ? `${historyContext}\n\nUser: ${prompt}`
@@ -706,7 +732,7 @@ export class ClaudianService {
     const content: Array<{ type: string; [key: string]: unknown }> = [];
 
     // Add images first (Claude recommends images before text)
-    for (const image of images.filter(img => !!img.data)) {
+    for (const image of images.filter((img) => !!img.data)) {
       content.push({
         type: 'image',
         source: {
@@ -774,7 +800,7 @@ export class ClaudianService {
             if (done) {
               return { value: undefined as unknown as StreamChunk, done: true };
             }
-            return new Promise(resolve => {
+            return new Promise((resolve) => {
               resolver = resolve;
             });
           },
@@ -796,7 +822,9 @@ export class ClaudianService {
       this.currentModel = model;
     }
 
-    const budgetConfig = THINKING_BUDGETS.find(b => b.value === this.plugin.settings.thinkingBudget);
+    const budgetConfig = THINKING_BUDGETS.find(
+      (b) => b.value === this.plugin.settings.thinkingBudget,
+    );
     if (budgetConfig) {
       const tokens = budgetConfig.tokens > 0 ? budgetConfig.tokens : null;
       if (tokens !== this.currentThinkingTokens) {
@@ -814,7 +842,9 @@ export class ClaudianService {
       permissionMode = 'default';
     }
     if (permissionMode !== this.currentPermissionMode) {
-      await this.persistentQuery.setPermissionMode(permissionMode as 'plan' | 'bypassPermissions' | 'default');
+      await this.persistentQuery.setPermissionMode(
+        permissionMode as 'plan' | 'bypassPermissions' | 'default',
+      );
       this.currentPermissionMode = permissionMode;
     }
 
@@ -937,7 +967,7 @@ export class ClaudianService {
       filePath,
       this.plugin.settings.allowedContextPaths,
       this.plugin.settings.allowedExportPaths,
-      this.vaultPath
+      this.vaultPath,
     );
   }
 
@@ -993,7 +1023,7 @@ export class ClaudianService {
    */
   private async handleAskUserQuestionTool(
     input: Record<string, unknown>,
-    toolUseId?: string
+    toolUseId?: string,
   ): Promise<PermissionResult> {
     if (!this.askUserQuestionCallback) {
       return {
@@ -1066,7 +1096,7 @@ export class ClaudianService {
    */
   private async handleExitPlanModeTool(
     input: Record<string, unknown>,
-    _toolUseId?: string
+    _toolUseId?: string,
   ): Promise<PermissionResult> {
     if (!this.exitPlanModeCallback) {
       return {
@@ -1110,14 +1140,16 @@ export class ClaudianService {
           // We use 'deny' with a success message because the SDK would otherwise continue in plan mode
           return {
             behavior: 'deny',
-            message: 'PLAN APPROVED. Plan mode has ended. The user has approved your plan and it has been saved. Implementation will begin with a new query that has full tool access.',
+            message:
+              'PLAN APPROVED. Plan mode has ended. The user has approved your plan and it has been saved. Implementation will begin with a new query that has full tool access.',
             interrupt: true,
           };
         case 'approve_new_session':
           // Plan approved with fresh session - interrupt and let caller handle
           return {
             behavior: 'deny',
-            message: 'PLAN APPROVED WITH NEW SESSION. Plan mode has ended. Implementation will begin with a fresh session that has full tool access.',
+            message:
+              'PLAN APPROVED WITH NEW SESSION. Plan mode has ended. Implementation will begin with a fresh session that has full tool access.',
             interrupt: true,
           };
         case 'revise': {
@@ -1158,7 +1190,7 @@ export class ClaudianService {
    */
   private async handleNormalModeApproval(
     toolName: string,
-    input: Record<string, unknown>
+    input: Record<string, unknown>,
   ): Promise<PermissionResult> {
     // Check if action is pre-approved
     if (this.approvalManager.isActionApproved(toolName, input)) {

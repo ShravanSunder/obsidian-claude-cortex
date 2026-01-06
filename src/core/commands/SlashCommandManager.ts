@@ -1,17 +1,17 @@
 /**
- * Claudian - Slash command manager
+ * Cortex - Slash command manager
  *
  * Core logic for parsing and expanding slash commands with Claude Code compatibility.
  * Supports $ARGUMENTS, $1/$2, @file references, and !`bash` execution.
  */
 
 import { exec } from 'child_process';
-import type { App} from 'obsidian';
+import type { App } from 'obsidian';
 import { TFile } from 'obsidian';
 
 import { getEnhancedPath } from '../../utils/env';
 import { parseSlashCommandContent } from '../../utils/slashCommand';
-import type { ClaudeModel,SlashCommand } from '../types';
+import type { ClaudeModel, SlashCommand } from '../types';
 
 type BashRunner = (command: string, cwd: string) => Promise<string>;
 
@@ -74,9 +74,10 @@ export class SlashCommandManager {
   getMatchingCommands(prefix: string): SlashCommand[] {
     const prefixLower = prefix.toLowerCase();
     return this.getCommands()
-      .filter(cmd =>
-        cmd.name.toLowerCase().includes(prefixLower) ||
-        cmd.description?.toLowerCase().includes(prefixLower)
+      .filter(
+        (cmd) =>
+          cmd.name.toLowerCase().includes(prefixLower) ||
+          cmd.description?.toLowerCase().includes(prefixLower),
       )
       .slice(0, 10);
   }
@@ -110,7 +111,11 @@ export class SlashCommandManager {
    * Expands a command with arguments.
    * Processes frontmatter, placeholders, file references, and bash execution.
    */
-  async expandCommand(command: SlashCommand, args: string, options: SlashCommandExpansionOptions = {}): Promise<ExpansionResult> {
+  async expandCommand(
+    command: SlashCommand,
+    args: string,
+    options: SlashCommandExpansionOptions = {},
+  ): Promise<ExpansionResult> {
     const errors: string[] = [];
 
     // Parse frontmatter from command content
@@ -128,7 +133,9 @@ export class SlashCommandManager {
       result = bashResult.content;
       errors.push(...bashResult.errors);
     } catch (error) {
-      errors.push(`Bash execution error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `Bash execution error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
 
     // Resolve @file references
@@ -137,7 +144,9 @@ export class SlashCommandManager {
       result = fileResult.content;
       errors.push(...fileResult.errors);
     } catch (error) {
-      errors.push(`File reference error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      errors.push(
+        `File reference error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
 
     return {
@@ -194,7 +203,9 @@ export class SlashCommandManager {
    * Resolves @file references in content.
    * Replaces @path/to/file.md with file contents.
    */
-  private async resolveFileReferences(content: string): Promise<{ content: string; errors: string[] }> {
+  private async resolveFileReferences(
+    content: string,
+  ): Promise<{ content: string; errors: string[] }> {
     // Pattern: boundary + @"path" or @'path' or @path.ext (must have extension)
     // Boundary is included and preserved during replacement.
     const pattern = /(^|[^\w])@(?:"([^"]+)"|'([^']+)'|([^\s]+\.\w+))/g;
@@ -228,7 +239,7 @@ export class SlashCommandManager {
         }
       } catch (error) {
         errors.push(
-          `File reference failed: ${m.path} (${error instanceof Error ? error.message : 'Unknown error'})`
+          `File reference failed: ${m.path} (${error instanceof Error ? error.message : 'Unknown error'})`,
         );
       }
     }
@@ -242,7 +253,7 @@ export class SlashCommandManager {
    */
   private async executeInlineBash(
     content: string,
-    bashOptions?: BashExpansionOptions
+    bashOptions?: BashExpansionOptions,
   ): Promise<{ content: string; errors: string[] }> {
     // Pattern: !`command here`
     const pattern = /!`([^`]+)`/g;
@@ -263,7 +274,10 @@ export class SlashCommandManager {
       try {
         if (!bashOptions?.enabled) {
           errors.push(`Inline bash is disabled: ${m.command}`);
-          result = result.slice(0, m.index) + `[Inline bash disabled]` + result.slice(m.index + m.full.length);
+          result =
+            result.slice(0, m.index) +
+            `[Inline bash disabled]` +
+            result.slice(m.index + m.full.length);
           continue;
         }
 
@@ -312,7 +326,7 @@ function defaultBashRunner(command: string, cwd: string): Promise<string> {
         } else {
           resolve(stdout);
         }
-      }
+      },
     );
   });
 }

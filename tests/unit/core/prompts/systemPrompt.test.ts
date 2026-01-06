@@ -1,4 +1,4 @@
-jest.mock('@/utils/date', () => ({
+vi.mock('@/utils/date', () => ({
   getTodayDate: () => 'Mocked Date',
 }));
 
@@ -26,7 +26,7 @@ describe('systemPrompt', () => {
     it('should include base system prompt elements', () => {
       const prompt = buildSystemPrompt();
       expect(prompt).toContain('Mocked Date');
-      expect(prompt).toContain('Claudian');
+      expect(prompt).toContain('Cortex');
       expect(prompt).toContain('# Critical Path Rules');
       expect(prompt).toContain('# User Message Format');
     });

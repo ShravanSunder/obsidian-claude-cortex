@@ -2,7 +2,10 @@
  * Tests for ConversationController - Conversation Lifecycle
  */
 
-import { ConversationController, type ConversationControllerDeps } from '@/features/chat/controllers/ConversationController';
+import {
+  ConversationController,
+  type ConversationControllerDeps,
+} from '@/features/chat/controllers/ConversationController';
 import { ChatState } from '@/features/chat/state/ChatState';
 
 // Helper to create mock DOM element
@@ -21,7 +24,9 @@ function createMockElement(): any {
     addClass: (cls: string) => classList.add(cls),
     removeClass: (cls: string) => classList.delete(cls),
     hasClass: (cls: string) => classList.has(cls),
-    empty: () => { children.length = 0; },
+    empty: () => {
+      children.length = 0;
+    },
     createDiv: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement();
       if (opts?.cls) child.addClass(opts.cls);
@@ -40,10 +45,10 @@ function createMockElement(): any {
       children.push(child);
       return child;
     },
-    setAttribute: jest.fn(),
-    addEventListener: jest.fn(),
-    querySelector: jest.fn().mockReturnValue(null),
-    setText: jest.fn(),
+    setAttribute: vi.fn(),
+    addEventListener: vi.fn(),
+    querySelector: vi.fn().mockReturnValue(null),
+    setText: vi.fn(),
     textContent: '',
   };
 
@@ -51,7 +56,9 @@ function createMockElement(): any {
 }
 
 // Helper to create mock dependencies
-function createMockDeps(overrides: Partial<ConversationControllerDeps> = {}): ConversationControllerDeps {
+function createMockDeps(
+  overrides: Partial<ConversationControllerDeps> = {},
+): ConversationControllerDeps {
   const state = new ChatState();
   const inputEl = { value: '' } as HTMLTextAreaElement;
   const historyDropdown = createMockElement();
@@ -59,16 +66,16 @@ function createMockDeps(overrides: Partial<ConversationControllerDeps> = {}): Co
   const messagesEl = createMockElement();
 
   const fileContextManager = {
-    resetForNewConversation: jest.fn(),
-    resetForLoadedConversation: jest.fn(),
-    autoAttachActiveFile: jest.fn(),
-    setCurrentNote: jest.fn(),
-    getCurrentNotePath: jest.fn().mockReturnValue(null),
+    resetForNewConversation: vi.fn(),
+    resetForLoadedConversation: vi.fn(),
+    autoAttachActiveFile: vi.fn(),
+    setCurrentNote: vi.fn(),
+    getCurrentNotePath: vi.fn().mockReturnValue(null),
   };
 
   return {
     plugin: {
-      createConversation: jest.fn().mockResolvedValue({
+      createConversation: vi.fn().mockResolvedValue({
         id: 'new-conv',
         title: 'New Conversation',
         messages: [],
@@ -76,7 +83,7 @@ function createMockDeps(overrides: Partial<ConversationControllerDeps> = {}): Co
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }),
-      switchConversation: jest.fn().mockResolvedValue({
+      switchConversation: vi.fn().mockResolvedValue({
         id: 'switched-conv',
         title: 'Switched Conversation',
         messages: [],
@@ -84,15 +91,15 @@ function createMockDeps(overrides: Partial<ConversationControllerDeps> = {}): Co
         createdAt: Date.now(),
         updatedAt: Date.now(),
       }),
-      getActiveConversation: jest.fn().mockReturnValue(null),
-      getConversationById: jest.fn().mockReturnValue(null),
-      getConversationList: jest.fn().mockReturnValue([]),
-      findEmptyConversation: jest.fn().mockReturnValue(null),
-      updateConversation: jest.fn().mockResolvedValue(undefined),
-      renameConversation: jest.fn().mockResolvedValue(undefined),
+      getActiveConversation: vi.fn().mockReturnValue(null),
+      getConversationById: vi.fn().mockReturnValue(null),
+      getConversationList: vi.fn().mockReturnValue([]),
+      findEmptyConversation: vi.fn().mockReturnValue(null),
+      updateConversation: vi.fn().mockResolvedValue(undefined),
+      renameConversation: vi.fn().mockResolvedValue(undefined),
       agentService: {
-        getSessionId: jest.fn().mockReturnValue(null),
-        setSessionId: jest.fn(),
+        getSessionId: vi.fn().mockReturnValue(null),
+        setSessionId: vi.fn(),
       },
       settings: {
         userName: '',
@@ -102,41 +109,47 @@ function createMockDeps(overrides: Partial<ConversationControllerDeps> = {}): Co
     } as any,
     state,
     renderer: {
-      renderMessages: jest.fn().mockReturnValue(createMockElement()),
+      renderMessages: vi.fn().mockReturnValue(createMockElement()),
     } as any,
     asyncSubagentManager: {
-      orphanAllActive: jest.fn(),
+      orphanAllActive: vi.fn(),
     } as any,
     getHistoryDropdown: () => historyDropdown as any,
     getWelcomeEl: () => welcomeEl,
-    setWelcomeEl: (el: any) => { welcomeEl = el; },
+    setWelcomeEl: (el: any) => {
+      welcomeEl = el;
+    },
     getMessagesEl: () => messagesEl as any,
     getInputEl: () => inputEl,
     getFileContextManager: () => fileContextManager as any,
-    getImageContextManager: () => ({
-      clearImages: jest.fn(),
-    }) as any,
-    getMcpServerSelector: () => ({
-      clearEnabled: jest.fn(),
-      getEnabledServers: jest.fn().mockReturnValue(new Set()),
-      setEnabledServers: jest.fn(),
-    }) as any,
-    getContextPathSelector: () => ({
-      getContextPaths: jest.fn().mockReturnValue([]),
-      setContextPaths: jest.fn(),
-      clearContextPaths: jest.fn(),
-    }) as any,
-    clearQueuedMessage: jest.fn(),
-    getApprovedPlan: jest.fn().mockReturnValue(null),
-    setApprovedPlan: jest.fn(),
-    showPlanBanner: jest.fn(),
-    hidePlanBanner: jest.fn(),
-    triggerPendingPlanApproval: jest.fn(),
+    getImageContextManager: () =>
+      ({
+        clearImages: vi.fn(),
+      }) as any,
+    getMcpServerSelector: () =>
+      ({
+        clearEnabled: vi.fn(),
+        getEnabledServers: vi.fn().mockReturnValue(new Set()),
+        setEnabledServers: vi.fn(),
+      }) as any,
+    getContextPathSelector: () =>
+      ({
+        getContextPaths: vi.fn().mockReturnValue([]),
+        setContextPaths: vi.fn(),
+        clearContextPaths: vi.fn(),
+      }) as any,
+    clearQueuedMessage: vi.fn(),
+    getApprovedPlan: vi.fn().mockReturnValue(null),
+    setApprovedPlan: vi.fn(),
+    showPlanBanner: vi.fn(),
+    hidePlanBanner: vi.fn(),
+    triggerPendingPlanApproval: vi.fn(),
     getTitleGenerationService: () => null,
-    setPlanModeActive: jest.fn(),
-    getTodoPanel: () => ({
-      remount: jest.fn(),
-    }) as any,
+    setPlanModeActive: vi.fn(),
+    getTodoPanel: () =>
+      ({
+        remount: vi.fn(),
+      }) as any,
     ...overrides,
   };
 }
@@ -146,7 +159,7 @@ describe('ConversationController - Queue Management', () => {
   let deps: ConversationControllerDeps;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     deps = createMockDeps();
     controller = new ConversationController(deps);
   });
@@ -190,7 +203,7 @@ describe('ConversationController - Queue Management', () => {
     it('should clear todos for new conversation', async () => {
       // Set up existing todos
       deps.state.currentTodos = [
-        { content: 'Existing todo', status: 'pending', activeForm: 'Doing existing todo' }
+        { content: 'Existing todo', status: 'pending', activeForm: 'Doing existing todo' },
       ];
       expect(deps.state.currentTodos).not.toBeNull();
 
@@ -208,8 +221,8 @@ describe('ConversationController - Queue Management', () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      (deps.plugin.findEmptyConversation as jest.Mock).mockReturnValue(emptyConv);
-      (deps.plugin.switchConversation as jest.Mock).mockResolvedValue(emptyConv);
+      (deps.plugin.findEmptyConversation as import('vitest').Mock).mockReturnValue(emptyConv);
+      (deps.plugin.switchConversation as import('vitest').Mock).mockResolvedValue(emptyConv);
 
       await controller.createNew();
 
@@ -220,7 +233,7 @@ describe('ConversationController - Queue Management', () => {
     });
 
     it('should create new conversation if no empty conversation exists', async () => {
-      (deps.plugin.findEmptyConversation as jest.Mock).mockReturnValue(null);
+      (deps.plugin.findEmptyConversation as import('vitest').Mock).mockReturnValue(null);
 
       await controller.createNew();
 
@@ -238,8 +251,8 @@ describe('ConversationController - Queue Management', () => {
         createdAt: Date.now(),
         updatedAt: Date.now(),
       };
-      (deps.plugin.findEmptyConversation as jest.Mock).mockReturnValue(emptyConv);
-      (deps.plugin.switchConversation as jest.Mock).mockResolvedValue(null);
+      (deps.plugin.findEmptyConversation as import('vitest').Mock).mockReturnValue(emptyConv);
+      (deps.plugin.switchConversation as import('vitest').Mock).mockResolvedValue(null);
 
       await controller.createNew();
 
@@ -314,7 +327,7 @@ describe('ConversationController - Queue Management', () => {
         isInPlanMode: false,
       };
       deps.plugin.settings.permissionMode = 'plan';
-      deps.plugin.getActiveConversation = jest.fn().mockReturnValue(conversation);
+      deps.plugin.getActiveConversation = vi.fn().mockReturnValue(conversation);
 
       await controller.loadActive();
 
@@ -325,7 +338,7 @@ describe('ConversationController - Queue Management', () => {
     it('should restore plan mode state on switch', async () => {
       deps.state.currentConversationId = 'old-conv';
       deps.plugin.settings.permissionMode = 'plan';
-      (deps.plugin.switchConversation as jest.Mock).mockResolvedValue({
+      (deps.plugin.switchConversation as import('vitest').Mock).mockResolvedValue({
         id: 'new-conv',
         messages: [],
         sessionId: null,
@@ -371,7 +384,7 @@ describe('ConversationController - Queue Management', () => {
     it('should update welcome visibility after switching to conversation with messages', async () => {
       deps.state.currentConversationId = 'old-conv';
       deps.state.messages = [];
-      (deps.plugin.switchConversation as jest.Mock).mockResolvedValue({
+      (deps.plugin.switchConversation as import('vitest').Mock).mockResolvedValue({
         id: 'new-conv',
         messages: [{ id: '1', role: 'user', content: 'test', timestamp: Date.now() }],
         sessionId: null,
@@ -389,7 +402,7 @@ describe('ConversationController - Queue Management', () => {
 
 describe('ConversationController - Callbacks', () => {
   it('should call onNewConversation callback', async () => {
-    const onNewConversation = jest.fn();
+    const onNewConversation = vi.fn();
     const deps = createMockDeps();
     const controller = new ConversationController(deps, { onNewConversation });
 
@@ -399,7 +412,7 @@ describe('ConversationController - Callbacks', () => {
   });
 
   it('should call onConversationSwitched callback', async () => {
-    const onConversationSwitched = jest.fn();
+    const onConversationSwitched = vi.fn();
     const deps = createMockDeps();
     deps.state.currentConversationId = 'old-conv';
     const controller = new ConversationController(deps, { onConversationSwitched });
@@ -410,7 +423,7 @@ describe('ConversationController - Callbacks', () => {
   });
 
   it('should call onConversationLoaded callback', async () => {
-    const onConversationLoaded = jest.fn();
+    const onConversationLoaded = vi.fn();
     const deps = createMockDeps();
     const controller = new ConversationController(deps, { onConversationLoaded });
 
@@ -426,10 +439,10 @@ describe('ConversationController - Title Generation', () => {
   let mockTitleService: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockTitleService = {
-      generateTitle: jest.fn().mockResolvedValue(undefined),
-      cancel: jest.fn(),
+      generateTitle: vi.fn().mockResolvedValue(undefined),
+      cancel: vi.fn(),
     };
     deps = createMockDeps({
       getTitleGenerationService: () => mockTitleService,
@@ -444,7 +457,7 @@ describe('ConversationController - Title Generation', () => {
       });
       const controllerNoService = new ConversationController(depsNoService);
 
-      (depsNoService.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (depsNoService.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Old Title',
         messages: [
@@ -460,7 +473,7 @@ describe('ConversationController - Title Generation', () => {
 
     it('should not regenerate if enableAutoTitleGeneration is false', async () => {
       deps.plugin.settings.enableAutoTitleGeneration = false;
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Old Title',
         messages: [
@@ -479,7 +492,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should not regenerate if conversation not found', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue(null);
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue(null);
 
       await controller.regenerateTitle('non-existent');
 
@@ -487,7 +500,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should not regenerate if conversation has less than 2 messages', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Title',
         messages: [{ role: 'user', content: 'Hello' }],
@@ -499,7 +512,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should not regenerate if no user message found', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Title',
         messages: [
@@ -514,7 +527,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should not regenerate if no assistant message found', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Title',
         messages: [
@@ -529,7 +542,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should not regenerate if assistant text is empty', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Title',
         messages: [
@@ -544,7 +557,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should set pending status before generating', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Old Title',
         messages: [
@@ -561,7 +574,7 @@ describe('ConversationController - Title Generation', () => {
     });
 
     it('should call titleService.generateTitle with correct params', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Old Title',
         messages: [
@@ -576,12 +589,12 @@ describe('ConversationController - Title Generation', () => {
         'conv-1',
         'Hello world!', // Uses displayContent
         'Hi there!',
-        expect.any(Function)
+        expect.any(Function),
       );
     });
 
     it('should preserve [Plan] prefix for plan conversations', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: '[Plan] Old Title',
         messages: [
@@ -594,11 +607,11 @@ describe('ConversationController - Title Generation', () => {
       mockTitleService.generateTitle.mockImplementation(
         async (convId: string, _user: string, _assistant: string, callback: any) => {
           await callback(convId, { success: true, title: 'New Generated Title' });
-        }
+        },
       );
 
       // Also mock getConversationById to return the expected title for the callback check
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: '[Plan] Old Title',
         messages: [
@@ -607,15 +620,18 @@ describe('ConversationController - Title Generation', () => {
         ],
       });
 
-      (deps.plugin.renameConversation as any) = jest.fn().mockResolvedValue(undefined);
+      (deps.plugin.renameConversation as any) = vi.fn().mockResolvedValue(undefined);
 
       await controller.regenerateTitle('conv-1');
 
-      expect(deps.plugin.renameConversation).toHaveBeenCalledWith('conv-1', '[Plan] New Generated Title');
+      expect(deps.plugin.renameConversation).toHaveBeenCalledWith(
+        'conv-1',
+        '[Plan] New Generated Title',
+      );
     });
 
     it('should extract text from contentBlocks if content is empty', async () => {
-      (deps.plugin.getConversationById as any) = jest.fn().mockReturnValue({
+      (deps.plugin.getConversationById as any) = vi.fn().mockReturnValue({
         id: 'conv-1',
         title: 'Title',
         messages: [
@@ -638,7 +654,7 @@ describe('ConversationController - Title Generation', () => {
         'conv-1',
         'Hello',
         'Block 1\nBlock 2', // Joins text blocks with newline
-        expect.any(Function)
+        expect.any(Function),
       );
     });
   });
@@ -672,11 +688,11 @@ describe('ConversationController - MCP Server Persistence', () => {
   let mockMcpServerSelector: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockMcpServerSelector = {
-      clearEnabled: jest.fn(),
-      getEnabledServers: jest.fn().mockReturnValue(new Set(['mcp-server-1', 'mcp-server-2'])),
-      setEnabledServers: jest.fn(),
+      clearEnabled: vi.fn(),
+      getEnabledServers: vi.fn().mockReturnValue(new Set(['mcp-server-1', 'mcp-server-2'])),
+      setEnabledServers: vi.fn(),
     };
     deps = createMockDeps({
       getMcpServerSelector: () => mockMcpServerSelector,
@@ -694,7 +710,7 @@ describe('ConversationController - MCP Server Persistence', () => {
         'conv-1',
         expect.objectContaining({
           enabledMcpServers: ['mcp-server-1', 'mcp-server-2'],
-        })
+        }),
       );
     });
 
@@ -708,14 +724,14 @@ describe('ConversationController - MCP Server Persistence', () => {
         'conv-1',
         expect.objectContaining({
           enabledMcpServers: undefined,
-        })
+        }),
       );
     });
   });
 
   describe('loadActive', () => {
     it('should restore enabled MCP servers from conversation', async () => {
-      (deps.plugin.getActiveConversation as jest.Mock).mockReturnValue({
+      (deps.plugin.getActiveConversation as import('vitest').Mock).mockReturnValue({
         id: 'conv-1',
         messages: [],
         sessionId: null,
@@ -731,7 +747,7 @@ describe('ConversationController - MCP Server Persistence', () => {
     });
 
     it('should clear MCP servers when conversation has none', async () => {
-      (deps.plugin.getActiveConversation as jest.Mock).mockReturnValue({
+      (deps.plugin.getActiveConversation as import('vitest').Mock).mockReturnValue({
         id: 'conv-1',
         messages: [],
         sessionId: null,
@@ -747,7 +763,7 @@ describe('ConversationController - MCP Server Persistence', () => {
   describe('switchTo', () => {
     it('should restore enabled MCP servers when switching conversations', async () => {
       deps.state.currentConversationId = 'old-conv';
-      (deps.plugin.switchConversation as jest.Mock).mockResolvedValue({
+      (deps.plugin.switchConversation as import('vitest').Mock).mockResolvedValue({
         id: 'new-conv',
         messages: [],
         sessionId: null,
@@ -761,7 +777,7 @@ describe('ConversationController - MCP Server Persistence', () => {
 
     it('should clear MCP servers when switching to conversation with no servers', async () => {
       deps.state.currentConversationId = 'old-conv';
-      (deps.plugin.switchConversation as jest.Mock).mockResolvedValue({
+      (deps.plugin.switchConversation as import('vitest').Mock).mockResolvedValue({
         id: 'new-conv',
         messages: [],
         sessionId: null,

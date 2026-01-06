@@ -1,5 +1,5 @@
 /**
- * Claudian - Type definitions barrel export.
+ * Cortex - Type definitions barrel export.
  *
  * Re-exports all types from modular type files.
  */
@@ -14,7 +14,7 @@ export {
   type ImageMediaType,
   type StreamChunk,
   type UsageInfo,
-  VIEW_TYPE_CLAUDIAN,
+  VIEW_TYPE_CORTEX,
 } from './chat';
 
 // Model types
@@ -27,17 +27,17 @@ export {
 } from './models';
 
 // SDK types
-export {
-  type ModelUsageInfo,
-  type SDKContentBlock,
-  type SDKMessage,
-  type SDKMessageContent,
-  type SDKStreamEvent,
+export type {
+  ModelUsageInfo,
+  SDKContentBlock,
+  SDKMessage,
+  SDKMessageContent,
+  SDKStreamEvent,
 } from './sdk';
 
 // Settings types
 export {
-  type ClaudianSettings,
+  type CortexSettings,
   DEFAULT_SETTINGS,
   type EnvSnippet,
   getBashToolBlockedCommands,
@@ -54,18 +54,18 @@ export {
 } from './settings';
 
 // Tool types
-export {
-  type AsyncSubagentStatus,
-  type SubagentInfo,
-  type SubagentMode,
-  type ToolCallInfo,
-  type ToolDiffData,
+export type {
+  AsyncSubagentStatus,
+  SubagentInfo,
+  SubagentMode,
+  ToolCallInfo,
+  ToolDiffData,
 } from './tools';
 
 // MCP types
 export {
-  type ClaudianMcpConfigFile,
-  type ClaudianMcpServer,
+  type CortexMcpConfigFile,
+  type CortexMcpServer,
   DEFAULT_MCP_SERVER,
   getMcpServerType,
   inferMcpServerType,
@@ -80,9 +80,9 @@ export {
 } from './mcp';
 
 // AskUserQuestion types
-export {
-  type AskUserQuestionCallback,
-  type AskUserQuestionInput,
-  type AskUserQuestionOption,
-  type AskUserQuestionQuestion,
+export type {
+  AskUserQuestionCallback,
+  AskUserQuestionInput,
+  AskUserQuestionOption,
+  AskUserQuestionQuestion,
 } from './askUserQuestion';

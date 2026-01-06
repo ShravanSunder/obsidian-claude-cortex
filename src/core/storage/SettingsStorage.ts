@@ -8,19 +8,15 @@
  * Machine-specific state (lastEnvHash, model tracking) stays in Obsidian's data.json.
  */
 
-import type { ClaudianSettings, PlatformBlockedCommands } from '../types';
+import type { CortexSettings, PlatformBlockedCommands } from '../types';
 import { DEFAULT_SETTINGS, getDefaultBlockedCommands } from '../types';
 import type { VaultFileAdapter } from './VaultFileAdapter';
 
 /** Fields that are machine-specific state or loaded separately. */
-type StateFields =
-  | 'slashCommands'
-  | 'lastEnvHash'
-  | 'lastClaudeModel'
-  | 'lastCustomModel';
+type StateFields = 'slashCommands' | 'lastEnvHash' | 'lastClaudeModel' | 'lastCustomModel';
 
 /** Settings stored in .claude/settings.json (user-facing, shareable). */
-export type StoredSettings = Omit<ClaudianSettings, StateFields>;
+export type StoredSettings = Omit<CortexSettings, StateFields>;
 
 /** Path to settings file relative to vault root. */
 export const SETTINGS_PATH = '.claude/settings.json';
@@ -78,7 +74,7 @@ export class SettingsStorage {
         blockedCommands,
       } as StoredSettings;
     } catch (error) {
-      console.error('[Claudian] Failed to load settings:', error);
+      console.error('[Cortex] Failed to load settings:', error);
       return this.getDefaults();
     }
   }
@@ -89,7 +85,7 @@ export class SettingsStorage {
       const content = JSON.stringify(settings, null, 2);
       await this.adapter.write(SETTINGS_PATH, content);
     } catch (error) {
-      console.error('[Claudian] Failed to save settings:', error);
+      console.error('[Cortex] Failed to save settings:', error);
       throw error;
     }
   }

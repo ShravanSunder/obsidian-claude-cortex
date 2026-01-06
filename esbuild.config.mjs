@@ -20,7 +20,7 @@ const prod = process.argv[2] === 'production';
 // Obsidian plugin folder path (set via OBSIDIAN_VAULT env var or .env.local)
 const OBSIDIAN_VAULT = process.env.OBSIDIAN_VAULT;
 const OBSIDIAN_PLUGIN_PATH = OBSIDIAN_VAULT
-  ? path.join(OBSIDIAN_VAULT, '.obsidian', 'plugins', 'claudian')
+  ? path.join(OBSIDIAN_VAULT, '.obsidian', 'plugins', 'cortex')
   : null;
 
 // Plugin to copy built files to Obsidian plugin folder
@@ -49,6 +49,10 @@ const context = await esbuild.context({
   entryPoints: ['src/main.ts'],
   bundle: true,
   plugins: [copyToObsidian],
+  alias: {
+    '@': path.resolve(process.cwd(), 'src'),
+    '@test': path.resolve(process.cwd(), 'tests'),
+  },
   external: [
     'obsidian',
     'electron',

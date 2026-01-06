@@ -31,7 +31,7 @@ interface MockElement {
   getAttribute: (name: string) => string | null;
 }
 
-function createMockElement(tag = 'div'): MockElement {
+function createMockElement(_tag = 'div'): MockElement {
   const children: MockElement[] = [];
   const classList = new Set<string>();
   const dataset: Record<string, string> = {};
@@ -45,10 +45,16 @@ function createMockElement(tag = 'div'): MockElement {
     dataset,
     style,
     addClass: (cls: string) => {
-      cls.split(/\s+/).filter(Boolean).forEach((c) => classList.add(c));
+      cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((c) => classList.add(c));
     },
     removeClass: (cls: string) => {
-      cls.split(/\s+/).filter(Boolean).forEach((c) => classList.delete(c));
+      cls
+        .split(/\s+/)
+        .filter(Boolean)
+        .forEach((c) => classList.delete(c));
     },
     hasClass: (cls: string) => classList.has(cls),
     getClasses: () => Array.from(classList),
@@ -126,7 +132,7 @@ describe('Sync Subagent Renderer', () => {
   let parentEl: MockElement;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     parentEl = createMockElement('div');
   });
 
@@ -198,7 +204,9 @@ describe('Sync Subagent Renderer', () => {
     });
 
     it('should show description in label', () => {
-      const state = createSubagentBlock(parentEl as any, 'task-1', { description: 'My task description' });
+      const state = createSubagentBlock(parentEl as any, 'task-1', {
+        description: 'My task description',
+      });
 
       expect(state.labelEl.textContent).toBe('My task description');
     });
@@ -291,7 +299,7 @@ describe('keyboard navigation', () => {
   let parentEl: MockElement;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     parentEl = createMockElement('div');
   });
 
@@ -310,7 +318,7 @@ describe('keyboard navigation', () => {
 
     // Re-check - the handler should already be registered
     // We need to dispatch a keydown event
-    const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+    const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
     (state.headerEl as any).dispatchEvent({ type: 'keydown', ...enterEvent });
 
     // The handler should have been called and expanded
@@ -318,7 +326,7 @@ describe('keyboard navigation', () => {
     expect((state.wrapperEl as any).hasClass('expanded')).toBe(true);
 
     // Space to collapse
-    const spaceEvent = { key: ' ', preventDefault: jest.fn() };
+    const spaceEvent = { key: ' ', preventDefault: vi.fn() };
     (state.headerEl as any).dispatchEvent({ type: 'keydown', ...spaceEvent });
 
     expect(state.info.isExpanded).toBe(false);
@@ -338,13 +346,13 @@ describe('keyboard navigation', () => {
     const headerEl = (wrapperEl as any).children[0];
 
     // Simulate Enter key
-    const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+    const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
     headerEl.dispatchEvent({ type: 'keydown', ...enterEvent });
 
     expect((wrapperEl as any).hasClass('expanded')).toBe(true);
 
     // Simulate Space key to collapse
-    const spaceEvent = { key: ' ', preventDefault: jest.fn() };
+    const spaceEvent = { key: ' ', preventDefault: vi.fn() };
     headerEl.dispatchEvent({ type: 'keydown', ...spaceEvent });
 
     expect((wrapperEl as any).hasClass('expanded')).toBe(false);
@@ -355,32 +363,40 @@ describe('Async Subagent Renderer', () => {
   let parentEl: MockElement;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     parentEl = createMockElement('div');
   });
 
   describe('collapsed by default', () => {
     it('should start collapsed by default', () => {
-      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', { description: 'Test task' });
+      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', {
+        description: 'Test task',
+      });
 
       expect(state.info.isExpanded).toBe(false);
       expect((state.wrapperEl as any).hasClass('expanded')).toBe(false);
     });
 
     it('should set aria-expanded to false by default', () => {
-      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', { description: 'Test task' });
+      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', {
+        description: 'Test task',
+      });
 
       expect(state.headerEl.getAttribute('aria-expanded')).toBe('false');
     });
 
     it('should hide content by default', () => {
-      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', { description: 'Test task' });
+      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', {
+        description: 'Test task',
+      });
 
       expect((state.contentEl as any).style.display).toBe('none');
     });
 
     it('should toggle expand/collapse on header click', () => {
-      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', { description: 'Test task' });
+      const state = createAsyncSubagentBlock(parentEl as any, 'task-1', {
+        description: 'Test task',
+      });
 
       // Initially collapsed
       expect(state.info.isExpanded).toBe(false);
@@ -402,64 +418,78 @@ describe('Async Subagent Renderer', () => {
   });
 
   it('shows label immediately and running status text', () => {
-    const state = createAsyncSubagentBlock(parentEl as any, 'task-1', { description: 'Background job' });
+    const state = createAsyncSubagentBlock(parentEl as any, 'task-1', {
+      description: 'Background job',
+    });
 
     expect(state.labelEl.textContent).toBe('Background job');
     expect(state.statusTextEl.textContent).toBe('Running');
-    expect((state.wrapperEl as any).getClasses()).toEqual(expect.arrayContaining(['async', 'pending']));
+    expect((state.wrapperEl as any).getClasses()).toEqual(
+      expect.arrayContaining(['async', 'pending']),
+    );
   });
 
   it('shows agent id in content and keeps label visible while running', () => {
-    const state = createAsyncSubagentBlock(parentEl as any, 'task-2', { description: 'Background job' });
+    const state = createAsyncSubagentBlock(parentEl as any, 'task-2', {
+      description: 'Background job',
+    });
 
     updateAsyncSubagentRunning(state, 'agent-xyz');
 
     expect(state.labelEl.textContent).toBe('Background job');
     expect(state.statusTextEl.textContent).toBe('Running');
-    const contentText = getTextByClass(state.contentEl as any, 'claudian-subagent-done-text')[0];
+    const contentText = getTextByClass(state.contentEl as any, 'cortex-subagent-done-text')[0];
     expect(contentText).toContain('agent-xyz');
-    expect((state.wrapperEl as any).getClasses()).toEqual(expect.arrayContaining(['running', 'async']));
+    expect((state.wrapperEl as any).getClasses()).toEqual(
+      expect.arrayContaining(['running', 'async']),
+    );
   });
 
   it('finalizes to completed and reveals description', () => {
-    const state = createAsyncSubagentBlock(parentEl as any, 'task-3', { description: 'Background job' });
+    const state = createAsyncSubagentBlock(parentEl as any, 'task-3', {
+      description: 'Background job',
+    });
     updateAsyncSubagentRunning(state, 'agent-complete');
 
-    (setIcon as jest.Mock).mockClear();
+    (setIcon as import('vitest').Mock).mockClear();
     finalizeAsyncSubagent(state, 'all done', false);
 
     expect(state.labelEl.textContent).toBe('Background job');
     expect(state.statusTextEl.textContent).toBe('Completed');
     expect((state.wrapperEl as any).hasClass('done')).toBe(true);
-    const contentText = getTextByClass(state.contentEl as any, 'claudian-subagent-done-text')[0];
+    const contentText = getTextByClass(state.contentEl as any, 'cortex-subagent-done-text')[0];
     expect(contentText).toBe('DONE');
-    const lastIcon = (setIcon as jest.Mock).mock.calls.pop();
+    const lastIcon = (setIcon as import('vitest').Mock).mock.calls.pop();
     expect(lastIcon?.[1]).toBe('check');
   });
 
   it('finalizes to error and truncates error message', () => {
-    const state = createAsyncSubagentBlock(parentEl as any, 'task-4', { description: 'Background job' });
+    const state = createAsyncSubagentBlock(parentEl as any, 'task-4', {
+      description: 'Background job',
+    });
     updateAsyncSubagentRunning(state, 'agent-error');
 
-    (setIcon as jest.Mock).mockClear();
+    (setIcon as import('vitest').Mock).mockClear();
     finalizeAsyncSubagent(state, 'failure happened', true);
 
     expect(state.statusTextEl.textContent).toBe('Error');
     expect((state.wrapperEl as any).hasClass('error')).toBe(true);
-    const contentText = getTextByClass(state.contentEl as any, 'claudian-subagent-done-text')[0];
+    const contentText = getTextByClass(state.contentEl as any, 'cortex-subagent-done-text')[0];
     expect(contentText).toContain('ERROR');
-    const lastIcon = (setIcon as jest.Mock).mock.calls.pop();
+    const lastIcon = (setIcon as import('vitest').Mock).mock.calls.pop();
     expect(lastIcon?.[1]).toBe('x');
   });
 
   it('marks async subagent as orphaned', () => {
-    const state = createAsyncSubagentBlock(parentEl as any, 'task-5', { description: 'Background job' });
+    const state = createAsyncSubagentBlock(parentEl as any, 'task-5', {
+      description: 'Background job',
+    });
 
     markAsyncSubagentOrphaned(state);
 
     expect(state.statusTextEl.textContent).toBe('Orphaned');
     expect((state.wrapperEl as any).hasClass('orphaned')).toBe(true);
-    const contentText = getTextByClass(state.contentEl as any, 'claudian-subagent-done-text')[0];
+    const contentText = getTextByClass(state.contentEl as any, 'cortex-subagent-done-text')[0];
     expect(contentText).toContain('Task orphaned');
   });
 });

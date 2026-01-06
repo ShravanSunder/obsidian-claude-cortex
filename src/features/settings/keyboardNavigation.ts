@@ -12,7 +12,7 @@ export const buildNavMappingText = (settings: KeyboardNavigationSettings): strin
 };
 
 export const parseNavMappings = (
-  value: string
+  value: string,
 ): { settings?: Record<NavAction, string>; error?: string } => {
   const parsed: Partial<Record<NavAction, string>> = {};
   const usedKeys = new Map<string, string>();

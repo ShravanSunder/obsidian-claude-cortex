@@ -38,7 +38,7 @@ export function transformMcpMentions(text: string, validNames: Set<string>): str
   // This allows @server. (period as punctuation) while preventing @test.foo matches
   const pattern = new RegExp(
     `@(${escapedNames})(?! MCP)(?!/)(?![a-zA-Z0-9_-])(?!\\.[a-zA-Z0-9_-])`,
-    'g'
+    'g',
   );
 
   return text.replace(pattern, '@$1 MCP');
@@ -48,7 +48,10 @@ function escapeRegExp(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-export function parseCommand(command: string, providedArgs?: string[]): { cmd: string; args: string[] } {
+export function parseCommand(
+  command: string,
+  providedArgs?: string[],
+): { cmd: string; args: string[] } {
   if (providedArgs && providedArgs.length > 0) {
     return { cmd: command, args: providedArgs };
   }
@@ -127,7 +130,7 @@ function parseSseEvent(raw: string): SseEvent | null {
 
 export async function consumeSseStream(
   body: ReadableStream<Uint8Array>,
-  onEvent: (event: SseEvent) => void
+  onEvent: (event: SseEvent) => void,
 ): Promise<void> {
   const reader = body.getReader();
   const decoder = new TextDecoder();
@@ -210,7 +213,7 @@ export function resolveSseEndpoint(data: string, baseUrl: URL): URL | null {
 export function waitForRpcResponse(
   pending: Map<number, (msg: Record<string, unknown>) => void>,
   id: number,
-  timeoutMs: number
+  timeoutMs: number,
 ): Promise<Record<string, unknown>> {
   return new Promise((resolve, reject) => {
     const timer = setTimeout(() => {
@@ -235,7 +238,7 @@ export async function postJsonRpc(
   url: URL,
   headers: Record<string, string>,
   payload: Record<string, unknown>,
-  options: PostJsonRpcOptions = {}
+  options: PostJsonRpcOptions = {},
 ): Promise<Response> {
   const requestHeaders: Record<string, string> = { ...headers };
   if (!requestHeaders['Content-Type']) {

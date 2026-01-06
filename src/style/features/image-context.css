@@ -1,7 +1,7 @@
 /* Image Context - Preview & Attachments */
 
 /* Image preview container (in input area) */
-.claudian-image-preview {
+.cortex-image-preview {
   display: none;
   flex-wrap: wrap;
   gap: 8px;
@@ -10,7 +10,7 @@
 }
 
 /* Individual image preview chip */
-.claudian-image-chip {
+.cortex-image-chip {
   display: flex;
   align-items: center;
   gap: 8px;
@@ -21,12 +21,12 @@
   max-width: 200px;
 }
 
-.claudian-image-chip:hover {
+.cortex-image-chip:hover {
   border-color: var(--interactive-accent);
 }
 
 /* Image thumbnail */
-.claudian-image-thumb {
+.cortex-image-thumb {
   width: 40px;
   height: 40px;
   border-radius: 4px;
@@ -35,21 +35,21 @@
   cursor: pointer;
 }
 
-.claudian-image-thumb img {
+.cortex-image-thumb img {
   width: 100%;
   height: 100%;
   object-fit: cover;
 }
 
 /* Image info */
-.claudian-image-info {
+.cortex-image-info {
   display: flex;
   flex-direction: column;
   min-width: 0;
   flex: 1;
 }
 
-.claudian-image-name {
+.cortex-image-name {
   font-size: 12px;
   color: var(--text-normal);
   overflow: hidden;
@@ -57,13 +57,13 @@
   white-space: nowrap;
 }
 
-.claudian-image-size {
+.cortex-image-size {
   font-size: 10px;
   color: var(--text-muted);
 }
 
 /* Remove button */
-.claudian-image-remove {
+.cortex-image-remove {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -78,20 +78,20 @@
   flex-shrink: 0;
 }
 
-.claudian-image-remove:hover {
+.cortex-image-remove:hover {
   background: var(--background-modifier-error);
   color: var(--text-on-accent);
 }
 
 /* Drop overlay - inside input wrapper */
-.claudian-drop-overlay {
+.cortex-drop-overlay {
   position: absolute;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
   background: rgba(217, 119, 87, 0.08);
-  border: 2px dashed #D97757;
+  border: 2px dashed #d97757;
   border-radius: 6px;
   display: none;
   align-items: center;
@@ -100,23 +100,23 @@
   pointer-events: none;
 }
 
-.claudian-drop-overlay.visible {
+.cortex-drop-overlay.visible {
   display: flex;
 }
 
-.claudian-drop-content {
+.cortex-drop-content {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 4px;
-  color: #D97757;
+  color: #d97757;
 }
 
-.claudian-drop-content svg {
+.cortex-drop-content svg {
   opacity: 0.7;
 }
 
-.claudian-drop-content span {
+.cortex-drop-content span {
   font-size: 12px;
   font-weight: 500;
 }
@@ -124,7 +124,7 @@
 /* Images in Messages (displayed above user bubble) */
 
 /* Images container - right-aligned above user message */
-.claudian-message-images {
+.cortex-message-images {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
@@ -134,7 +134,7 @@
 }
 
 /* Individual image in message - standardized size */
-.claudian-message-image {
+.cortex-message-image {
   width: 120px;
   height: 120px;
   border-radius: 8px;
@@ -145,12 +145,12 @@
   border: 1px solid var(--background-modifier-border);
 }
 
-.claudian-message-image:hover {
+.cortex-message-image:hover {
   transform: scale(1.03);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
 }
 
-.claudian-message-image img {
+.cortex-message-image img {
   width: 100%;
   height: 100%;
   object-fit: cover;

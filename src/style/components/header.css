@@ -1,37 +1,37 @@
 /* Header */
-.claudian-header {
+.cortex-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 12px 12px 12px;
 }
 
-.claudian-title {
+.cortex-title {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.claudian-logo {
+.cortex-logo {
   display: flex;
   align-items: center;
 }
 
-.claudian-header h4 {
+.cortex-header h4 {
   margin: 0;
   font-size: 14px;
   font-weight: 600;
 }
 
 /* Header actions (right side) */
-.claudian-header-actions {
+.cortex-header-actions {
   display: flex;
   align-items: center;
   gap: 4px;
 }
 
 /* Header icon buttons (history, new, etc.) */
-.claudian-header-btn {
+.cortex-header-btn {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -42,12 +42,12 @@
   transition: background 0.15s ease, color 0.15s ease;
 }
 
-.claudian-header-btn:hover {
+.cortex-header-btn:hover {
   background: var(--background-modifier-hover);
   color: var(--text-normal);
 }
 
-.claudian-header-btn svg {
+.cortex-header-btn svg {
   width: 16px;
   height: 16px;
 }

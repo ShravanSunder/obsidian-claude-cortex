@@ -1,4 +1,4 @@
-/** Claudian UI components - barrel export. */
+/** Cortex UI components - barrel export. */
 
 export {
   AskUserQuestionPanel,
@@ -45,6 +45,4 @@ export {
   type SlashCommandDropdownCallbacks,
   type SlashCommandDropdownOptions,
 } from './SlashCommandDropdown';
-export {
-  TodoPanel,
-} from './TodoPanel';
+export { TodoPanel } from './TodoPanel';

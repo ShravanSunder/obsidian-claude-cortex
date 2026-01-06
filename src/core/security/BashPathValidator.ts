@@ -2,7 +2,7 @@
  * Bash Path Validator
  *
  * Pure functions for parsing bash commands and validating path access.
- * Extracted from ClaudianService for better testability and separation of concerns.
+ * Extracted from CortexService for better testability and separation of concerns.
  */
 
 import * as path from 'path';
@@ -67,7 +67,10 @@ export function splitBashTokensIntoSegments(tokens: string[]): string[][] {
 }
 
 /** Get the command name and index from a bash segment, skipping wrappers like sudo/env */
-export function getBashSegmentCommandName(segment: string[]): { cmdName: string; cmdIndex: number } {
+export function getBashSegmentCommandName(segment: string[]): {
+  cmdName: string;
+  cmdIndex: number;
+} {
   const wrappers = new Set(['command', 'env', 'sudo']);
   let cmdIndex = 0;
   while (cmdIndex < segment.length && wrappers.has(segment[cmdIndex])) {
@@ -81,7 +84,17 @@ export function getBashSegmentCommandName(segment: string[]): { cmdName: string;
 
 /** Check if token is a bash output redirect operator */
 export function isBashOutputRedirectOperator(token: string): boolean {
-  return token === '>' || token === '>>' || token === '1>' || token === '1>>' || token === '2>' || token === '2>>' || token === '&>' || token === '&>>' || token === '>|';
+  return (
+    token === '>' ||
+    token === '>>' ||
+    token === '1>' ||
+    token === '1>>' ||
+    token === '2>' ||
+    token === '2>>' ||
+    token === '&>' ||
+    token === '&>>' ||
+    token === '>|'
+  );
 }
 
 /** Check if token is a bash input redirect operator */
@@ -91,7 +104,13 @@ export function isBashInputRedirectOperator(token: string): boolean {
 
 /** Check if token is an output option expecting a value */
 export function isBashOutputOptionExpectingValue(token: string): boolean {
-  return token === '-o' || token === '--output' || token === '--out' || token === '--outfile' || token === '--output-file';
+  return (
+    token === '-o' ||
+    token === '--output' ||
+    token === '--out' ||
+    token === '--outfile' ||
+    token === '--output-file'
+  );
 }
 
 /** Clean a path token by stripping quotes and delimiters */
@@ -164,7 +183,7 @@ export function isPathLikeToken(token: string): boolean {
 export function checkBashPathAccess(
   candidate: string,
   access: 'read' | 'write',
-  context: PathCheckContext
+  context: PathCheckContext,
 ): PathViolation | null {
   const cleaned = cleanPathToken(candidate);
   if (!cleaned) return null;
@@ -192,7 +211,7 @@ export function checkBashPathAccess(
  */
 export function findBashPathViolationInSegment(
   segment: string[],
-  context: PathCheckContext
+  context: PathCheckContext,
 ): PathViolation | null {
   if (segment.length === 0) return null;
 
@@ -318,7 +337,7 @@ export function findBashPathViolationInSegment(
  */
 export function findBashCommandPathViolation(
   command: string,
-  context: PathCheckContext
+  context: PathCheckContext,
 ): PathViolation | null {
   if (!command) return null;
 

@@ -9,7 +9,11 @@ import type { App, Component } from 'obsidian';
 import { MarkdownRenderer, setIcon } from 'obsidian';
 
 import { getImageAttachmentDataUri } from '../../../core/images/imageLoader';
-import { isWriteEditTool, TOOL_ASK_USER_QUESTION, TOOL_TODO_WRITE } from '../../../core/tools/toolNames';
+import {
+  TOOL_ASK_USER_QUESTION,
+  TOOL_TODO_WRITE,
+  isWriteEditTool,
+} from '../../../core/tools/toolNames';
 import type { ChatMessage, ImageAttachment } from '../../../core/types';
 import {
   renderStoredAskUserQuestion,
@@ -34,11 +38,7 @@ export class MessageRenderer {
   private component: Component;
   private messagesEl: HTMLElement;
 
-  constructor(
-    app: App,
-    component: Component,
-    messagesEl: HTMLElement
-  ) {
+  constructor(app: App, component: Component, messagesEl: HTMLElement) {
     this.app = app;
     this.component = component;
     this.messagesEl = messagesEl;
@@ -94,15 +94,15 @@ export class MessageRenderer {
     }
 
     const msgEl = this.messagesEl.createDiv({
-      cls: `claudian-message claudian-message-${msg.role}`,
+      cls: `cortex-message cortex-message-${msg.role}`,
     });
 
-    const contentEl = msgEl.createDiv({ cls: 'claudian-message-content' });
+    const contentEl = msgEl.createDiv({ cls: 'cortex-message-content' });
 
     if (msg.role === 'user') {
       const textToShow = msg.displayContent ?? msg.content;
       if (textToShow) {
-        const textEl = contentEl.createDiv({ cls: 'claudian-text-block' });
+        const textEl = contentEl.createDiv({ cls: 'cortex-text-block' });
         void this.renderContent(textEl, textToShow);
       }
     }
@@ -122,16 +122,15 @@ export class MessageRenderer {
    * @param getGreeting Function to get greeting text
    * @returns The newly created welcome element
    */
-  renderMessages(
-    messages: ChatMessage[],
-    getGreeting: () => string
-  ): HTMLElement {
-    const existingTodoPanel = this.messagesEl.querySelector('.claudian-todo-panel') as HTMLElement | null;
+  renderMessages(messages: ChatMessage[], getGreeting: () => string): HTMLElement {
+    const existingTodoPanel = this.messagesEl.querySelector(
+      '.cortex-todo-panel',
+    ) as HTMLElement | null;
     this.messagesEl.empty();
 
     // Recreate welcome element after clearing
-    const newWelcomeEl = this.messagesEl.createDiv({ cls: 'claudian-welcome' });
-    newWelcomeEl.createDiv({ cls: 'claudian-welcome-greeting', text: getGreeting() });
+    const newWelcomeEl = this.messagesEl.createDiv({ cls: 'cortex-welcome' });
+    newWelcomeEl.createDiv({ cls: 'cortex-welcome-greeting', text: getGreeting() });
 
     for (const msg of messages) {
       this.renderStoredMessage(msg);
@@ -171,20 +170,20 @@ export class MessageRenderer {
     }
 
     const msgEl = this.messagesEl.createDiv({
-      cls: `claudian-message claudian-message-${msg.role}`,
+      cls: `cortex-message cortex-message-${msg.role}`,
     });
 
     // Apply plan message styling if this is a plan message
     if (msg.isPlanMessage) {
-      msgEl.classList.add('claudian-message-plan');
+      msgEl.classList.add('cortex-message-plan');
     }
 
-    const contentEl = msgEl.createDiv({ cls: 'claudian-message-content' });
+    const contentEl = msgEl.createDiv({ cls: 'cortex-message-content' });
 
     if (msg.role === 'user') {
       const textToShow = msg.displayContent ?? msg.content;
       if (textToShow) {
-        const textEl = contentEl.createDiv({ cls: 'claudian-text-block' });
+        const textEl = contentEl.createDiv({ cls: 'cortex-text-block' });
         void this.renderContent(textEl, textToShow);
       }
     } else if (msg.role === 'assistant') {
@@ -195,27 +194,29 @@ export class MessageRenderer {
   /**
    * Renders an approval indicator for plan mode decisions.
    */
-  private renderApprovalIndicator(indicator: NonNullable<ChatMessage['approvalIndicator']>): HTMLElement {
+  private renderApprovalIndicator(
+    indicator: NonNullable<ChatMessage['approvalIndicator']>,
+  ): HTMLElement {
     const indicatorEl = this.messagesEl.createDiv({
-      cls: 'claudian-approval-indicator',
+      cls: 'cortex-approval-indicator',
     });
 
-    const iconEl = indicatorEl.createSpan({ cls: 'claudian-approval-indicator-icon' });
-    const textEl = indicatorEl.createSpan({ cls: 'claudian-approval-indicator-text' });
+    const iconEl = indicatorEl.createSpan({ cls: 'cortex-approval-indicator-icon' });
+    const textEl = indicatorEl.createSpan({ cls: 'cortex-approval-indicator-text' });
 
     switch (indicator.type) {
       case 'approve':
-        indicatorEl.classList.add('claudian-approval-indicator-approve');
+        indicatorEl.classList.add('cortex-approval-indicator-approve');
         setIcon(iconEl, 'check');
         textEl.textContent = 'User approved plan.';
         break;
       case 'approve_new_session':
-        indicatorEl.classList.add('claudian-approval-indicator-approve');
+        indicatorEl.classList.add('cortex-approval-indicator-approve');
         setIcon(iconEl, 'check');
         textEl.textContent = 'User approved plan, implement in new session.';
         break;
       case 'revise':
-        indicatorEl.classList.add('claudian-approval-indicator-revise');
+        indicatorEl.classList.add('cortex-approval-indicator-revise');
         setIcon(iconEl, 'x');
         textEl.textContent = indicator.feedback || 'User requested revision.';
         break;
@@ -231,22 +232,19 @@ export class MessageRenderer {
     if (msg.contentBlocks && msg.contentBlocks.length > 0) {
       for (const block of msg.contentBlocks) {
         if (block.type === 'thinking') {
-          renderStoredThinkingBlock(
-            contentEl,
-            block.content,
-            block.durationSeconds,
-            (el, md) => this.renderContent(el, md)
+          renderStoredThinkingBlock(contentEl, block.content, block.durationSeconds, (el, md) =>
+            this.renderContent(el, md),
           );
         } else if (block.type === 'text') {
-          const textEl = contentEl.createDiv({ cls: 'claudian-text-block' });
+          const textEl = contentEl.createDiv({ cls: 'cortex-text-block' });
           void this.renderContent(textEl, block.content);
         } else if (block.type === 'tool_use') {
-          const toolCall = msg.toolCalls?.find(tc => tc.id === block.toolId);
+          const toolCall = msg.toolCalls?.find((tc) => tc.id === block.toolId);
           if (toolCall) {
             this.renderToolCall(contentEl, toolCall);
           }
         } else if (block.type === 'subagent') {
-          const subagent = msg.subagents?.find(s => s.id === block.subagentId);
+          const subagent = msg.subagents?.find((s) => s.id === block.subagentId);
           if (subagent) {
             const mode = block.mode || subagent.mode || 'sync';
             if (mode === 'async') {
@@ -260,7 +258,7 @@ export class MessageRenderer {
     } else {
       // Fallback for old conversations without contentBlocks
       if (msg.content) {
-        const textEl = contentEl.createDiv({ cls: 'claudian-text-block' });
+        const textEl = contentEl.createDiv({ cls: 'cortex-text-block' });
         void this.renderContent(textEl, msg.content);
       }
       if (msg.toolCalls) {
@@ -275,7 +273,16 @@ export class MessageRenderer {
    * Renders a tool call with special handling for Write/Edit, and AskUserQuestion.
    * TodoWrite is not rendered inline - it only shows in the bottom panel.
    */
-  private renderToolCall(contentEl: HTMLElement, toolCall: { id: string; name: string; input: Record<string, unknown>; status?: string; result?: string }): void {
+  private renderToolCall(
+    contentEl: HTMLElement,
+    toolCall: {
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+      status?: string;
+      result?: string;
+    },
+  ): void {
     if (toolCall.name === TOOL_TODO_WRITE) {
       // TodoWrite is not rendered inline - only in bottom panel
       return;
@@ -296,10 +303,10 @@ export class MessageRenderer {
    * Renders image attachments above a message.
    */
   renderMessageImages(containerEl: HTMLElement, images: ImageAttachment[]): void {
-    const imagesEl = containerEl.createDiv({ cls: 'claudian-message-images' });
+    const imagesEl = containerEl.createDiv({ cls: 'cortex-message-images' });
 
     for (const image of images) {
-      const imageWrapper = imagesEl.createDiv({ cls: 'claudian-message-image' });
+      const imageWrapper = imagesEl.createDiv({ cls: 'cortex-message-image' });
       const imgEl = imageWrapper.createEl('img', {
         attr: {
           alt: image.name,
@@ -322,8 +329,8 @@ export class MessageRenderer {
     const dataUri = getImageAttachmentDataUri(this.app, image);
     if (!dataUri) return;
 
-    const overlay = document.body.createDiv({ cls: 'claudian-image-modal-overlay' });
-    const modal = overlay.createDiv({ cls: 'claudian-image-modal' });
+    const overlay = document.body.createDiv({ cls: 'cortex-image-modal-overlay' });
+    const modal = overlay.createDiv({ cls: 'cortex-image-modal' });
 
     modal.createEl('img', {
       attr: {
@@ -332,7 +339,7 @@ export class MessageRenderer {
       },
     });
 
-    const closeBtn = modal.createDiv({ cls: 'claudian-image-modal-close' });
+    const closeBtn = modal.createDiv({ cls: 'cortex-image-modal-close' });
     closeBtn.setText('\u00D7');
 
     const handleEsc = (e: KeyboardEvent) => {
@@ -379,10 +386,10 @@ export class MessageRenderer {
     // Wrap pre elements and move buttons outside scroll area
     el.querySelectorAll('pre').forEach((pre) => {
       // Skip if already wrapped
-      if (pre.parentElement?.classList.contains('claudian-code-wrapper')) return;
+      if (pre.parentElement?.classList.contains('cortex-code-wrapper')) return;
 
       // Create wrapper
-      const wrapper = createEl('div', { cls: 'claudian-code-wrapper' });
+      const wrapper = createEl('div', { cls: 'cortex-code-wrapper' });
       pre.parentElement?.insertBefore(wrapper, pre);
       wrapper.appendChild(pre);
 
@@ -393,7 +400,7 @@ export class MessageRenderer {
         if (match) {
           wrapper.classList.add('has-language');
           const label = createEl('span', {
-            cls: 'claudian-code-lang-label',
+            cls: 'cortex-code-lang-label',
             text: match[1],
           });
           wrapper.appendChild(label);
@@ -438,7 +445,8 @@ export class MessageRenderer {
 
   /** Keeps the persistent todo panel pinned to the bottom of the messages container. */
   private ensureTodoPanelAtBottom(panelEl?: HTMLElement | null): void {
-    const todoPanel = panelEl ?? (this.messagesEl.querySelector('.claudian-todo-panel') as HTMLElement | null);
+    const todoPanel =
+      panelEl ?? (this.messagesEl.querySelector('.cortex-todo-panel') as HTMLElement | null);
     if (todoPanel) {
       this.messagesEl.appendChild(todoPanel);
     }

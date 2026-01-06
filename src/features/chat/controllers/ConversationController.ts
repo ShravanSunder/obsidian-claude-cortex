@@ -8,8 +8,15 @@
 import { setIcon } from 'obsidian';
 
 import type { Conversation } from '../../../core/types';
-import type ClaudianPlugin from '../../../main';
-import { type ContextPathSelector, extractLastTodosFromMessages, type FileContextManager, type ImageContextManager, type McpServerSelector, type TodoPanel } from '../../../ui';
+import type CortexPlugin from '../../../main';
+import {
+  type ContextPathSelector,
+  type FileContextManager,
+  type ImageContextManager,
+  type McpServerSelector,
+  type TodoPanel,
+  extractLastTodosFromMessages,
+} from '../../../ui';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { AsyncSubagentManager } from '../services/AsyncSubagentManager';
 import type { TitleGenerationService } from '../services/TitleGenerationService';
@@ -24,7 +31,7 @@ export interface ConversationCallbacks {
 
 /** Dependencies for ConversationController. */
 export interface ConversationControllerDeps {
-  plugin: ClaudianPlugin;
+  plugin: CortexPlugin;
   state: ChatState;
   renderer: MessageRenderer;
   asyncSubagentManager: AsyncSubagentManager;
@@ -87,7 +94,7 @@ export class ConversationController {
     // Check for existing empty conversation to reuse
     const emptyConv = plugin.findEmptyConversation();
     const conversation = emptyConv
-      ? await plugin.switchConversation(emptyConv.id) ?? await plugin.createConversation()
+      ? ((await plugin.switchConversation(emptyConv.id)) ?? (await plugin.createConversation()))
       : await plugin.createConversation();
 
     state.currentConversationId = conversation.id;
@@ -108,8 +115,8 @@ export class ConversationController {
     this.deps.getTodoPanel()?.remount();
 
     // Recreate welcome element after clearing messages
-    const welcomeEl = messagesEl.createDiv({ cls: 'claudian-welcome' });
-    welcomeEl.createDiv({ cls: 'claudian-welcome-greeting', text: this.getGreeting() });
+    const welcomeEl = messagesEl.createDiv({ cls: 'cortex-welcome' });
+    welcomeEl.createDiv({ cls: 'cortex-welcome-greeting', text: this.getGreeting() });
     this.deps.setWelcomeEl(welcomeEl);
 
     this.deps.getInputEl().value = '';
@@ -182,10 +189,7 @@ export class ConversationController {
       mcpServerSelector?.clearEnabled();
     }
 
-    const welcomeEl = renderer.renderMessages(
-      state.messages,
-      () => this.getGreeting()
-    );
+    const welcomeEl = renderer.renderMessages(state.messages, () => this.getGreeting());
     this.deps.setWelcomeEl(welcomeEl);
     this.updateWelcomeVisibility();
 
@@ -258,10 +262,7 @@ export class ConversationController {
       mcpServerSelector?.clearEnabled();
     }
 
-    const welcomeEl = renderer.renderMessages(
-      state.messages,
-      () => this.getGreeting()
-    );
+    const welcomeEl = renderer.renderMessages(state.messages, () => this.getGreeting());
     this.deps.setWelcomeEl(welcomeEl);
 
     // Restore todo panel from switched conversation
@@ -290,7 +291,9 @@ export class ConversationController {
     const sessionContextPaths = contextPathSelector?.getContextPaths() ?? [];
     const approvedPlan = this.deps.getApprovedPlan();
     const mcpServerSelector = this.deps.getMcpServerSelector();
-    const enabledMcpServers = mcpServerSelector ? Array.from(mcpServerSelector.getEnabledServers()) : [];
+    const enabledMcpServers = mcpServerSelector
+      ? Array.from(mcpServerSelector.getEnabledServers())
+      : [];
 
     const updates: Partial<Conversation> = {
       messages: state.getPersistedMessages(),
@@ -365,14 +368,14 @@ export class ConversationController {
 
     dropdown.empty();
 
-    const dropdownHeader = dropdown.createDiv({ cls: 'claudian-history-header' });
+    const dropdownHeader = dropdown.createDiv({ cls: 'cortex-history-header' });
     dropdownHeader.createSpan({ text: 'Conversations' });
 
-    const list = dropdown.createDiv({ cls: 'claudian-history-list' });
+    const list = dropdown.createDiv({ cls: 'cortex-history-list' });
     const allConversations = plugin.getConversationList();
 
     if (allConversations.length === 0) {
-      list.createDiv({ cls: 'claudian-history-empty', text: 'No conversations' });
+      list.createDiv({ cls: 'cortex-history-empty', text: 'No conversations' });
       return;
     }
 
@@ -384,18 +387,20 @@ export class ConversationController {
     for (const conv of conversations) {
       const isCurrent = conv.id === state.currentConversationId;
       const item = list.createDiv({
-        cls: `claudian-history-item${isCurrent ? ' active' : ''}`,
+        cls: `cortex-history-item${isCurrent ? ' active' : ''}`,
       });
 
-      const iconEl = item.createDiv({ cls: 'claudian-history-item-icon' });
+      const iconEl = item.createDiv({ cls: 'cortex-history-item-icon' });
       setIcon(iconEl, isCurrent ? 'message-square-dot' : 'message-square');
 
-      const content = item.createDiv({ cls: 'claudian-history-item-content' });
-      const titleEl = content.createDiv({ cls: 'claudian-history-item-title', text: conv.title });
+      const content = item.createDiv({ cls: 'cortex-history-item-content' });
+      const titleEl = content.createDiv({ cls: 'cortex-history-item-title', text: conv.title });
       titleEl.setAttribute('title', conv.title);
       content.createDiv({
-        cls: 'claudian-history-item-date',
-        text: isCurrent ? 'Current session' : this.formatDate(conv.lastResponseAt ?? conv.createdAt),
+        cls: 'cortex-history-item-date',
+        text: isCurrent
+          ? 'Current session'
+          : this.formatDate(conv.lastResponseAt ?? conv.createdAt),
       });
 
       if (!isCurrent) {
@@ -405,15 +410,17 @@ export class ConversationController {
         });
       }
 
-      const actions = item.createDiv({ cls: 'claudian-history-item-actions' });
+      const actions = item.createDiv({ cls: 'cortex-history-item-actions' });
 
       // Show regenerate button if title generation failed, or loading indicator if pending
       if (conv.titleGenerationStatus === 'pending') {
-        const loadingEl = actions.createEl('span', { cls: 'claudian-action-btn claudian-action-loading' });
+        const loadingEl = actions.createEl('span', {
+          cls: 'cortex-action-btn cortex-action-loading',
+        });
         setIcon(loadingEl, 'loader-2');
         loadingEl.setAttribute('aria-label', 'Generating title...');
       } else if (conv.titleGenerationStatus === 'failed') {
-        const regenerateBtn = actions.createEl('button', { cls: 'claudian-action-btn' });
+        const regenerateBtn = actions.createEl('button', { cls: 'cortex-action-btn' });
         setIcon(regenerateBtn, 'refresh-cw');
         regenerateBtn.setAttribute('aria-label', 'Regenerate title');
         regenerateBtn.addEventListener('click', async (e) => {
@@ -426,7 +433,7 @@ export class ConversationController {
         });
       }
 
-      const renameBtn = actions.createEl('button', { cls: 'claudian-action-btn' });
+      const renameBtn = actions.createEl('button', { cls: 'cortex-action-btn' });
       setIcon(renameBtn, 'pencil');
       renameBtn.setAttribute('aria-label', 'Rename');
       renameBtn.addEventListener('click', (e) => {
@@ -434,7 +441,7 @@ export class ConversationController {
         this.showRenameInput(item, conv.id, conv.title);
       });
 
-      const deleteBtn = actions.createEl('button', { cls: 'claudian-action-btn claudian-delete-btn' });
+      const deleteBtn = actions.createEl('button', { cls: 'cortex-action-btn cortex-delete-btn' });
       setIcon(deleteBtn, 'trash-2');
       deleteBtn.setAttribute('aria-label', 'Delete');
       deleteBtn.addEventListener('click', async (e) => {
@@ -452,12 +459,12 @@ export class ConversationController {
 
   /** Shows inline rename input for a conversation. */
   private showRenameInput(item: HTMLElement, convId: string, currentTitle: string): void {
-    const titleEl = item.querySelector('.claudian-history-item-title') as HTMLElement;
+    const titleEl = item.querySelector('.cortex-history-item-title') as HTMLElement;
     if (!titleEl) return;
 
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'claudian-rename-input';
+    input.className = 'cortex-rename-input';
     input.value = currentTitle;
 
     titleEl.replaceWith(input);
@@ -517,8 +524,8 @@ export class ConversationController {
     const getTimeGreetings = (): string[] => {
       if (hour >= 5 && hour < 12) {
         return name
-          ? [`Good morning, ${name}`, 'Coffee and Claudian time?']
-          : ['Good morning', 'Coffee and Claudian time?'];
+          ? [`Good morning, ${name}`, 'Coffee and Cortex time?']
+          : ['Good morning', 'Coffee and Cortex time?'];
       } else if (hour >= 12 && hour < 18) {
         return name
           ? [`Good afternoon, ${name}`, `Hey there, ${name}`, `How's it going, ${name}?`]
@@ -526,11 +533,9 @@ export class ConversationController {
       } else if (hour >= 18 && hour < 22) {
         return name
           ? [`Good evening, ${name}`, `Evening, ${name}`, `How was your day, ${name}?`]
-          : ['Good evening', 'Evening', "How was your day?"];
+          : ['Good evening', 'Evening', 'How was your day?'];
       } else {
-        return name
-          ? ['Hello, night owl', `Evening, ${name}`]
-          : ['Hello, night owl', 'Evening'];
+        return name ? ['Hello, night owl', `Evening, ${name}`] : ['Hello, night owl', 'Evening'];
       }
     };
 
@@ -544,20 +549,10 @@ export class ConversationController {
           `What's new, ${name}?`,
           `${name} returns!`,
         ]
-      : [
-          'Hey there',
-          'Hi, how are you?',
-          "How's it going?",
-          'Welcome Back!',
-          "What's new?",
-        ];
+      : ['Hey there', 'Hi, how are you?', "How's it going?", 'Welcome Back!', "What's new?"];
 
     // Combine day + time + general greetings, pick randomly
-    const allGreetings = [
-      ...(dayGreetings[day] || []),
-      ...getTimeGreetings(),
-      ...generalGreetings,
-    ];
+    const allGreetings = [...(dayGreetings[day] || []), ...getTimeGreetings(), ...generalGreetings];
 
     return allGreetings[Math.floor(Math.random() * allGreetings.length)];
   }
@@ -598,18 +593,20 @@ export class ConversationController {
     if (!fullConv || fullConv.messages.length < 2) return;
 
     // Find first user and assistant messages by role (not by index)
-    const firstUserMsg = fullConv.messages.find(m => m.role === 'user');
-    const firstAssistantMsg = fullConv.messages.find(m => m.role === 'assistant');
+    const firstUserMsg = fullConv.messages.find((m) => m.role === 'user');
+    const firstAssistantMsg = fullConv.messages.find((m) => m.role === 'assistant');
     if (!firstUserMsg || !firstAssistantMsg) return;
 
     const userContent = firstUserMsg.displayContent || firstUserMsg.content;
 
     // Extract text from assistant response
-    const assistantText = firstAssistantMsg.content ||
+    const assistantText =
+      firstAssistantMsg.content ||
       firstAssistantMsg.contentBlocks
         ?.filter((b): b is { type: 'text'; content: string } => b.type === 'text')
-        .map(b => b.content)
-        .join('\n') || '';
+        .map((b) => b.content)
+        .join('\n') ||
+      '';
 
     if (!assistantText) return;
 
@@ -648,7 +645,7 @@ export class ConversationController {
           await plugin.updateConversation(convId, { titleGenerationStatus: undefined });
         }
         this.updateHistoryDropdown();
-      }
+      },
     );
   }
 
@@ -658,7 +655,11 @@ export class ConversationController {
     const now = new Date();
 
     if (date.toDateString() === now.toDateString()) {
-      return date.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit', hour12: false });
+      return date.toLocaleTimeString(undefined, {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      });
     }
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   }

@@ -1,4 +1,4 @@
-/** Claudian UI settings - barrel export. */
+/** Cortex UI settings - barrel export. */
 
 export {
   EnvSnippetManager,

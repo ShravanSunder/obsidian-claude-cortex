@@ -1,19 +1,17 @@
 /**
- * Claudian - Input toolbar components (model selector, thinking budget, permission toggle).
+ * Cortex - Input toolbar components (model selector, thinking budget, permission toggle).
  */
 
 import { Notice, setIcon } from 'obsidian';
 
 import type {
   ClaudeModel,
-  ClaudianMcpServer,
+  CortexMcpServer,
   PermissionMode,
   ThinkingBudget,
-  UsageInfo} from '../../core/types';
-import {
-  DEFAULT_CLAUDE_MODELS,
-  THINKING_BUDGETS
+  UsageInfo,
 } from '../../core/types';
+import { DEFAULT_CLAUDE_MODELS, THINKING_BUDGETS } from '../../core/types';
 import { CHECK_ICON_SVG, MCP_ICON_SVG } from '../../features/chat/constants';
 import type { McpService } from '../../features/mcp/McpService';
 import { findConflictingPath } from '../../utils/contextPath';
@@ -49,7 +47,7 @@ export class ModelSelector {
 
   constructor(parentEl: HTMLElement, callbacks: ToolbarCallbacks) {
     this.callbacks = callbacks;
-    this.container = parentEl.createDiv({ cls: 'claudian-model-selector' });
+    this.container = parentEl.createDiv({ cls: 'cortex-model-selector' });
     this.render();
   }
 
@@ -77,10 +75,10 @@ export class ModelSelector {
   private render() {
     this.container.empty();
 
-    this.buttonEl = this.container.createDiv({ cls: 'claudian-model-btn' });
+    this.buttonEl = this.container.createDiv({ cls: 'cortex-model-btn' });
     this.updateDisplay();
 
-    this.dropdownEl = this.container.createDiv({ cls: 'claudian-model-dropdown' });
+    this.dropdownEl = this.container.createDiv({ cls: 'cortex-model-dropdown' });
     this.renderOptions();
   }
 
@@ -88,13 +86,13 @@ export class ModelSelector {
     if (!this.buttonEl) return;
     const currentModel = this.callbacks.getSettings().model;
     const models = this.getAvailableModels();
-    const modelInfo = models.find(m => m.value === currentModel);
+    const modelInfo = models.find((m) => m.value === currentModel);
 
     const displayModel = modelInfo || models[0];
 
     this.buttonEl.empty();
 
-    const labelEl = this.buttonEl.createSpan({ cls: 'claudian-model-label' });
+    const labelEl = this.buttonEl.createSpan({ cls: 'cortex-model-label' });
     labelEl.setText(displayModel?.label || 'Unknown');
   }
 
@@ -106,7 +104,7 @@ export class ModelSelector {
     const models = this.getAvailableModels();
 
     for (const model of [...models].reverse()) {
-      const option = this.dropdownEl.createDiv({ cls: 'claudian-model-option' });
+      const option = this.dropdownEl.createDiv({ cls: 'cortex-model-option' });
       if (model.value === currentModel) {
         option.addClass('selected');
       }
@@ -134,17 +132,17 @@ export class ThinkingBudgetSelector {
 
   constructor(parentEl: HTMLElement, callbacks: ToolbarCallbacks) {
     this.callbacks = callbacks;
-    this.container = parentEl.createDiv({ cls: 'claudian-thinking-selector' });
+    this.container = parentEl.createDiv({ cls: 'cortex-thinking-selector' });
     this.render();
   }
 
   private render() {
     this.container.empty();
 
-    const labelEl = this.container.createSpan({ cls: 'claudian-thinking-label-text' });
+    const labelEl = this.container.createSpan({ cls: 'cortex-thinking-label-text' });
     labelEl.setText('Thinking:');
 
-    this.gearsEl = this.container.createDiv({ cls: 'claudian-thinking-gears' });
+    this.gearsEl = this.container.createDiv({ cls: 'cortex-thinking-gears' });
     this.renderGears();
   }
 
@@ -153,17 +151,20 @@ export class ThinkingBudgetSelector {
     this.gearsEl.empty();
 
     const currentBudget = this.callbacks.getSettings().thinkingBudget;
-    const currentBudgetInfo = THINKING_BUDGETS.find(b => b.value === currentBudget);
+    const currentBudgetInfo = THINKING_BUDGETS.find((b) => b.value === currentBudget);
 
-    const currentEl = this.gearsEl.createDiv({ cls: 'claudian-thinking-current' });
+    const currentEl = this.gearsEl.createDiv({ cls: 'cortex-thinking-current' });
     currentEl.setText(currentBudgetInfo?.label || 'Off');
 
-    const optionsEl = this.gearsEl.createDiv({ cls: 'claudian-thinking-options' });
+    const optionsEl = this.gearsEl.createDiv({ cls: 'cortex-thinking-options' });
 
     for (const budget of [...THINKING_BUDGETS].reverse()) {
-      const gearEl = optionsEl.createDiv({ cls: 'claudian-thinking-gear' });
+      const gearEl = optionsEl.createDiv({ cls: 'cortex-thinking-gear' });
       gearEl.setText(budget.label);
-      gearEl.setAttribute('title', budget.tokens > 0 ? `${budget.tokens.toLocaleString()} tokens` : 'Disabled');
+      gearEl.setAttribute(
+        'title',
+        budget.tokens > 0 ? `${budget.tokens.toLocaleString()} tokens` : 'Disabled',
+      );
 
       if (budget.value === currentBudget) {
         gearEl.addClass('selected');
@@ -192,15 +193,15 @@ export class PermissionToggle {
 
   constructor(parentEl: HTMLElement, callbacks: ToolbarCallbacks) {
     this.callbacks = callbacks;
-    this.container = parentEl.createDiv({ cls: 'claudian-permission-toggle' });
+    this.container = parentEl.createDiv({ cls: 'cortex-permission-toggle' });
     this.render();
   }
 
   private render() {
     this.container.empty();
 
-    this.labelEl = this.container.createSpan({ cls: 'claudian-permission-label' });
-    this.toggleEl = this.container.createDiv({ cls: 'claudian-toggle-switch' });
+    this.labelEl = this.container.createSpan({ cls: 'cortex-permission-label' });
+    this.toggleEl = this.container.createDiv({ cls: 'cortex-toggle-switch' });
 
     this.updateDisplay();
 
@@ -245,7 +246,7 @@ export class PermissionToggle {
       this.container.addClass('plan-mode');
       // Show pause icon (two vertical bars) + "Plan Mode"
       this.labelEl.empty();
-      const iconEl = this.labelEl.createSpan({ cls: 'claudian-plan-mode-icon' });
+      const iconEl = this.labelEl.createSpan({ cls: 'cortex-plan-mode-icon' });
       iconEl.textContent = '▎▎';
       iconEl.style.fontSize = '0.8em';
       iconEl.style.letterSpacing = '-4px';
@@ -303,7 +304,7 @@ export class ContextPathSelector {
 
   constructor(parentEl: HTMLElement, callbacks: ToolbarCallbacks) {
     this.callbacks = callbacks;
-    this.container = parentEl.createDiv({ cls: 'claudian-context-path-selector' });
+    this.container = parentEl.createDiv({ cls: 'cortex-context-path-selector' });
     this.render();
   }
 
@@ -334,12 +335,12 @@ export class ContextPathSelector {
   private render() {
     this.container.empty();
 
-    const iconWrapper = this.container.createDiv({ cls: 'claudian-context-path-icon-wrapper' });
+    const iconWrapper = this.container.createDiv({ cls: 'cortex-context-path-icon-wrapper' });
 
-    this.iconEl = iconWrapper.createDiv({ cls: 'claudian-context-path-icon' });
+    this.iconEl = iconWrapper.createDiv({ cls: 'cortex-context-path-icon' });
     setIcon(this.iconEl, 'folder');
 
-    this.badgeEl = iconWrapper.createDiv({ cls: 'claudian-context-path-badge' });
+    this.badgeEl = iconWrapper.createDiv({ cls: 'cortex-context-path-badge' });
 
     this.updateDisplay();
 
@@ -349,7 +350,7 @@ export class ContextPathSelector {
       this.openFolderPicker();
     });
 
-    this.dropdownEl = this.container.createDiv({ cls: 'claudian-context-path-dropdown' });
+    this.dropdownEl = this.container.createDiv({ cls: 'cortex-context-path-dropdown' });
     this.renderDropdown();
   }
 
@@ -390,7 +391,10 @@ export class ContextPathSelector {
   }
 
   /** Shows a notice when a conflicting path is detected. */
-  private showConflictNotice(newPath: string, conflict: { path: string; type: 'parent' | 'child' }) {
+  private showConflictNotice(
+    newPath: string,
+    conflict: { path: string; type: 'parent' | 'child' },
+  ) {
     const shortNew = this.shortenPath(newPath);
     const shortExisting = this.shortenPath(conflict.path);
 
@@ -409,31 +413,31 @@ export class ContextPathSelector {
     this.dropdownEl.empty();
 
     // Header
-    const headerEl = this.dropdownEl.createDiv({ cls: 'claudian-context-path-header' });
+    const headerEl = this.dropdownEl.createDiv({ cls: 'cortex-context-path-header' });
     headerEl.setText('Context Paths (Read-Only)');
 
     // Path list
-    const listEl = this.dropdownEl.createDiv({ cls: 'claudian-context-path-list' });
+    const listEl = this.dropdownEl.createDiv({ cls: 'cortex-context-path-list' });
 
     if (this.sessionContextPaths.length === 0) {
-      const emptyEl = listEl.createDiv({ cls: 'claudian-context-path-empty' });
+      const emptyEl = listEl.createDiv({ cls: 'cortex-context-path-empty' });
       emptyEl.setText('Click folder icon to add');
     } else {
       for (const pathStr of this.sessionContextPaths) {
-        const itemEl = listEl.createDiv({ cls: 'claudian-context-path-item' });
+        const itemEl = listEl.createDiv({ cls: 'cortex-context-path-item' });
 
-        const pathTextEl = itemEl.createSpan({ cls: 'claudian-context-path-text' });
+        const pathTextEl = itemEl.createSpan({ cls: 'cortex-context-path-text' });
         // Show shortened path for display
         const displayPath = this.shortenPath(pathStr);
         pathTextEl.setText(displayPath);
         pathTextEl.setAttribute('title', pathStr);
 
-        const removeBtn = itemEl.createSpan({ cls: 'claudian-context-path-remove' });
+        const removeBtn = itemEl.createSpan({ cls: 'cortex-context-path-remove' });
         setIcon(removeBtn, 'x');
         removeBtn.setAttribute('title', 'Remove path');
         removeBtn.addEventListener('click', (e) => {
           e.stopPropagation();
-          this.sessionContextPaths = this.sessionContextPaths.filter(p => p !== pathStr);
+          this.sessionContextPaths = this.sessionContextPaths.filter((p) => p !== pathStr);
           this.onChangeCallback?.(this.sessionContextPaths);
           this.updateDisplay();
           this.renderDropdown();
@@ -451,12 +455,10 @@ export class ContextPathSelector {
       const normalize = (value: string) => value.replace(/\\/g, '/');
       const normalizedFull = normalize(fullPath);
       const normalizedHome = normalize(homeDir);
-      const compareFull = process.platform === 'win32'
-        ? normalizedFull.toLowerCase()
-        : normalizedFull;
-      const compareHome = process.platform === 'win32'
-        ? normalizedHome.toLowerCase()
-        : normalizedHome;
+      const compareFull =
+        process.platform === 'win32' ? normalizedFull.toLowerCase() : normalizedFull;
+      const compareHome =
+        process.platform === 'win32' ? normalizedHome.toLowerCase() : normalizedHome;
       if (compareFull.startsWith(compareHome)) {
         return '~' + fullPath.slice(homeDir.length);
       }
@@ -473,7 +475,10 @@ export class ContextPathSelector {
 
     if (count > 0) {
       this.iconEl.addClass('active');
-      this.iconEl.setAttribute('title', `${count} context path${count > 1 ? 's' : ''} (click to add more)`);
+      this.iconEl.setAttribute(
+        'title',
+        `${count} context path${count > 1 ? 's' : ''} (click to add more)`,
+      );
 
       // Show badge only when more than 1 path
       if (count > 1) {
@@ -501,7 +506,7 @@ export class McpServerSelector {
   private onChangeCallback: ((enabled: Set<string>) => void) | null = null;
 
   constructor(parentEl: HTMLElement) {
-    this.container = parentEl.createDiv({ cls: 'claudian-mcp-selector' });
+    this.container = parentEl.createDiv({ cls: 'cortex-mcp-selector' });
     this.render();
   }
 
@@ -555,7 +560,12 @@ export class McpServerSelector {
 
   private pruneEnabledServers(): void {
     if (!this.mcpService) return;
-    const activeNames = new Set(this.mcpService.getServers().filter((s) => s.enabled).map((s) => s.name));
+    const activeNames = new Set(
+      this.mcpService
+        .getServers()
+        .filter((s) => s.enabled)
+        .map((s) => s.name),
+    );
     let changed = false;
     for (const name of this.enabledServers) {
       if (!activeNames.has(name)) {
@@ -571,16 +581,16 @@ export class McpServerSelector {
   private render() {
     this.container.empty();
 
-    const iconWrapper = this.container.createDiv({ cls: 'claudian-mcp-selector-icon-wrapper' });
+    const iconWrapper = this.container.createDiv({ cls: 'cortex-mcp-selector-icon-wrapper' });
 
-    this.iconEl = iconWrapper.createDiv({ cls: 'claudian-mcp-selector-icon' });
+    this.iconEl = iconWrapper.createDiv({ cls: 'cortex-mcp-selector-icon' });
     this.iconEl.innerHTML = MCP_ICON_SVG;
 
-    this.badgeEl = iconWrapper.createDiv({ cls: 'claudian-mcp-selector-badge' });
+    this.badgeEl = iconWrapper.createDiv({ cls: 'cortex-mcp-selector-badge' });
 
     this.updateDisplay();
 
-    this.dropdownEl = this.container.createDiv({ cls: 'claudian-mcp-selector-dropdown' });
+    this.dropdownEl = this.container.createDiv({ cls: 'cortex-mcp-selector-dropdown' });
     this.renderDropdown();
 
     // Re-render dropdown content on hover (CSS handles visibility)
@@ -595,18 +605,20 @@ export class McpServerSelector {
     this.dropdownEl.empty();
 
     // Header
-    const headerEl = this.dropdownEl.createDiv({ cls: 'claudian-mcp-selector-header' });
+    const headerEl = this.dropdownEl.createDiv({ cls: 'cortex-mcp-selector-header' });
     headerEl.setText('MCP Servers');
 
     // Server list
-    const listEl = this.dropdownEl.createDiv({ cls: 'claudian-mcp-selector-list' });
+    const listEl = this.dropdownEl.createDiv({ cls: 'cortex-mcp-selector-list' });
 
     const allServers = this.mcpService?.getServers() || [];
-    const servers = allServers.filter(s => s.enabled);
+    const servers = allServers.filter((s) => s.enabled);
 
     if (servers.length === 0) {
-      const emptyEl = listEl.createDiv({ cls: 'claudian-mcp-selector-empty' });
-      emptyEl.setText(allServers.length === 0 ? 'No MCP servers configured' : 'All MCP servers disabled');
+      const emptyEl = listEl.createDiv({ cls: 'cortex-mcp-selector-empty' });
+      emptyEl.setText(
+        allServers.length === 0 ? 'No MCP servers configured' : 'All MCP servers disabled',
+      );
       return;
     }
 
@@ -615,8 +627,8 @@ export class McpServerSelector {
     }
   }
 
-  private renderServerItem(listEl: HTMLElement, server: ClaudianMcpServer) {
-    const itemEl = listEl.createDiv({ cls: 'claudian-mcp-selector-item' });
+  private renderServerItem(listEl: HTMLElement, server: CortexMcpServer) {
+    const itemEl = listEl.createDiv({ cls: 'cortex-mcp-selector-item' });
     itemEl.dataset.serverName = server.name;
 
     const isEnabled = this.enabledServers.has(server.name);
@@ -625,20 +637,20 @@ export class McpServerSelector {
     }
 
     // Checkbox
-    const checkEl = itemEl.createDiv({ cls: 'claudian-mcp-selector-check' });
+    const checkEl = itemEl.createDiv({ cls: 'cortex-mcp-selector-check' });
     if (isEnabled) {
       checkEl.innerHTML = CHECK_ICON_SVG;
     }
 
     // Info
-    const infoEl = itemEl.createDiv({ cls: 'claudian-mcp-selector-item-info' });
+    const infoEl = itemEl.createDiv({ cls: 'cortex-mcp-selector-item-info' });
 
-    const nameEl = infoEl.createSpan({ cls: 'claudian-mcp-selector-item-name' });
+    const nameEl = infoEl.createSpan({ cls: 'cortex-mcp-selector-item-name' });
     nameEl.setText(server.name);
 
     // Badges
     if (server.contextSaving) {
-      const csEl = infoEl.createSpan({ cls: 'claudian-mcp-selector-cs-badge' });
+      const csEl = infoEl.createSpan({ cls: 'cortex-mcp-selector-cs-badge' });
       csEl.setText('@');
       csEl.setAttribute('title', 'Context-saving: can also enable via @' + server.name);
     }
@@ -660,7 +672,7 @@ export class McpServerSelector {
 
     // Update item visually in-place (immediate feedback)
     const isEnabled = this.enabledServers.has(name);
-    const checkEl = itemEl.querySelector('.claudian-mcp-selector-check') as HTMLElement | null;
+    const checkEl = itemEl.querySelector('.cortex-mcp-selector-check') as HTMLElement | null;
 
     if (isEnabled) {
       itemEl.addClass('enabled');
@@ -690,7 +702,10 @@ export class McpServerSelector {
 
     if (count > 0) {
       this.iconEl.addClass('active');
-      this.iconEl.setAttribute('title', `${count} MCP server${count > 1 ? 's' : ''} enabled (click to manage)`);
+      this.iconEl.setAttribute(
+        'title',
+        `${count} MCP server${count > 1 ? 's' : ''} enabled (click to manage)`,
+      );
 
       // Show badge only when more than 1
       if (count > 1) {
@@ -712,10 +727,10 @@ export class ContextUsageMeter {
   private container: HTMLElement;
   private fillPath: SVGPathElement | null = null;
   private percentEl: HTMLElement | null = null;
-  private circumference: number = 0;
+  private circumference = 0;
 
   constructor(parentEl: HTMLElement) {
-    this.container = parentEl.createDiv({ cls: 'claudian-context-meter' });
+    this.container = parentEl.createDiv({ cls: 'cortex-context-meter' });
     this.render();
     // Initially hidden
     this.container.style.display = 'none';
@@ -742,21 +757,21 @@ export class ContextUsageMeter {
     const x2 = cx + radius * Math.cos(endRad);
     const y2 = cy + radius * Math.sin(endRad);
 
-    const gaugeEl = this.container.createDiv({ cls: 'claudian-context-meter-gauge' });
+    const gaugeEl = this.container.createDiv({ cls: 'cortex-context-meter-gauge' });
     gaugeEl.innerHTML = `
       <svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
-        <path class="claudian-meter-bg"
+        <path class="cortex-meter-bg"
           d="M ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${x2} ${y2}"
           fill="none" stroke-width="${strokeWidth}" stroke-linecap="round"/>
-        <path class="claudian-meter-fill"
+        <path class="cortex-meter-fill"
           d="M ${x1} ${y1} A ${radius} ${radius} 0 1 1 ${x2} ${y2}"
           fill="none" stroke-width="${strokeWidth}" stroke-linecap="round"
           stroke-dasharray="${this.circumference}" stroke-dashoffset="${this.circumference}"/>
       </svg>
     `;
-    this.fillPath = gaugeEl.querySelector('.claudian-meter-fill');
+    this.fillPath = gaugeEl.querySelector('.cortex-meter-fill');
 
-    this.percentEl = this.container.createSpan({ cls: 'claudian-context-meter-percent' });
+    this.percentEl = this.container.createSpan({ cls: 'cortex-context-meter-percent' });
   }
 
   update(usage: UsageInfo | null): void {
@@ -798,7 +813,7 @@ export class ContextUsageMeter {
 /** Factory function to create all toolbar components. */
 export function createInputToolbar(
   parentEl: HTMLElement,
-  callbacks: ToolbarCallbacks
+  callbacks: ToolbarCallbacks,
 ): {
   modelSelector: ModelSelector;
   thinkingBudgetSelector: ThinkingBudgetSelector;
@@ -814,5 +829,12 @@ export function createInputToolbar(
   const mcpServerSelector = new McpServerSelector(parentEl);
   const permissionToggle = new PermissionToggle(parentEl, callbacks);
 
-  return { modelSelector, thinkingBudgetSelector, contextUsageMeter, contextPathSelector, mcpServerSelector, permissionToggle };
+  return {
+    modelSelector,
+    thinkingBudgetSelector,
+    contextUsageMeter,
+    contextPathSelector,
+    mcpServerSelector,
+    permissionToggle,
+  };
 }

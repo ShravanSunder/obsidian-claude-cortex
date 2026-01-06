@@ -67,7 +67,10 @@ class MockElement {
 
   set className(value: string) {
     this.classList.clear();
-    value.split(/\s+/).filter(Boolean).forEach((cls) => this.classList.add(cls));
+    value
+      .split(/\s+/)
+      .filter(Boolean)
+      .forEach((cls) => this.classList.add(cls));
   }
 
   get className(): string {
@@ -94,9 +97,7 @@ class MockElement {
   setAttribute(name: string, value: string): void {
     this.attributes[name] = value;
     if (name.startsWith('data-')) {
-      const key = name
-        .slice(5)
-        .replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+      const key = name.slice(5).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
       this.dataset[key] = value;
     }
   }
@@ -207,9 +208,9 @@ function createMockDocument() {
 function createContainer(document: any): MockElement {
   const container = document.createElement('div');
   const inputContainer = document.createElement('div');
-  inputContainer.className = 'claudian-input-container';
+  inputContainer.className = 'cortex-input-container';
   const inputWrapper = document.createElement('div');
-  inputWrapper.className = 'claudian-input-wrapper';
+  inputWrapper.className = 'cortex-input-wrapper';
   inputContainer.appendChild(inputWrapper);
   container.appendChild(inputContainer);
   document.body.appendChild(container);
@@ -221,8 +222,8 @@ function createKeyEvent(key: string, options: { shiftKey?: boolean } = {}) {
     type: 'keydown',
     key,
     shiftKey: options.shiftKey ?? false,
-    preventDefault: jest.fn(),
-    stopPropagation: jest.fn(),
+    preventDefault: vi.fn(),
+    stopPropagation: vi.fn(),
   } as any;
 }
 
@@ -250,8 +251,8 @@ describe('AskUserQuestionPanel - global keyboard routing', () => {
     const panel = new AskUserQuestionPanel({} as any, {
       containerEl: containerEl as unknown as HTMLElement,
       input,
-      onSubmit: jest.fn(),
-      onCancel: jest.fn(),
+      onSubmit: vi.fn(),
+      onCancel: vi.fn(),
     });
 
     const outsideEl = mockDocument.createElement('div');
@@ -262,7 +263,7 @@ describe('AskUserQuestionPanel - global keyboard routing', () => {
     mockDocument.dispatchEvent(event);
 
     const option1 = containerEl.querySelector(
-      '.claudian-ask-panel-option[data-option-index="1"]'
+      '.cortex-ask-panel-option[data-option-index="1"]',
     ) as MockElement;
 
     expect(option1).toBeTruthy();
@@ -297,15 +298,15 @@ describe('AskUserQuestionPanel - global keyboard routing', () => {
     const panel = new AskUserQuestionPanel({} as any, {
       containerEl: containerEl as unknown as HTMLElement,
       input,
-      onSubmit: jest.fn(),
-      onCancel: jest.fn(),
+      onSubmit: vi.fn(),
+      onCancel: vi.fn(),
     });
 
     const event = createKeyEvent('Tab');
     mockDocument.dispatchEvent(event);
 
     const submitTab = containerEl.querySelector(
-      '.claudian-ask-panel-tab[data-tab-index="1"]'
+      '.cortex-ask-panel-tab[data-tab-index="1"]',
     ) as MockElement;
 
     expect(submitTab).toBeTruthy();

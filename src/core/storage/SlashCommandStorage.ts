@@ -44,11 +44,11 @@ export class SlashCommandStorage {
             commands.push(command);
           }
         } catch (error) {
-          console.error(`[Claudian] Failed to load command from ${filePath}:`, error);
+          console.error(`[Cortex] Failed to load command from ${filePath}:`, error);
         }
       }
     } catch (error) {
-      console.error('[Claudian] Failed to list command files:', error);
+      console.error('[Cortex] Failed to list command files:', error);
     }
 
     return commands;
@@ -60,7 +60,7 @@ export class SlashCommandStorage {
       const content = await this.adapter.read(filePath);
       return this.parseFile(content, filePath);
     } catch (error) {
-      console.error(`[Claudian] Failed to read command file ${filePath}:`, error);
+      console.error(`[Cortex] Failed to read command file ${filePath}:`, error);
       return null;
     }
   }
@@ -91,7 +91,7 @@ export class SlashCommandStorage {
   /** Check if any commands exist. */
   async hasCommands(): Promise<boolean> {
     const files = await this.adapter.listFilesRecursive(COMMANDS_PATH);
-    return files.some(f => f.endsWith('.md'));
+    return files.some((f) => f.endsWith('.md'));
   }
 
   /** Get the file path for a command. */
@@ -128,11 +128,9 @@ export class SlashCommandStorage {
     //   a-b.md   -> cmd-a-_b
     //   a--b.md  -> cmd-a-_-_b
     //   a/b-c.md -> cmd-a--b-_c
-    const relativePath = filePath
-      .replace(`${COMMANDS_PATH}/`, '')
-      .replace(/\.md$/, '');
+    const relativePath = filePath.replace(`${COMMANDS_PATH}/`, '').replace(/\.md$/, '');
     const escaped = relativePath
-      .replace(/-/g, '-_')   // Escape dashes first
+      .replace(/-/g, '-_') // Escape dashes first
       .replace(/\//g, '--'); // Then encode slashes
     return `cmd-${escaped}`;
   }
@@ -140,9 +138,7 @@ export class SlashCommandStorage {
   /** Convert a file path to a command name. */
   private filePathToName(filePath: string): string {
     // .claude/commands/nested/foo.md -> nested/foo
-    return filePath
-      .replace(`${COMMANDS_PATH}/`, '')
-      .replace(/\.md$/, '');
+    return filePath.replace(`${COMMANDS_PATH}/`, '').replace(/\.md$/, '');
   }
 
   /** Serialize a command to Markdown with YAML frontmatter. */
@@ -176,8 +172,13 @@ export class SlashCommandStorage {
 
   /** Quote a YAML string if needed. */
   private yamlString(value: string): string {
-    if (value.includes(':') || value.includes('#') || value.includes('\n') ||
-        value.startsWith(' ') || value.endsWith(' ')) {
+    if (
+      value.includes(':') ||
+      value.includes('#') ||
+      value.includes('\n') ||
+      value.startsWith(' ') ||
+      value.endsWith(' ')
+    ) {
       return `"${value.replace(/"/g, '\\"')}"`;
     }
     return value;

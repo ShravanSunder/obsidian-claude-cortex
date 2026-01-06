@@ -1,53 +1,53 @@
 import * as imageCache from '@/core/images/imageCache';
-import { DEFAULT_SETTINGS, VIEW_TYPE_CLAUDIAN } from '@/core/types';
+import { DEFAULT_SETTINGS, VIEW_TYPE_CORTEX } from '@/core/types';
 
-// Mock fs for ClaudianService
-jest.mock('fs');
+// Mock fs for CortexService
+vi.mock('fs');
 
 // Now import the plugin after mocking
-import ClaudianPlugin from '@/main';
+import CortexPlugin from '@/main';
 
-describe('ClaudianPlugin', () => {
-  let plugin: ClaudianPlugin;
+describe('CortexPlugin', () => {
+  let plugin: CortexPlugin;
   let mockApp: any;
   let mockManifest: any;
 
   beforeEach(() => {
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
 
     mockApp = {
       vault: {
         adapter: {
           basePath: '/test/vault',
-          exists: jest.fn().mockResolvedValue(false),
-          read: jest.fn().mockResolvedValue(''),
-          write: jest.fn().mockResolvedValue(undefined),
-          remove: jest.fn().mockResolvedValue(undefined),
-          mkdir: jest.fn().mockResolvedValue(undefined),
-          list: jest.fn().mockResolvedValue({ files: [], folders: [] }),
-          stat: jest.fn().mockResolvedValue(null),
-          rename: jest.fn().mockResolvedValue(undefined),
+          exists: vi.fn().mockResolvedValue(false),
+          read: vi.fn().mockResolvedValue(''),
+          write: vi.fn().mockResolvedValue(undefined),
+          remove: vi.fn().mockResolvedValue(undefined),
+          mkdir: vi.fn().mockResolvedValue(undefined),
+          list: vi.fn().mockResolvedValue({ files: [], folders: [] }),
+          stat: vi.fn().mockResolvedValue(null),
+          rename: vi.fn().mockResolvedValue(undefined),
         },
       },
       workspace: {
-        getLeavesOfType: jest.fn().mockReturnValue([]),
-        getRightLeaf: jest.fn().mockReturnValue({
-          setViewState: jest.fn().mockResolvedValue(undefined),
+        getLeavesOfType: vi.fn().mockReturnValue([]),
+        getRightLeaf: vi.fn().mockReturnValue({
+          setViewState: vi.fn().mockResolvedValue(undefined),
         }),
-        revealLeaf: jest.fn(),
+        revealLeaf: vi.fn(),
       },
     };
 
     mockManifest = {
-      id: 'claudian',
-      name: 'Claudian',
+      id: 'cortex',
+      name: 'Cortex',
       version: '0.1.0',
     };
 
     // Create plugin instance with mocked app
-    plugin = new ClaudianPlugin(mockApp, mockManifest);
-    (plugin.loadData as jest.Mock).mockResolvedValue({});
+    plugin = new CortexPlugin(mockApp, mockManifest);
+    (plugin.loadData as import('vitest').Mock).mockResolvedValue({});
   });
 
   describe('onload', () => {
@@ -68,26 +68,26 @@ describe('ClaudianPlugin', () => {
     it('should register the view', async () => {
       await plugin.onload();
 
-      expect((plugin.registerView as jest.Mock)).toHaveBeenCalledWith(
-        VIEW_TYPE_CLAUDIAN,
-        expect.any(Function)
+      expect(plugin.registerView as import('vitest').Mock).toHaveBeenCalledWith(
+        VIEW_TYPE_CORTEX,
+        expect.any(Function),
       );
     });
 
     it('should add ribbon icon', async () => {
       await plugin.onload();
 
-      expect((plugin.addRibbonIcon as jest.Mock)).toHaveBeenCalledWith(
+      expect(plugin.addRibbonIcon as import('vitest').Mock).toHaveBeenCalledWith(
         'bot',
-        'Open Claudian',
-        expect.any(Function)
+        'Open Cortex',
+        expect.any(Function),
       );
     });
 
     it('should add command to open view', async () => {
       await plugin.onload();
 
-      expect((plugin.addCommand as jest.Mock)).toHaveBeenCalledWith({
+      expect(plugin.addCommand as import('vitest').Mock).toHaveBeenCalledWith({
         id: 'open-view',
         name: 'Open chat view',
         callback: expect.any(Function),
@@ -97,7 +97,7 @@ describe('ClaudianPlugin', () => {
     it('should add settings tab', async () => {
       await plugin.onload();
 
-      expect((plugin.addSettingTab as jest.Mock)).toHaveBeenCalled();
+      expect(plugin.addSettingTab as import('vitest').Mock).toHaveBeenCalled();
     });
   });
 
@@ -105,7 +105,7 @@ describe('ClaudianPlugin', () => {
     it('should call cleanup on agentService', async () => {
       await plugin.onload();
 
-      const cleanupSpy = jest.spyOn(plugin.agentService, 'cleanup');
+      const cleanupSpy = vi.spyOn(plugin.agentService, 'cleanup');
 
       plugin.onunload();
 
@@ -126,7 +126,7 @@ describe('ClaudianPlugin', () => {
 
     it('should create new leaf in right sidebar if view does not exist', async () => {
       const mockRightLeaf = {
-        setViewState: jest.fn().mockResolvedValue(undefined),
+        setViewState: vi.fn().mockResolvedValue(undefined),
       };
       mockApp.workspace.getLeavesOfType.mockReturnValue([]);
       mockApp.workspace.getRightLeaf.mockReturnValue(mockRightLeaf);
@@ -136,7 +136,7 @@ describe('ClaudianPlugin', () => {
 
       expect(mockApp.workspace.getRightLeaf).toHaveBeenCalledWith(false);
       expect(mockRightLeaf.setViewState).toHaveBeenCalledWith({
-        type: VIEW_TYPE_CLAUDIAN,
+        type: VIEW_TYPE_CORTEX,
         active: true,
       });
     });
@@ -191,13 +191,15 @@ describe('ClaudianPlugin', () => {
       await plugin.loadSettings();
 
       expect(plugin.settings.blockedCommands.unix).toEqual(['rm -rf']);
-      expect(plugin.settings.blockedCommands.windows).toEqual(DEFAULT_SETTINGS.blockedCommands.windows);
+      expect(plugin.settings.blockedCommands.windows).toEqual(
+        DEFAULT_SETTINGS.blockedCommands.windows,
+      );
     });
 
     it('should use defaults when no saved data', async () => {
       // No settings file exists
       mockApp.vault.adapter.exists.mockResolvedValue(false);
-      (plugin.loadData as jest.Mock).mockResolvedValue(null);
+      (plugin.loadData as import('vitest').Mock).mockResolvedValue(null);
 
       await plugin.loadSettings();
 
@@ -207,7 +209,7 @@ describe('ClaudianPlugin', () => {
     it('should use defaults when loadData returns empty object', async () => {
       // No settings file exists
       mockApp.vault.adapter.exists.mockResolvedValue(false);
-      (plugin.loadData as jest.Mock).mockResolvedValue({});
+      (plugin.loadData as import('vitest').Mock).mockResolvedValue({});
 
       await plugin.loadSettings();
 
@@ -229,7 +231,7 @@ describe('ClaudianPlugin', () => {
         return '';
       });
 
-      const saveSpy = jest.spyOn(plugin, 'saveSettings');
+      const saveSpy = vi.spyOn(plugin, 'saveSettings');
       await plugin.loadSettings();
 
       expect(plugin.settings.model).toBe('custom-model');
@@ -248,11 +250,11 @@ describe('ClaudianPlugin', () => {
       // Settings should be written to .claude/settings.json via vault adapter
       expect(mockApp.vault.adapter.write).toHaveBeenCalledWith(
         '.claude/settings.json',
-        expect.stringContaining('"enableBlocklist": false')
+        expect.stringContaining('"enableBlocklist": false'),
       );
 
       // Plugin state should be saved to data.json (machine-specific only)
-      const savedData = (plugin.saveData as jest.Mock).mock.calls[0][0];
+      const savedData = (plugin.saveData as import('vitest').Mock).mock.calls[0][0];
       expect(savedData).toHaveProperty('activeConversationId');
       expect(savedData).toHaveProperty('lastEnvHash');
       expect(savedData).toHaveProperty('lastClaudeModel');
@@ -283,8 +285,8 @@ describe('ClaudianPlugin', () => {
       await plugin.onload();
 
       // Get the callback passed to addRibbonIcon
-      const ribbonCallback = (plugin.addRibbonIcon as jest.Mock).mock.calls[0][2];
-      const activateViewSpy = jest.spyOn(plugin, 'activateView');
+      const ribbonCallback = (plugin.addRibbonIcon as import('vitest').Mock).mock.calls[0][2];
+      const activateViewSpy = vi.spyOn(plugin, 'activateView');
 
       ribbonCallback();
 
@@ -297,8 +299,8 @@ describe('ClaudianPlugin', () => {
       await plugin.onload();
 
       // Get the callback passed to addCommand
-      const commandConfig = (plugin.addCommand as jest.Mock).mock.calls[0][0];
-      const activateViewSpy = jest.spyOn(plugin, 'activateView');
+      const commandConfig = (plugin.addCommand as import('vitest').Mock).mock.calls[0][0];
+      const activateViewSpy = vi.spyOn(plugin, 'activateView');
 
       commandConfig.callback();
 
@@ -339,7 +341,7 @@ describe('ClaudianPlugin', () => {
     it('should reset agent service session', async () => {
       await plugin.onload();
 
-      const resetSessionSpy = jest.spyOn(plugin.agentService, 'resetSession');
+      const resetSessionSpy = vi.spyOn(plugin.agentService, 'resetSession');
 
       await plugin.createConversation();
 
@@ -369,7 +371,7 @@ describe('ClaudianPlugin', () => {
 
       await plugin.createConversation();
 
-      const switchSessionSpy = jest.spyOn(plugin.agentService, 'switchSession');
+      const switchSessionSpy = vi.spyOn(plugin.agentService, 'switchSession');
 
       await plugin.switchConversation(conv1.id);
 
@@ -398,7 +400,7 @@ describe('ClaudianPlugin', () => {
       await plugin.deleteConversation(convId);
 
       const list = plugin.getConversationList();
-      expect(list.find(c => c.id === convId)).toBeUndefined();
+      expect(list.find((c) => c.id === convId)).toBeUndefined();
     });
 
     it('should create new conversation if deleted active and no others exist', async () => {
@@ -433,7 +435,7 @@ describe('ClaudianPlugin', () => {
   describe('cleanupConversationImages', () => {
     it('deletes cached images not used elsewhere', async () => {
       await plugin.onload();
-      const deleteSpy = jest.spyOn(imageCache, 'deleteCachedImages').mockImplementation(() => {});
+      const deleteSpy = vi.spyOn(imageCache, 'deleteCachedImages').mockImplementation(() => {});
 
       const convA: any = {
         id: 'a',
@@ -442,10 +444,30 @@ describe('ClaudianPlugin', () => {
         updatedAt: Date.now(),
         sessionId: null,
         messages: [
-          { id: 'm1', role: 'user', content: '', timestamp: 0, images: [
-            { id: 'i1', name: 'x', mediaType: 'image/png', cachePath: 'path1', size: 1, source: 'file' },
-            { id: 'i2', name: 'y', mediaType: 'image/png', cachePath: 'path2', size: 1, source: 'file' },
-          ] },
+          {
+            id: 'm1',
+            role: 'user',
+            content: '',
+            timestamp: 0,
+            images: [
+              {
+                id: 'i1',
+                name: 'x',
+                mediaType: 'image/png',
+                cachePath: 'path1',
+                size: 1,
+                source: 'file',
+              },
+              {
+                id: 'i2',
+                name: 'y',
+                mediaType: 'image/png',
+                cachePath: 'path2',
+                size: 1,
+                source: 'file',
+              },
+            ],
+          },
         ],
       };
 
@@ -456,9 +478,22 @@ describe('ClaudianPlugin', () => {
         updatedAt: Date.now(),
         sessionId: null,
         messages: [
-          { id: 'm2', role: 'user', content: '', timestamp: 0, images: [
-            { id: 'i3', name: 'z', mediaType: 'image/png', cachePath: 'path1', size: 1, source: 'file' },
-          ] },
+          {
+            id: 'm2',
+            role: 'user',
+            content: '',
+            timestamp: 0,
+            images: [
+              {
+                id: 'i3',
+                name: 'z',
+                mediaType: 'image/png',
+                cachePath: 'path1',
+                size: 1,
+                source: 'file',
+              },
+            ],
+          },
         ],
       };
 
@@ -527,7 +562,7 @@ describe('ClaudianPlugin', () => {
       const originalUpdatedAt = conv.updatedAt;
 
       // Small delay to ensure timestamp differs
-      await new Promise(resolve => setTimeout(resolve, 10));
+      await new Promise((resolve) => setTimeout(resolve, 10));
 
       await plugin.updateConversation(conv.id, { title: 'Changed' });
 
@@ -556,13 +591,11 @@ describe('ClaudianPlugin', () => {
 
       const conv = await plugin.createConversation();
       await plugin.updateConversation(conv.id, {
-        messages: [
-          { id: 'msg-1', role: 'user', content: 'Hello Claude', timestamp: Date.now() },
-        ],
+        messages: [{ id: 'msg-1', role: 'user', content: 'Hello Claude', timestamp: Date.now() }],
       });
 
       const list = plugin.getConversationList();
-      const meta = list.find(c => c.id === conv.id);
+      const meta = list.find((c) => c.id === conv.id);
 
       expect(meta?.preview).toContain('Hello Claude');
     });
@@ -598,7 +631,7 @@ describe('ClaudianPlugin', () => {
       });
 
       // Mock minimal data.json with activeConversationId
-      (plugin.loadData as jest.Mock).mockResolvedValue({
+      (plugin.loadData as import('vitest').Mock).mockResolvedValue({
         activeConversationId: 'conv-saved-1',
         migrationVersion: 2,
       });
@@ -622,9 +655,11 @@ describe('ClaudianPlugin', () => {
       });
 
       mockApp.vault.adapter.exists.mockImplementation(async (path: string) => {
-        return path === '.claude/settings.json' ||
+        return (
+          path === '.claude/settings.json' ||
           path === '.claude/sessions' ||
-          path === '.claude/sessions/conv-saved-1.jsonl';
+          path === '.claude/sessions/conv-saved-1.jsonl'
+        );
       });
       mockApp.vault.adapter.list.mockImplementation(async (path: string) => {
         if (path === '.claude/sessions') {
@@ -644,7 +679,7 @@ describe('ClaudianPlugin', () => {
         return '';
       });
 
-      (plugin.loadData as jest.Mock).mockResolvedValue({
+      (plugin.loadData as import('vitest').Mock).mockResolvedValue({
         activeConversationId: 'conv-saved-1',
         lastEnvHash: 'old-hash',
         migrationVersion: 2,
@@ -655,8 +690,8 @@ describe('ClaudianPlugin', () => {
       const active = plugin.getActiveConversation();
       expect(active?.sessionId).toBeNull();
 
-      const sessionWrite = (mockApp.vault.adapter.write as jest.Mock).mock.calls.find(
-        ([path]) => path === '.claude/sessions/conv-saved-1.jsonl'
+      const sessionWrite = (mockApp.vault.adapter.write as import('vitest').Mock).mock.calls.find(
+        ([path]) => path === '.claude/sessions/conv-saved-1.jsonl',
       );
       expect(sessionWrite).toBeDefined();
       const metaLine = (sessionWrite?.[1] as string).split(/\r?\n/)[0];
@@ -669,7 +704,7 @@ describe('ClaudianPlugin', () => {
       mockApp.vault.adapter.exists.mockResolvedValue(false);
       mockApp.vault.adapter.list.mockResolvedValue({ files: [], folders: [] });
 
-      (plugin.loadData as jest.Mock).mockResolvedValue({
+      (plugin.loadData as import('vitest').Mock).mockResolvedValue({
         activeConversationId: 'non-existent',
         migrationVersion: 2,
       });
@@ -681,5 +716,4 @@ describe('ClaudianPlugin', () => {
       expect(plugin.getActiveConversation()).toBeNull();
     });
   });
-
 });

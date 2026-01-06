@@ -9,7 +9,7 @@ describe('contextPathScanner', () => {
 
   beforeEach(() => {
     // Create a temp directory for testing
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'claudian-test-'));
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-test-'));
 
     // Create test file structure
     fs.mkdirSync(path.join(tempDir, 'subdir'));
@@ -34,12 +34,12 @@ describe('contextPathScanner', () => {
       const files = contextPathScanner.scanPaths([tempDir]);
 
       expect(files.length).toBe(3);
-      expect(files.map(f => f.name).sort()).toEqual(['file1.txt', 'file2.md', 'file3.ts']);
+      expect(files.map((f) => f.name).sort()).toEqual(['file1.txt', 'file2.md', 'file3.ts']);
     });
 
     it('should include file metadata', () => {
       const files = contextPathScanner.scanPaths([tempDir]);
-      const file1 = files.find(f => f.name === 'file1.txt');
+      const file1 = files.find((f) => f.name === 'file1.txt');
 
       expect(file1).toBeDefined();
       expect(file1!.path).toBe(path.join(tempDir, 'file1.txt'));
@@ -50,7 +50,7 @@ describe('contextPathScanner', () => {
 
     it('should include files in subdirectories', () => {
       const files = contextPathScanner.scanPaths([tempDir]);
-      const file3 = files.find(f => f.name === 'file3.ts');
+      const file3 = files.find((f) => f.name === 'file3.ts');
 
       expect(file3).toBeDefined();
       expect(file3!.relativePath).toBe(path.join('subdir', 'file3.ts'));
@@ -58,7 +58,7 @@ describe('contextPathScanner', () => {
 
     it('should skip hidden files', () => {
       const files = contextPathScanner.scanPaths([tempDir]);
-      const hidden = files.find(f => f.name === '.hidden');
+      const hidden = files.find((f) => f.name === '.hidden');
 
       expect(hidden).toBeUndefined();
     });
@@ -70,7 +70,7 @@ describe('contextPathScanner', () => {
       fs.writeFileSync(path.join(hiddenDir, 'secret.txt'), 'secret');
 
       const files = contextPathScanner.scanPaths([tempDir]);
-      const secret = files.find(f => f.name === 'secret.txt');
+      const secret = files.find((f) => f.name === 'secret.txt');
 
       expect(secret).toBeUndefined();
     });
@@ -82,7 +82,7 @@ describe('contextPathScanner', () => {
       fs.writeFileSync(path.join(nodeModules, 'package.json'), '{}');
 
       const files = contextPathScanner.scanPaths([tempDir]);
-      const pkg = files.find(f => f.name === 'package.json');
+      const pkg = files.find((f) => f.name === 'package.json');
 
       expect(pkg).toBeUndefined();
     });
@@ -95,14 +95,14 @@ describe('contextPathScanner', () => {
 
     it('should handle multiple context paths', () => {
       // Create a second temp directory
-      const tempDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'claudian-test2-'));
+      const tempDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-test2-'));
       fs.writeFileSync(path.join(tempDir2, 'file4.js'), 'content4');
 
       try {
         const files = contextPathScanner.scanPaths([tempDir, tempDir2]);
 
         expect(files.length).toBe(4);
-        expect(files.map(f => f.name).sort()).toEqual([
+        expect(files.map((f) => f.name).sort()).toEqual([
           'file1.txt',
           'file2.md',
           'file3.ts',
@@ -126,7 +126,7 @@ describe('contextPathScanner', () => {
       const files2 = contextPathScanner.scanPaths([tempDir]);
 
       expect(files1.length).toBe(files2.length);
-      expect(files2.find(f => f.name === 'new-file.txt')).toBeUndefined();
+      expect(files2.find((f) => f.name === 'new-file.txt')).toBeUndefined();
     });
 
     it('should respect cache invalidation', () => {
@@ -142,12 +142,12 @@ describe('contextPathScanner', () => {
       // Second scan should see new file
       const files = contextPathScanner.scanPaths([tempDir]);
 
-      expect(files.find(f => f.name === 'new-file.txt')).toBeDefined();
+      expect(files.find((f) => f.name === 'new-file.txt')).toBeDefined();
     });
 
     it('should invalidate specific path', () => {
       // Create a second temp directory
-      const tempDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'claudian-test2-'));
+      const tempDir2 = fs.mkdtempSync(path.join(os.tmpdir(), 'cortex-test2-'));
       fs.writeFileSync(path.join(tempDir2, 'file4.js'), 'content4');
 
       try {
@@ -165,9 +165,9 @@ describe('contextPathScanner', () => {
         const files = contextPathScanner.scanPaths([tempDir, tempDir2]);
 
         // Should see new file in first path (invalidated)
-        expect(files.find(f => f.name === 'new1.txt')).toBeDefined();
+        expect(files.find((f) => f.name === 'new1.txt')).toBeDefined();
         // Should NOT see new file in second path (still cached)
-        expect(files.find(f => f.name === 'new2.txt')).toBeUndefined();
+        expect(files.find((f) => f.name === 'new2.txt')).toBeUndefined();
       } finally {
         fs.rmSync(tempDir2, { recursive: true, force: true });
       }

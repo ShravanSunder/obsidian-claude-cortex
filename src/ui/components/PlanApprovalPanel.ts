@@ -9,7 +9,7 @@ import type { App, Component } from 'obsidian';
 
 /** Options for creating the panel. */
 export interface PlanApprovalPanelOptions {
-  /** Container element (the main claudian view container). */
+  /** Container element (the main cortex view container). */
   containerEl: HTMLElement;
   /** The plan content to display. */
   planContent: string;
@@ -32,8 +32,8 @@ function findInputElements(containerEl: HTMLElement): {
   inputContainer: HTMLElement | null;
   inputWrapper: HTMLElement | null;
 } {
-  const inputContainer = containerEl.querySelector('.claudian-input-container') as HTMLElement | null;
-  const inputWrapper = containerEl.querySelector('.claudian-input-wrapper') as HTMLElement | null;
+  const inputContainer = containerEl.querySelector('.cortex-input-container') as HTMLElement | null;
+  const inputWrapper = containerEl.querySelector('.cortex-input-wrapper') as HTMLElement | null;
   return { inputContainer, inputWrapper };
 }
 
@@ -41,7 +41,7 @@ function findInputElements(containerEl: HTMLElement): {
 const APPROVAL_OPTIONS = [
   { label: 'Approve', isRevise: false },
   { label: 'Approve && New Session', isRevise: false },
-  { label: 'Type here to tell Claudian what to change', isRevise: true },
+  { label: 'Type here to tell Cortex what to change', isRevise: true },
 ] as const;
 
 /**
@@ -97,7 +97,7 @@ export class PlanApprovalPanel {
   /** Create the panel DOM structure. */
   private createPanel(): HTMLElement {
     const panel = document.createElement('div');
-    panel.className = 'claudian-plan-approval-panel';
+    panel.className = 'cortex-plan-approval-panel';
     panel.setAttribute('tabindex', '0');
     panel.setAttribute('role', 'dialog');
     panel.setAttribute('aria-label', 'Review implementation plan');
@@ -107,13 +107,13 @@ export class PlanApprovalPanel {
 
     // Header: "Would you like to proceed?"
     const headerEl = document.createElement('div');
-    headerEl.className = 'claudian-plan-approval-header';
+    headerEl.className = 'cortex-plan-approval-header';
     headerEl.textContent = 'Would you like to proceed?';
     panel.appendChild(headerEl);
 
     // Options container
     this.optionsEl = document.createElement('div');
-    this.optionsEl.className = 'claudian-plan-approval-options';
+    this.optionsEl.className = 'cortex-plan-approval-options';
     this.renderOptions();
     panel.appendChild(this.optionsEl);
 
@@ -127,18 +127,18 @@ export class PlanApprovalPanel {
 
     APPROVAL_OPTIONS.forEach((option, index) => {
       const optionEl = document.createElement('div');
-      optionEl.className = 'claudian-plan-approval-option';
+      optionEl.className = 'cortex-plan-approval-option';
       optionEl.setAttribute('data-option-index', String(index));
 
       // Caret indicator
       const caretEl = document.createElement('span');
-      caretEl.className = 'claudian-plan-approval-caret';
+      caretEl.className = 'cortex-plan-approval-caret';
       caretEl.textContent = index === this.currentOptionIndex ? '>' : ' ';
       optionEl.appendChild(caretEl);
 
       // Number indicator
       const numberEl = document.createElement('span');
-      numberEl.className = 'claudian-plan-approval-number';
+      numberEl.className = 'cortex-plan-approval-number';
       numberEl.textContent = `${index + 1}.`;
       optionEl.appendChild(numberEl);
 
@@ -146,7 +146,7 @@ export class PlanApprovalPanel {
       if (option.isRevise) {
         this.reviseInputEl = document.createElement('input');
         this.reviseInputEl.type = 'text';
-        this.reviseInputEl.className = 'claudian-plan-approval-revise-inline';
+        this.reviseInputEl.className = 'cortex-plan-approval-revise-inline';
         this.reviseInputEl.placeholder = option.label;
         // Prevent click from bubbling to option click handler
         this.reviseInputEl.addEventListener('click', (e) => {
@@ -184,7 +184,7 @@ export class PlanApprovalPanel {
       } else {
         // Regular label
         const labelEl = document.createElement('span');
-        labelEl.className = 'claudian-plan-approval-option-label';
+        labelEl.className = 'cortex-plan-approval-option-label';
         labelEl.textContent = option.label;
         optionEl.appendChild(labelEl);
       }
@@ -219,9 +219,9 @@ export class PlanApprovalPanel {
   private updateOptionFocus(): void {
     if (!this.optionsEl) return;
 
-    const options = this.optionsEl.querySelectorAll('.claudian-plan-approval-option');
+    const options = this.optionsEl.querySelectorAll('.cortex-plan-approval-option');
     options.forEach((opt, i) => {
-      const caret = opt.querySelector('.claudian-plan-approval-caret');
+      const caret = opt.querySelector('.cortex-plan-approval-caret');
       const isFocused = i === this.currentOptionIndex;
       opt.classList.toggle('focused', isFocused);
       if (caret) {
@@ -229,7 +229,11 @@ export class PlanApprovalPanel {
       }
     });
 
-    if (this.currentOptionIndex !== 2 && this.reviseInputEl && document.activeElement === this.reviseInputEl) {
+    if (
+      this.currentOptionIndex !== 2 &&
+      this.reviseInputEl &&
+      document.activeElement === this.reviseInputEl
+    ) {
       this.reviseInputEl.blur();
       this.panelEl.focus();
     }
@@ -274,7 +278,10 @@ export class PlanApprovalPanel {
 
       case 'ArrowDown':
         e.preventDefault();
-        this.currentOptionIndex = Math.min(APPROVAL_OPTIONS.length - 1, this.currentOptionIndex + 1);
+        this.currentOptionIndex = Math.min(
+          APPROVAL_OPTIONS.length - 1,
+          this.currentOptionIndex + 1,
+        );
         this.updateOptionFocus();
         break;
 
@@ -313,7 +320,13 @@ export class PlanApprovalPanel {
       default:
         // If on revise option and user types a printable character,
         // focus input and let it receive the character
-        if (this.currentOptionIndex === 2 && e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+        if (
+          this.currentOptionIndex === 2 &&
+          e.key.length === 1 &&
+          !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey
+        ) {
           e.preventDefault();
           if (this.reviseInputEl) {
             this.reviseInputEl.focus();
@@ -386,7 +399,7 @@ export function showPlanApprovalPanel(
   app: App,
   containerEl: HTMLElement,
   planContent: string,
-  component: Component
+  component: Component,
 ): Promise<
   | { decision: 'approve' | 'approve_new_session' | 'cancel' }
   | { decision: 'revise'; feedback: string }

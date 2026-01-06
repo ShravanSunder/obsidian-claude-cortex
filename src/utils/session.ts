@@ -1,5 +1,5 @@
 /**
- * Claudian - Session Utilities
+ * Cortex - Session Utilities
  *
  * Session recovery and history reconstruction.
  */
@@ -39,7 +39,7 @@ export function isSessionExpiredError(error: unknown): boolean {
   }
 
   for (const { includes } of SESSION_ERROR_COMPOUND_PATTERNS) {
-    if (includes.every(part => msg.includes(part))) {
+    if (includes.every((part) => msg.includes(part))) {
       return true;
     }
   }
@@ -95,7 +95,7 @@ export function buildContextFromHistory(messages: ChatMessage[]): string {
     if (message.role === 'assistant') {
       const hasContent = message.content && message.content.trim().length > 0;
       const hasToolResult = message.toolCalls?.some(
-        tc => tc.result && tc.result.trim().length > 0
+        (tc) => tc.result && tc.result.trim().length > 0,
       );
       if (!hasContent && !hasToolResult) {
         continue;
@@ -117,7 +117,7 @@ export function buildContextFromHistory(messages: ChatMessage[]): string {
 
     if (message.role === 'assistant' && message.toolCalls?.length) {
       const toolLines = message.toolCalls
-        .map(tc => formatToolCallForContext(tc))
+        .map((tc) => formatToolCallForContext(tc))
         .filter(Boolean) as string[];
       if (toolLines.length > 0) {
         lines.push(...toolLines);

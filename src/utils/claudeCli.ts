@@ -1,5 +1,5 @@
 /**
- * Claudian - Claude CLI resolver
+ * Cortex - Claude CLI resolver
  *
  * Shared resolver for Claude CLI path detection across services.
  */
@@ -39,7 +39,10 @@ export class ClaudeCliResolver {
   }
 }
 
-export function resolveClaudeCliPath(customPath: string | undefined, envText: string): string | null {
+export function resolveClaudeCliPath(
+  customPath: string | undefined,
+  envText: string,
+): string | null {
   const trimmed = (customPath ?? '').trim();
   if (trimmed) {
     const expandedPath = expandHomePath(trimmed);
@@ -49,13 +52,13 @@ export function resolveClaudeCliPath(customPath: string | undefined, envText: st
         if (stat.isFile()) {
           return expandedPath;
         }
-        console.warn(`Claudian: Custom CLI path is a directory, not a file: ${expandedPath}`);
+        console.warn(`Cortex: Custom CLI path is a directory, not a file: ${expandedPath}`);
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        console.warn(`Claudian: Custom CLI path not accessible: ${expandedPath} (${message})`);
+        console.warn(`Cortex: Custom CLI path not accessible: ${expandedPath} (${message})`);
       }
     } else {
-      console.warn(`Claudian: Custom CLI path not found: ${expandedPath}`);
+      console.warn(`Cortex: Custom CLI path not found: ${expandedPath}`);
     }
   }
 

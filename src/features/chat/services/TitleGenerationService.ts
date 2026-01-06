@@ -1,5 +1,5 @@
 /**
- * Claudian - Title generation service
+ * Cortex - Title generation service
  *
  * Lightweight Claude query service for generating conversation titles
  * based on first user message and first AI response.
@@ -9,7 +9,7 @@ import type { Options } from '@anthropic-ai/claude-agent-sdk';
 import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
 
 import { TITLE_GENERATION_SYSTEM_PROMPT } from '../../../core/prompts/titleGeneration';
-import type ClaudianPlugin from '../../../main';
+import type CortexPlugin from '../../../main';
 import { getEnhancedPath, parseEnvironmentVariables } from '../../../utils/env';
 import { getVaultPath } from '../../../utils/path';
 
@@ -21,16 +21,16 @@ export type TitleGenerationResult =
 /** Callback when title generation completes. */
 export type TitleGenerationCallback = (
   conversationId: string,
-  result: TitleGenerationResult
+  result: TitleGenerationResult,
 ) => Promise<void>;
 
 /** Service for generating conversation titles with AI. */
 export class TitleGenerationService {
-  private plugin: ClaudianPlugin;
+  private plugin: CortexPlugin;
   /** Map of conversationId to AbortController for concurrent generation support. */
   private activeGenerations: Map<string, AbortController> = new Map();
 
-  constructor(plugin: ClaudianPlugin) {
+  constructor(plugin: CortexPlugin) {
     this.plugin = plugin;
   }
 
@@ -42,7 +42,7 @@ export class TitleGenerationService {
     conversationId: string,
     userMessage: string,
     assistantResponse: string,
-    callback: TitleGenerationCallback
+    callback: TitleGenerationCallback,
   ): Promise<void> {
     const vaultPath = getVaultPath(this.plugin.app);
     if (!vaultPath) {
@@ -54,9 +54,7 @@ export class TitleGenerationService {
       return;
     }
 
-    const envVars = parseEnvironmentVariables(
-      this.plugin.getActiveEnvironmentVariables()
-    );
+    const envVars = parseEnvironmentVariables(this.plugin.getActiveEnvironmentVariables());
 
     const resolvedClaudePath = this.plugin.getResolvedClaudeCliPath();
     if (!resolvedClaudePath) {
@@ -176,16 +174,17 @@ Generate a title for this conversation:`;
   }
 
   /** Extracts text content from SDK message. */
-  private extractTextFromMessage(
-    message: { type: string; message?: { content?: Array<{ type: string; text?: string }> } }
-  ): string {
+  private extractTextFromMessage(message: {
+    type: string;
+    message?: { content?: Array<{ type: string; text?: string }> };
+  }): string {
     if (message.type !== 'assistant' || !message.message?.content) {
       return '';
     }
 
     return message.message.content
-      .filter((block): block is { type: 'text'; text: string } =>
-        block.type === 'text' && !!block.text
+      .filter(
+        (block): block is { type: 'text'; text: string } => block.type === 'text' && !!block.text,
       )
       .map((block) => block.text)
       .join('');
@@ -220,12 +219,15 @@ Generate a title for this conversation:`;
   private async safeCallback(
     callback: TitleGenerationCallback,
     conversationId: string,
-    result: TitleGenerationResult
+    result: TitleGenerationResult,
   ): Promise<void> {
     try {
       await callback(conversationId, result);
     } catch (error) {
-      console.error('[TitleGeneration] Error in callback:', error instanceof Error ? error.message : error);
+      console.error(
+        '[TitleGeneration] Error in callback:',
+        error instanceof Error ? error.message : error,
+      );
     }
   }
 }

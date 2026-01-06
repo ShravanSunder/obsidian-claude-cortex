@@ -11,7 +11,7 @@ import { getFolderName, normalizePathForComparison } from '../../../../utils/con
 import { type ContextPathFile, contextPathScanner } from '../../../../utils/contextPathScanner';
 import { extractMcpMentions } from '../../../../utils/mcp';
 import { SelectableDropdown } from '../../SelectableDropdown';
-import { type ContextPathEntry, createContextPathEntry, type MentionItem } from './types';
+import { type ContextPathEntry, type MentionItem, createContextPathEntry } from './types';
 
 export interface MentionDropdownOptions {
   fixed?: boolean;
@@ -45,7 +45,7 @@ export class MentionDropdownController {
     containerEl: HTMLElement,
     inputEl: HTMLTextAreaElement | HTMLInputElement,
     callbacks: MentionDropdownCallbacks,
-    options: MentionDropdownOptions = {}
+    options: MentionDropdownOptions = {},
   ) {
     this.containerEl = containerEl;
     this.inputEl = inputEl;
@@ -53,11 +53,11 @@ export class MentionDropdownController {
     this.fixed = options.fixed ?? false;
 
     this.dropdown = new SelectableDropdown<MentionItem>(this.containerEl, {
-      listClassName: 'claudian-mention-dropdown',
-      itemClassName: 'claudian-mention-item',
-      emptyClassName: 'claudian-mention-empty',
+      listClassName: 'cortex-mention-dropdown',
+      itemClassName: 'cortex-mention-item',
+      emptyClassName: 'cortex-mention-empty',
       fixed: this.fixed,
-      fixedClassName: 'claudian-mention-dropdown-fixed',
+      fixedClassName: 'cortex-mention-dropdown-fixed',
     });
   }
 
@@ -75,7 +75,7 @@ export class MentionDropdownController {
       } catch (err) {
         console.warn(
           'Failed to pre-scan context paths:',
-          err instanceof Error ? err.message : String(err)
+          err instanceof Error ? err.message : String(err),
         );
       }
     }, 0);
@@ -101,9 +101,7 @@ export class MentionDropdownController {
   updateMcpMentionsFromText(text: string): void {
     if (!this.mcpService) return;
 
-    const validNames = new Set(
-      this.mcpService.getContextSavingServers().map(s => s.name)
-    );
+    const validNames = new Set(this.mcpService.getContextSavingServers().map((s) => s.name));
 
     const newMentions = extractMcpMentions(text, validNames);
     const changed = this.callbacks.setMentionedMcpServers(newMentions);
@@ -183,8 +181,9 @@ export class MentionDropdownController {
       counts.set(folderName, (counts.get(folderName) ?? 0) + 1);
     }
 
-    return contextPaths.map(contextRoot => {
-      const normalized = normalizedPaths.get(contextRoot) ?? normalizePathForComparison(contextRoot);
+    return contextPaths.map((contextRoot) => {
+      const normalized =
+        normalizedPaths.get(contextRoot) ?? normalizePathForComparison(contextRoot);
       const folderName = getFolderName(contextRoot);
       const needsDisambiguation = (counts.get(folderName) ?? 0) > 1;
       const displayName = this.getContextDisplayName(normalized, folderName, needsDisambiguation);
@@ -195,7 +194,7 @@ export class MentionDropdownController {
   private getContextDisplayName(
     normalizedPath: string,
     folderName: string,
-    needsDisambiguation: boolean
+    needsDisambiguation: boolean,
   ): string {
     if (!needsDisambiguation) return folderName;
 
@@ -221,7 +220,7 @@ export class MentionDropdownController {
 
     if (isFilterSearch) {
       const matchingContext = contextEntries
-        .filter(entry => searchLower.startsWith(`${entry.displayNameLower}/`))
+        .filter((entry) => searchLower.startsWith(`${entry.displayNameLower}/`))
         .sort((a, b) => b.displayNameLower.length - a.displayNameLower.length)[0];
 
       if (matchingContext) {
@@ -239,7 +238,7 @@ export class MentionDropdownController {
     if (this.activeContextFilter && isFilterSearch) {
       const contextFiles = contextPathScanner.scanPaths([this.activeContextFilter.contextRoot]);
       this.filteredContextFiles = contextFiles
-        .filter(file => {
+        .filter((file) => {
           const relativePath = file.relativePath.replace(/\\/g, '/');
           const pathLower = relativePath.toLowerCase();
           const nameLower = file.name.toLowerCase();
@@ -288,7 +287,10 @@ export class MentionDropdownController {
     if (contextEntries.length > 0) {
       const matchingFolders = new Set<string>();
       for (const entry of contextEntries) {
-        if (entry.displayNameLower.includes(searchLower) && !matchingFolders.has(entry.displayName)) {
+        if (
+          entry.displayNameLower.includes(searchLower) &&
+          !matchingFolders.has(entry.displayName)
+        ) {
           matchingFolders.add(entry.displayName);
           this.filteredMentionItems.push({
             type: 'context-folder',
@@ -307,7 +309,7 @@ export class MentionDropdownController {
     if (remainingSlots > 0) {
       const allFiles = this.callbacks.getCachedMarkdownFiles();
       vaultFiles = allFiles
-        .filter(file => {
+        .filter((file) => {
           const pathLower = file.path.toLowerCase();
           const nameLower = file.name.toLowerCase();
           return pathLower.includes(searchLower) || nameLower.includes(searchLower);
@@ -352,7 +354,7 @@ export class MentionDropdownController {
         return undefined;
       },
       renderItem: (item, itemEl) => {
-        const iconEl = itemEl.createSpan({ cls: 'claudian-mention-icon' });
+        const iconEl = itemEl.createSpan({ cls: 'cortex-mention-icon' });
         if (item.type === 'mcp-server') {
           iconEl.innerHTML = MCP_ICON_SVG;
         } else if (item.type === 'context-file') {
@@ -363,23 +365,23 @@ export class MentionDropdownController {
           setIcon(iconEl, 'file-text');
         }
 
-        const textEl = itemEl.createSpan({ cls: 'claudian-mention-text' });
+        const textEl = itemEl.createSpan({ cls: 'cortex-mention-text' });
 
         if (item.type === 'mcp-server') {
-          const nameEl = textEl.createSpan({ cls: 'claudian-mention-name' });
+          const nameEl = textEl.createSpan({ cls: 'cortex-mention-name' });
           nameEl.setText(`@${item.name}`);
         } else if (item.type === 'context-folder') {
           const nameEl = textEl.createSpan({
-            cls: 'claudian-mention-name claudian-mention-name-folder',
+            cls: 'cortex-mention-name cortex-mention-name-folder',
           });
           nameEl.setText(`@${item.name}/`);
         } else if (item.type === 'context-file') {
           const nameEl = textEl.createSpan({
-            cls: 'claudian-mention-name claudian-mention-name-context',
+            cls: 'cortex-mention-name cortex-mention-name-context',
           });
           nameEl.setText(item.name);
         } else {
-          const pathEl = textEl.createSpan({ cls: 'claudian-mention-path' });
+          const pathEl = textEl.createSpan({ cls: 'cortex-mention-path' });
           pathEl.setText(item.path || item.name);
         }
       },
@@ -426,14 +428,16 @@ export class MentionDropdownController {
     if (selectedItem.type === 'mcp-server') {
       const replacement = `@${selectedItem.name} `;
       this.inputEl.value = beforeAt + replacement + afterCursor;
-      this.inputEl.selectionStart = this.inputEl.selectionEnd = beforeAt.length + replacement.length;
+      this.inputEl.selectionStart = this.inputEl.selectionEnd =
+        beforeAt.length + replacement.length;
 
       this.callbacks.addMentionedMcpServer(selectedItem.name);
       this.callbacks.onMcpMentionChange?.(this.callbacks.getMentionedMcpServers());
     } else if (selectedItem.type === 'context-folder') {
       const replacement = `@${selectedItem.name}/`;
       this.inputEl.value = beforeAt + replacement + afterCursor;
-      this.inputEl.selectionStart = this.inputEl.selectionEnd = beforeAt.length + replacement.length;
+      this.inputEl.selectionStart = this.inputEl.selectionEnd =
+        beforeAt.length + replacement.length;
       this.inputEl.focus();
 
       this.handleInputChange();
@@ -448,7 +452,8 @@ export class MentionDropdownController {
         : `@${selectedItem.name}`;
       const replacement = `${displayName} `;
       this.inputEl.value = beforeAt + replacement + afterCursor;
-      this.inputEl.selectionStart = this.inputEl.selectionEnd = beforeAt.length + replacement.length;
+      this.inputEl.selectionStart = this.inputEl.selectionEnd =
+        beforeAt.length + replacement.length;
     } else {
       const file = selectedItem.file;
       if (file) {
@@ -465,7 +470,8 @@ export class MentionDropdownController {
 
       const replacement = `@${selectedItem.name} `;
       this.inputEl.value = beforeAt + replacement + afterCursor;
-      this.inputEl.selectionStart = this.inputEl.selectionEnd = beforeAt.length + replacement.length;
+      this.inputEl.selectionStart = this.inputEl.selectionEnd =
+        beforeAt.length + replacement.length;
     }
 
     this.hide();

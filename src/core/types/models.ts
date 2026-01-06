@@ -26,7 +26,7 @@ export const THINKING_BUDGETS: { value: ThinkingBudget; label: string; tokens: n
 
 /** Default thinking budget per model tier. */
 export const DEFAULT_THINKING_BUDGET: Record<string, ThinkingBudget> = {
-  'haiku': 'off',
-  'sonnet': 'low',
-  'opus': 'medium',
+  haiku: 'off',
+  sonnet: 'low',
+  opus: 'medium',
 };

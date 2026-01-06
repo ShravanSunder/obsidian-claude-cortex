@@ -1,5 +1,5 @@
 /**
- * Claudian - Editor Context Utilities
+ * Cortex - Editor Context Utilities
  *
  * Editor cursor and selection context for inline editing.
  */
@@ -26,7 +26,7 @@ export function findNearestNonEmptyLine(
   getLine: (line: number) => string,
   lineCount: number,
   startLine: number,
-  direction: 'before' | 'after'
+  direction: 'before' | 'after',
 ): string {
   const step = direction === 'before' ? -1 : 1;
   for (let i = startLine + step; i >= 0 && i < lineCount; i += step) {
@@ -49,7 +49,7 @@ export function buildCursorContext(
   getLine: (line: number) => string,
   lineCount: number,
   line: number,
-  column: number
+  column: number,
 ): CursorContext {
   const lineContent = getLine(line);
   const beforeCursor = lineContent.substring(0, column);
@@ -76,9 +76,10 @@ export function buildCursorContext(
 /** Formats editor context in XML format. */
 export function formatEditorContext(context: EditorSelectionContext): string {
   if (context.mode === 'selection' && context.selectedText) {
-    const lineAttr = context.startLine && context.lineCount
-      ? ` lines="${context.startLine}-${context.startLine + context.lineCount - 1}"`
-      : '';
+    const lineAttr =
+      context.startLine && context.lineCount
+        ? ` lines="${context.startLine}-${context.startLine + context.lineCount - 1}"`
+        : '';
     return `<editor_selection path="${context.notePath}"${lineAttr}>\n${context.selectedText}\n</editor_selection>`;
   } else if (context.mode === 'cursor' && context.cursorContext) {
     const ctx = context.cursorContext;

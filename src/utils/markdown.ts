@@ -1,5 +1,5 @@
 /**
- * Claudian - Markdown Utilities
+ * Cortex - Markdown Utilities
  *
  * Markdown manipulation helpers.
  */

@@ -65,7 +65,7 @@ export class SessionStorage {
       const content = await this.adapter.read(filePath);
       return this.parseJSONL(content);
     } catch (error) {
-      console.error(`[Claudian] Failed to load conversation ${id}:`, error);
+      console.error(`[Cortex] Failed to load conversation ${id}:`, error);
       return null;
     }
   }
@@ -99,14 +99,14 @@ export class SessionStorage {
             metas.push(meta);
           }
         } catch (error) {
-          console.error(`[Claudian] Failed to load meta from ${filePath}:`, error);
+          console.error(`[Cortex] Failed to load meta from ${filePath}:`, error);
         }
       }
 
       // Sort by updatedAt descending (most recent first)
       metas.sort((a, b) => b.updatedAt - a.updatedAt);
     } catch (error) {
-      console.error('[Claudian] Failed to list sessions:', error);
+      console.error('[Cortex] Failed to list sessions:', error);
     }
 
     return metas;
@@ -129,14 +129,14 @@ export class SessionStorage {
             conversations.push(conversation);
           }
         } catch (error) {
-          console.error(`[Claudian] Failed to load conversation from ${filePath}:`, error);
+          console.error(`[Cortex] Failed to load conversation from ${filePath}:`, error);
         }
       }
 
       // Sort by updatedAt descending
       conversations.sort((a, b) => b.updatedAt - a.updatedAt);
     } catch (error) {
-      console.error('[Claudian] Failed to load all conversations:', error);
+      console.error('[Cortex] Failed to load all conversations:', error);
     }
 
     return conversations;
@@ -145,7 +145,7 @@ export class SessionStorage {
   /** Check if any sessions exist. */
   async hasSessions(): Promise<boolean> {
     const files = await this.adapter.listFiles(SESSIONS_PATH);
-    return files.some(f => f.endsWith('.jsonl'));
+    return files.some((f) => f.endsWith('.jsonl'));
   }
 
   /** Get the file path for a conversation. */
@@ -166,7 +166,7 @@ export class SessionStorage {
       if (record.type !== 'meta') return null;
 
       // Count messages by counting remaining lines
-      const lines = content.split(/\r?\n/).filter(l => l.trim());
+      const lines = content.split(/\r?\n/).filter((l) => l.trim());
       const messageCount = lines.length - 1;
 
       // Get preview from first user message
@@ -202,7 +202,7 @@ export class SessionStorage {
   /** Parse JSONL content into a Conversation object. */
   private parseJSONL(content: string): Conversation | null {
     // Handle both Unix (LF) and Windows (CRLF) line endings
-    const lines = content.split(/\r?\n/).filter(l => l.trim());
+    const lines = content.split(/\r?\n/).filter((l) => l.trim());
     if (lines.length === 0) return null;
 
     let meta: SessionMetaRecord | null = null;
@@ -218,7 +218,7 @@ export class SessionStorage {
           messages.push(record.message);
         }
       } catch (error) {
-        console.warn('[Claudian] Failed to parse JSONL line:', error);
+        console.warn('[Cortex] Failed to parse JSONL line:', error);
       }
     }
 
@@ -283,7 +283,7 @@ export class SessionStorage {
     }
 
     // Strip base64 data only when a cachePath or filePath exists
-    const strippedImages: ImageAttachment[] = message.images.map(img => {
+    const strippedImages: ImageAttachment[] = message.images.map((img) => {
       if (!img.cachePath && !img.filePath) {
         return img;
       }

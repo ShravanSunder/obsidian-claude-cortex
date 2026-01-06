@@ -16,7 +16,7 @@ import {
 
 export function getPathFromToolInput(
   toolName: string,
-  toolInput: Record<string, unknown>
+  toolInput: Record<string, unknown>,
 ): string | null {
   switch (toolName) {
     case TOOL_READ:

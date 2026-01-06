@@ -1,9 +1,9 @@
 /* Settings - Approved Actions List */
-.claudian-approved-desc {
+.cortex-approved-desc {
   margin-bottom: 12px;
 }
 
-.claudian-approved-empty {
+.cortex-approved-empty {
   padding: 16px;
   text-align: center;
   color: var(--text-muted);
@@ -13,11 +13,11 @@
   margin-bottom: 16px;
 }
 
-.claudian-approved-list {
+.cortex-approved-list {
   margin-bottom: 16px;
 }
 
-.claudian-approved-item {
+.cortex-approved-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -27,23 +27,23 @@
   margin-bottom: 8px;
 }
 
-.claudian-approved-item-info {
+.cortex-approved-item-info {
   flex: 1;
   min-width: 0;
 }
 
-.claudian-approved-item-tool {
+.cortex-approved-item-tool {
   display: inline-block;
   padding: 2px 8px;
   background: rgba(217, 119, 87, 0.15);
-  color: #D97757;
+  color: #d97757;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 500;
   margin-right: 8px;
 }
 
-.claudian-approved-item-pattern {
+.cortex-approved-item-pattern {
   font-family: var(--font-monospace);
   font-size: 12px;
   color: var(--text-normal);
@@ -53,13 +53,13 @@
   text-overflow: ellipsis;
 }
 
-.claudian-approved-item-date {
+.cortex-approved-item-date {
   font-size: 11px;
   color: var(--text-muted);
   margin-left: 8px;
 }
 
-.claudian-approved-remove-btn {
+.cortex-approved-remove-btn {
   padding: 4px 12px;
   font-size: 12px;
   background: var(--background-modifier-error);
@@ -71,6 +71,6 @@
   margin-left: 12px;
 }
 
-.claudian-approved-remove-btn:hover {
+.cortex-approved-remove-btn:hover {
   opacity: 0.9;
 }

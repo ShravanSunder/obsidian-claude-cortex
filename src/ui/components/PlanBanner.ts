@@ -26,7 +26,7 @@ export class PlanBanner {
   private bannerEl: HTMLElement | null = null;
   private contentEl: HTMLElement | null = null;
   private isExpanded = false;
-  private planContent: string = '';
+  private planContent = '';
 
   constructor(options: PlanBannerOptions) {
     this.app = options.app;
@@ -59,22 +59,22 @@ export class PlanBanner {
 
     // Create the banner element
     this.bannerEl = document.createElement('div');
-    this.bannerEl.className = 'claudian-plan-banner';
+    this.bannerEl.className = 'cortex-plan-banner';
 
     // Header (clickable to toggle)
     const headerEl = document.createElement('div');
-    headerEl.className = 'claudian-plan-banner-header';
+    headerEl.className = 'cortex-plan-banner-header';
     headerEl.addEventListener('click', () => this.toggle());
 
     // Chevron icon
     const chevronEl = document.createElement('span');
-    chevronEl.className = 'claudian-plan-banner-chevron';
+    chevronEl.className = 'cortex-plan-banner-chevron';
     chevronEl.textContent = '▶';
     headerEl.appendChild(chevronEl);
 
     // Title
     const titleEl = document.createElement('span');
-    titleEl.className = 'claudian-plan-banner-title';
+    titleEl.className = 'cortex-plan-banner-title';
     titleEl.textContent = 'Approved Plan';
     headerEl.appendChild(titleEl);
 
@@ -82,7 +82,7 @@ export class PlanBanner {
 
     // Content area (hidden by default)
     this.contentEl = document.createElement('div');
-    this.contentEl.className = 'claudian-plan-banner-content';
+    this.contentEl.className = 'cortex-plan-banner-content';
     this.contentEl.style.display = 'none';
 
     // Render plan content as markdown
@@ -91,7 +91,7 @@ export class PlanBanner {
     this.bannerEl.appendChild(this.contentEl);
 
     // Insert after header, before messages
-    const messagesEl = this.containerEl.querySelector('.claudian-messages');
+    const messagesEl = this.containerEl.querySelector('.cortex-messages');
     if (messagesEl) {
       this.containerEl.insertBefore(this.bannerEl, messagesEl);
     } else {
@@ -126,7 +126,7 @@ export class PlanBanner {
   private updateDisplay(): void {
     if (!this.bannerEl || !this.contentEl) return;
 
-    const chevron = this.bannerEl.querySelector('.claudian-plan-banner-chevron');
+    const chevron = this.bannerEl.querySelector('.cortex-plan-banner-chevron');
     if (chevron) {
       chevron.textContent = this.isExpanded ? '▼' : '▶';
     }
@@ -142,13 +142,7 @@ export class PlanBanner {
     if (!this.contentEl) return;
 
     try {
-      await MarkdownRenderer.render(
-        this.app,
-        this.planContent,
-        this.contentEl,
-        '',
-        this.component
-      );
+      await MarkdownRenderer.render(this.app, this.planContent, this.contentEl, '', this.component);
     } catch {
       // Fallback to plain text
       this.contentEl.textContent = this.planContent;

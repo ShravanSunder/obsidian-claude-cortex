@@ -2,16 +2,16 @@
  * Tests for InstructionRefineService - Refining custom instructions
  */
 
+import * as fs from 'fs';
 // eslint-disable-next-line jest/no-mocks-import
 import {
   getLastOptions,
   resetMockMessages,
   setMockMessages,
 } from '@test/__mocks__/claude-agent-sdk';
-import * as fs from 'fs';
 
 // Mock fs module
-jest.mock('fs');
+vi.mock('fs');
 
 // Import after mocks are set up
 import { InstructionRefineService } from '@/features/chat/services/InstructionRefineService';
@@ -31,8 +31,8 @@ function createMockPlugin(settings = {}) {
         },
       },
     },
-    getActiveEnvironmentVariables: jest.fn().mockReturnValue(''),
-    getResolvedClaudeCliPath: jest.fn().mockReturnValue('/fake/claude'),
+    getActiveEnvironmentVariables: vi.fn().mockReturnValue(''),
+    getResolvedClaudeCliPath: vi.fn().mockReturnValue('/fake/claude'),
   } as any;
 }
 
@@ -41,7 +41,7 @@ describe('InstructionRefineService', () => {
   let mockPlugin: any;
 
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     resetMockMessages();
     mockPlugin = createMockPlugin();
     service = new InstructionRefineService(mockPlugin);
@@ -90,7 +90,9 @@ describe('InstructionRefineService', () => {
       const result = await service.refineInstruction('coding style', existing);
 
       expect(result.success).toBe(true);
-      expect(result.refinedInstruction).toBe('## Coding Style\n\n- Use TypeScript.\n- Prefer small diffs.');
+      expect(result.refinedInstruction).toBe(
+        '## Coding Style\n\n- Use TypeScript.\n- Prefer small diffs.',
+      );
 
       const options = getLastOptions();
       expect(options?.systemPrompt).toContain('EXISTING INSTRUCTIONS');
@@ -107,9 +109,9 @@ describe('InstructionRefineService', () => {
         const pathModule = require('path');
         return pathModule.resolve(p);
       };
-      (fs.realpathSync as any) = jest.fn(normalizePath);
+      (fs.realpathSync as any) = vi.fn(normalizePath);
       if (fs.realpathSync) {
-        (fs.realpathSync as any).native = jest.fn(normalizePath);
+        (fs.realpathSync as any).native = vi.fn(normalizePath);
       }
     });
 

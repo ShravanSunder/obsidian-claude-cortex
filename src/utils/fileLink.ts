@@ -1,5 +1,5 @@
 /**
- * Claudian - File Link Utilities
+ * Cortex - File Link Utilities
  *
  * Detects Obsidian wikilinks [[path/to/file]] in rendered content and makes
  * them clickable to open the file in Obsidian.
@@ -90,12 +90,9 @@ function fileExistsInVault(app: App, linkPath: string): boolean {
  * Creates a link element for a wikilink.
  * Click handling is done via event delegation in registerFileLinkHandler.
  */
-function createWikilink(
-  linkTarget: string,
-  displayText: string
-): HTMLElement {
+function createWikilink(linkTarget: string, displayText: string): HTMLElement {
   const link = document.createElement('a');
-  link.className = 'claudian-file-link internal-link';
+  link.className = 'cortex-file-link internal-link';
   link.textContent = displayText;
   link.setAttribute('data-href', linkTarget);
   link.setAttribute('href', linkTarget);
@@ -105,17 +102,17 @@ function createWikilink(
 /**
  * Registers a delegated click handler for file links on a container.
  * Should be called once on the messages container.
- * Handles both our custom .claudian-file-link and Obsidian's .internal-link.
+ * Handles both our custom .cortex-file-link and Obsidian's .internal-link.
  */
 export function registerFileLinkHandler(
   app: App,
   container: HTMLElement,
-  component: Component
+  component: Component,
 ): void {
   component.registerDomEvent(container, 'click', (event: MouseEvent) => {
     const target = event.target as HTMLElement;
     // Handle both our links and Obsidian's internal links
-    const link = target.closest('.claudian-file-link, .internal-link') as HTMLAnchorElement;
+    const link = target.closest('.cortex-file-link, .internal-link') as HTMLAnchorElement;
 
     if (link) {
       event.preventDefault();
@@ -140,7 +137,7 @@ function buildFragmentWithLinks(text: string, matches: WikilinkMatch[]): Documen
     if (endIndex < currentIndex) {
       fragment.insertBefore(
         document.createTextNode(text.slice(endIndex, currentIndex)),
-        fragment.firstChild
+        fragment.firstChild,
       );
     }
 
@@ -151,7 +148,7 @@ function buildFragmentWithLinks(text: string, matches: WikilinkMatch[]): Documen
   if (currentIndex > 0) {
     fragment.insertBefore(
       document.createTextNode(text.slice(0, currentIndex)),
-      fragment.firstChild
+      fragment.firstChild,
     );
   }
 
@@ -203,29 +200,25 @@ export function processFileLinks(app: App, container: HTMLElement): void {
   });
 
   // Process regular text nodes (not in code blocks or already-rendered links)
-  const walker = document.createTreeWalker(
-    container,
-    NodeFilter.SHOW_TEXT,
-    {
-      acceptNode(node) {
-        // Skip nodes inside <pre>, <code>, <a>, or already processed links
-        const parent = node.parentElement;
-        if (!parent) return NodeFilter.FILTER_REJECT;
+  const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, {
+    acceptNode(node) {
+      // Skip nodes inside <pre>, <code>, <a>, or already processed links
+      const parent = node.parentElement;
+      if (!parent) return NodeFilter.FILTER_REJECT;
 
-        const tagName = parent.tagName.toUpperCase();
-        if (tagName === 'PRE' || tagName === 'CODE' || tagName === 'A') {
-          return NodeFilter.FILTER_REJECT;
-        }
+      const tagName = parent.tagName.toUpperCase();
+      if (tagName === 'PRE' || tagName === 'CODE' || tagName === 'A') {
+        return NodeFilter.FILTER_REJECT;
+      }
 
-        // Skip if parent or ancestor is a code block or link
-        if (parent.closest('pre, code, a, .claudian-file-link, .internal-link')) {
-          return NodeFilter.FILTER_REJECT;
-        }
+      // Skip if parent or ancestor is a code block or link
+      if (parent.closest('pre, code, a, .cortex-file-link, .internal-link')) {
+        return NodeFilter.FILTER_REJECT;
+      }
 
-        return NodeFilter.FILTER_ACCEPT;
-      },
-    }
-  );
+      return NodeFilter.FILTER_ACCEPT;
+    },
+  });
 
   // Collect text nodes first (modifying while walking causes issues)
   const textNodes: Text[] = [];

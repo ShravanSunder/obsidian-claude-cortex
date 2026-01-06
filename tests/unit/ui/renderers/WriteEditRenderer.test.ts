@@ -32,7 +32,10 @@ function createMockElement(tag = 'div'): any {
     set className(value: string) {
       classes.clear();
       if (value) {
-        value.split(' ').filter(Boolean).forEach(c => classes.add(c));
+        value
+          .split(' ')
+          .filter(Boolean)
+          .forEach((c) => classes.add(c));
       }
     },
     classList: {
@@ -63,7 +66,7 @@ function createMockElement(tag = 'div'): any {
     createDiv: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement('div');
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -72,7 +75,7 @@ function createMockElement(tag = 'div'): any {
     createSpan: (opts?: { cls?: string; text?: string }) => {
       const child = createMockElement('span');
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -81,7 +84,7 @@ function createMockElement(tag = 'div'): any {
     createEl: (tagName: string, opts?: { cls?: string; text?: string }) => {
       const child = createMockElement(tagName);
       if (opts?.cls) {
-        opts.cls.split(' ').forEach(c => child.addClass(c));
+        opts.cls.split(' ').forEach((c) => child.addClass(c));
       }
       if (opts?.text) child.textContent = opts.text;
       children.push(child);
@@ -214,7 +217,7 @@ describe('WriteEditRenderer', () => {
 
       // Should be shortened, not the full path
       expect(state.labelEl.textContent.length).toBeLessThan(
-        'Write: /very/long/path/to/some/deeply/nested/file.md'.length + 10
+        'Write: /very/long/path/to/some/deeply/nested/file.md'.length + 10,
       );
     });
 
@@ -490,7 +493,7 @@ describe('WriteEditRenderer', () => {
 
       // Find header and trigger click
       const header = (block as any)._children.find((c: any) =>
-        c.hasClass('claudian-write-edit-header')
+        c.hasClass('cortex-write-edit-header'),
       );
       expect(header).toBeDefined();
 
@@ -516,14 +519,14 @@ describe('WriteEditRenderer', () => {
 
       const block = renderStoredWriteEdit(parentEl, toolCall);
       const header = (block as any)._children.find((c: any) =>
-        c.hasClass('claudian-write-edit-header')
+        c.hasClass('cortex-write-edit-header'),
       );
 
       const keydownHandlers = header._eventListeners.get('keydown') || [];
       expect(keydownHandlers.length).toBeGreaterThan(0);
 
       // Simulate Enter key
-      const enterEvent = { key: 'Enter', preventDefault: jest.fn() };
+      const enterEvent = { key: 'Enter', preventDefault: vi.fn() };
       keydownHandlers[0](enterEvent);
 
       expect(enterEvent.preventDefault).toHaveBeenCalled();
@@ -586,7 +589,7 @@ describe('WriteEditRenderer', () => {
 
       // Should show +2 for two new lines
       expect(state.diffLines).toBeDefined();
-      expect(state.diffLines!.filter(l => l.type === 'insert').length).toBe(2);
+      expect(state.diffLines!.filter((l) => l.type === 'insert').length).toBe(2);
     });
 
     it('should handle empty file being written', () => {
@@ -604,7 +607,7 @@ describe('WriteEditRenderer', () => {
 
       // Should show -1 for deleted line
       expect(state.diffLines).toBeDefined();
-      expect(state.diffLines!.filter(l => l.type === 'delete').length).toBe(1);
+      expect(state.diffLines!.filter((l) => l.type === 'delete').length).toBe(1);
     });
 
     it('should handle mixed changes', () => {
@@ -627,7 +630,7 @@ describe('WriteEditRenderer', () => {
           acc[l.type] = (acc[l.type] || 0) + 1;
           return acc;
         },
-        {} as Record<string, number>
+        {} as Record<string, number>,
       );
 
       expect(types.delete).toBe(1);

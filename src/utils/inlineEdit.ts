@@ -15,4 +15,3 @@ export function normalizeInsertionText(text: string): string {
 export function escapeHtml(text: string): string {
   return text.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
-

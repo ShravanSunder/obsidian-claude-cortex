@@ -1,22 +1,27 @@
 /**
- * Claudian - Environment snippet manager
+ * Cortex - Environment snippet manager
  *
  * Manages saving and restoring environment variable configurations.
  */
 
-import type { App} from 'obsidian';
-import { Modal, Notice, setIcon, Setting } from 'obsidian';
+import type { App } from 'obsidian';
+import { Modal, Notice, Setting, setIcon } from 'obsidian';
 
 import type { EnvSnippet } from '../../core/types';
-import type ClaudianPlugin from '../../main';
+import type CortexPlugin from '../../main';
 
 /** Modal for creating/editing environment variable snippets. */
 export class EnvSnippetModal extends Modal {
-  plugin: ClaudianPlugin;
+  plugin: CortexPlugin;
   snippet: EnvSnippet | null;
   onSave: (snippet: EnvSnippet) => void;
 
-  constructor(app: App, plugin: ClaudianPlugin, snippet: EnvSnippet | null, onSave: (snippet: EnvSnippet) => void) {
+  constructor(
+    app: App,
+    plugin: CortexPlugin,
+    snippet: EnvSnippet | null,
+    onSave: (snippet: EnvSnippet) => void,
+  ) {
     super(app);
     this.plugin = plugin;
     this.snippet = snippet;
@@ -28,7 +33,7 @@ export class EnvSnippetModal extends Modal {
     this.setTitle(this.snippet ? 'Edit snippet' : 'Save snippet');
 
     // Make modal more compact
-    this.modalEl.addClass('claudian-env-snippet-modal');
+    this.modalEl.addClass('cortex-env-snippet-modal');
 
     let nameEl: HTMLInputElement;
     let descEl: HTMLInputElement;
@@ -69,7 +74,7 @@ export class EnvSnippetModal extends Modal {
       .addText((text) => {
         nameEl = text.inputEl;
         text.setValue(this.snippet?.name || '');
-                text.inputEl.addEventListener('keydown', handleKeyDown);
+        text.inputEl.addEventListener('keydown', handleKeyDown);
       });
 
     new Setting(contentEl)
@@ -78,7 +83,7 @@ export class EnvSnippetModal extends Modal {
       .addText((text) => {
         descEl = text.inputEl;
         text.setValue(this.snippet?.description || '');
-                text.inputEl.addEventListener('keydown', handleKeyDown);
+        text.inputEl.addEventListener('keydown', handleKeyDown);
       });
 
     // Editable environment variables - full width layout
@@ -92,21 +97,21 @@ export class EnvSnippetModal extends Modal {
         text.inputEl.rows = 8;
       });
     // Make textarea full width under the label
-    envVarsSetting.settingEl.addClass('claudian-env-snippet-setting');
-    envVarsSetting.controlEl.addClass('claudian-env-snippet-control');
+    envVarsSetting.settingEl.addClass('cortex-env-snippet-setting');
+    envVarsSetting.controlEl.addClass('cortex-env-snippet-control');
 
     // Compact button container
-    const buttonContainer = contentEl.createDiv({ cls: 'claudian-snippet-buttons' });
+    const buttonContainer = contentEl.createDiv({ cls: 'cortex-snippet-buttons' });
 
     const cancelBtn = buttonContainer.createEl('button', {
       text: 'Cancel',
-      cls: 'claudian-cancel-btn'
+      cls: 'cortex-cancel-btn',
     });
     cancelBtn.addEventListener('click', () => this.close());
 
     const saveBtn = buttonContainer.createEl('button', {
       text: this.snippet ? 'Update' : 'Save',
-      cls: 'claudian-save-btn'
+      cls: 'cortex-save-btn',
     });
     saveBtn.addEventListener('click', () => saveSnippet());
   }
@@ -120,9 +125,9 @@ export class EnvSnippetModal extends Modal {
 /** Component for managing environment variable snippets. */
 export class EnvSnippetManager {
   private containerEl: HTMLElement;
-  private plugin: ClaudianPlugin;
+  private plugin: CortexPlugin;
 
-  constructor(containerEl: HTMLElement, plugin: ClaudianPlugin) {
+  constructor(containerEl: HTMLElement, plugin: CortexPlugin) {
     this.containerEl = containerEl;
     this.plugin = plugin;
     this.render();
@@ -132,11 +137,11 @@ export class EnvSnippetManager {
     this.containerEl.empty();
 
     // Header with save button
-    const headerEl = this.containerEl.createDiv({ cls: 'claudian-snippet-header' });
-    headerEl.createSpan({ text: 'Snippets', cls: 'claudian-snippet-label' });
+    const headerEl = this.containerEl.createDiv({ cls: 'cortex-snippet-header' });
+    headerEl.createSpan({ text: 'Snippets', cls: 'cortex-snippet-label' });
 
     const saveBtn = headerEl.createEl('button', {
-      cls: 'claudian-settings-action-btn',
+      cls: 'cortex-settings-action-btn',
       attr: { 'aria-label': 'Save current' },
     });
     setIcon(saveBtn, 'plus');
@@ -145,34 +150,36 @@ export class EnvSnippetManager {
     const snippets = this.plugin.settings.envSnippets;
 
     if (snippets.length === 0) {
-      const emptyEl = this.containerEl.createDiv({ cls: 'claudian-snippet-empty' });
-      emptyEl.setText('No saved environment snippets yet. Click "Save Current" to save your current environment configuration.');
+      const emptyEl = this.containerEl.createDiv({ cls: 'cortex-snippet-empty' });
+      emptyEl.setText(
+        'No saved environment snippets yet. Click "Save Current" to save your current environment configuration.',
+      );
       return;
     }
 
     // Use snippets as-is (maintain creation order)
     const sortedSnippets = snippets;
 
-    const listEl = this.containerEl.createDiv({ cls: 'claudian-snippet-list' });
+    const listEl = this.containerEl.createDiv({ cls: 'cortex-snippet-list' });
 
     for (const snippet of sortedSnippets) {
-      const itemEl = listEl.createDiv({ cls: 'claudian-snippet-item' });
+      const itemEl = listEl.createDiv({ cls: 'cortex-snippet-item' });
 
-      const infoEl = itemEl.createDiv({ cls: 'claudian-snippet-info' });
+      const infoEl = itemEl.createDiv({ cls: 'cortex-snippet-info' });
 
-      const nameEl = infoEl.createDiv({ cls: 'claudian-snippet-name' });
+      const nameEl = infoEl.createDiv({ cls: 'cortex-snippet-name' });
       nameEl.setText(snippet.name);
 
       if (snippet.description) {
-        const descEl = infoEl.createDiv({ cls: 'claudian-snippet-description' });
+        const descEl = infoEl.createDiv({ cls: 'cortex-snippet-description' });
         descEl.setText(snippet.description);
       }
 
-      const actionsEl = itemEl.createDiv({ cls: 'claudian-snippet-actions' });
+      const actionsEl = itemEl.createDiv({ cls: 'cortex-snippet-actions' });
 
       // Restore button
       const restoreBtn = actionsEl.createEl('button', {
-        cls: 'claudian-settings-action-btn',
+        cls: 'cortex-settings-action-btn',
         attr: { 'aria-label': 'Insert' },
       });
       setIcon(restoreBtn, 'clipboard-paste');
@@ -182,7 +189,7 @@ export class EnvSnippetManager {
 
       // Edit button
       const editBtn = actionsEl.createEl('button', {
-        cls: 'claudian-settings-action-btn',
+        cls: 'cortex-settings-action-btn',
         attr: { 'aria-label': 'Edit' },
       });
       setIcon(editBtn, 'pencil');
@@ -192,7 +199,7 @@ export class EnvSnippetManager {
 
       // Delete button
       const deleteBtn = actionsEl.createEl('button', {
-        cls: 'claudian-settings-action-btn claudian-settings-delete-btn',
+        cls: 'cortex-settings-action-btn cortex-settings-delete-btn',
         attr: { 'aria-label': 'Delete' },
       });
       setIcon(deleteBtn, 'trash-2');
@@ -205,23 +212,20 @@ export class EnvSnippetManager {
   }
 
   private async saveCurrentEnv() {
-    const modal = new EnvSnippetModal(
-      this.plugin.app,
-      this.plugin,
-      null,
-      async (snippet) => {
-        this.plugin.settings.envSnippets.push(snippet);
-        await this.plugin.saveSettings();
-        this.render();
-        new Notice(`Environment snippet "${snippet.name}" saved`);
-      }
-    );
+    const modal = new EnvSnippetModal(this.plugin.app, this.plugin, null, async (snippet) => {
+      this.plugin.settings.envSnippets.push(snippet);
+      await this.plugin.saveSettings();
+      this.render();
+      new Notice(`Environment snippet "${snippet.name}" saved`);
+    });
     modal.open();
   }
 
   private async insertSnippet(snippet: EnvSnippet) {
     // Insert the snippet's environment variables into the input field
-    const envTextarea = document.querySelector('.claudian-settings-env-textarea') as HTMLTextAreaElement;
+    const envTextarea = document.querySelector(
+      '.cortex-settings-env-textarea',
+    ) as HTMLTextAreaElement;
     if (envTextarea) {
       // Always clear and replace with snippet content
       const snippetContent = snippet.envVars.trim();
@@ -231,24 +235,22 @@ export class EnvSnippetManager {
       await this.plugin.applyEnvironmentVariables(snippetContent);
 
       // Trigger model selector refresh if it exists
-      const view = this.plugin.app.workspace.getLeavesOfType('claudian-view')[0]?.view as any;
+      const view = this.plugin.app.workspace.getLeavesOfType('cortex-view')[0]?.view as any;
       if (view?.modelSelector) {
         view.modelSelector.updateDisplay();
         view.modelSelector.renderOptions();
       }
-
     } else {
       // Fallback: directly replace in settings if textarea not found
       await this.plugin.applyEnvironmentVariables(snippet.envVars);
       this.render();
 
       // Trigger model selector refresh if it exists
-      const view = this.plugin.app.workspace.getLeavesOfType('claudian-view')[0]?.view as any;
+      const view = this.plugin.app.workspace.getLeavesOfType('cortex-view')[0]?.view as any;
       if (view?.modelSelector) {
         view.modelSelector.updateDisplay();
         view.modelSelector.renderOptions();
       }
-
     }
   }
 
@@ -258,20 +260,22 @@ export class EnvSnippetManager {
       this.plugin,
       snippet,
       async (updatedSnippet) => {
-        const index = this.plugin.settings.envSnippets.findIndex(s => s.id === snippet.id);
+        const index = this.plugin.settings.envSnippets.findIndex((s) => s.id === snippet.id);
         if (index !== -1) {
           this.plugin.settings.envSnippets[index] = updatedSnippet;
           await this.plugin.saveSettings();
           this.render();
           new Notice(`Environment snippet "${updatedSnippet.name}" updated`);
         }
-      }
+      },
     );
     modal.open();
   }
 
   private async deleteSnippet(snippet: EnvSnippet) {
-    this.plugin.settings.envSnippets = this.plugin.settings.envSnippets.filter(s => s.id !== snippet.id);
+    this.plugin.settings.envSnippets = this.plugin.settings.envSnippets.filter(
+      (s) => s.id !== snippet.id,
+    );
     await this.plugin.saveSettings();
     this.render();
     new Notice(`Environment snippet "${snippet.name}" deleted`);
