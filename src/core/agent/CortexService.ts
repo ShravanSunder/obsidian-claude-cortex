@@ -893,16 +893,16 @@ export class CortexService {
   }
 
   /**
-   * Switches to a different session by closing the persistent query.
-   * The SDK binds sessions at query creation time via the `resume` option,
-   * so we must restart the query to actually switch sessions.
+   * Switches to a different session.
    *
-   * The restart is done lazily - the query will be restarted when the user
-   * sends their next message (in query()). This makes conversation switching
-   * instant and avoids blocking on cold start.
+   * For NEW sessions (null): Just resets session state. The subprocess stays alive,
+   * and the next message with `session_id: ""` triggers a fresh session. This is instant.
+   *
+   * For EXISTING sessions: Must restart the subprocess because sessions are bound
+   * at query creation via the `resume` option. This has cold start latency.
    *
    * @param newSessionId The session ID to switch to (null for new session)
-   * @param preWarmInBackground If true, start warming the new session in the background
+   * @param preWarmInBackground If true, start warming in background (only for existing sessions)
    */
   async switchSession(newSessionId: string | null, preWarmInBackground = true): Promise<void> {
     const currentSessionId = this.sessionManager.getSessionId();
@@ -912,24 +912,30 @@ export class CortexService {
       return;
     }
 
-    // Update session state
-    this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
+    // Clear session-related state
     this.approvalManager.clearSessionApprovals();
     this.diffStore.clear();
     this.approvedPlanContent = null;
     this.currentPlanFilePath = null;
     this.activeResponseResolvers = [];
 
-    // Close the persistent query - it will be lazily restarted with the new
-    // session ID when the user sends their next message (in query())
-    if (this.persistentQuery) {
-      this.closePersistentQuery();
-    }
+    if (newSessionId === null) {
+      // NEW SESSION: Just reset session state, keep subprocess alive
+      // Next message will have session_id: "" which triggers new session creation
+      this.sessionManager.setSessionId(null, this.plugin.settings.model);
+      // Don't close the persistent query - it stays warm!
+    } else {
+      // EXISTING SESSION: Must restart subprocess with resume option
+      this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
 
-    // Optionally start pre-warming in the background so the query might be
-    // ready by the time the user types their message
-    if (preWarmInBackground) {
-      void this.preWarm(newSessionId ?? undefined);
+      if (this.persistentQuery) {
+        this.closePersistentQuery();
+      }
+
+      // Pre-warm in background so query might be ready when user sends message
+      if (preWarmInBackground) {
+        void this.preWarm(newSessionId);
+      }
     }
   }
 
