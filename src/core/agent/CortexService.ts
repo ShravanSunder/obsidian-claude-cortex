@@ -889,14 +889,45 @@ export class CortexService {
     this.sessionManager.setSessionId(id, this.plugin.settings.model);
   }
 
-  /** Switches session via session_id in messages, preserving subprocess. */
+  /**
+   * Switches to a different session by restarting the persistent query.
+   * The SDK binds sessions at query creation time via the `resume` option,
+   * so we must restart the query to actually switch sessions.
+   */
   async switchSession(newSessionId: string | null): Promise<void> {
+    const currentSessionId = this.sessionManager.getSessionId();
+
+    // Skip if already on the target session
+    if (currentSessionId === newSessionId) {
+      return;
+    }
+
+    // Clear session-related state
     this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
     this.approvalManager.clearSessionApprovals();
     this.diffStore.clear();
     this.approvedPlanContent = null;
     this.currentPlanFilePath = null;
     this.activeResponseResolvers = [];
+
+    // Restart the persistent query with the new session ID
+    // This is necessary because the SDK binds sessions at query creation time
+    if (this.persistentQuery) {
+      this.closePersistentQuery();
+
+      // Re-warm with the new session
+      const vaultPath = this.vaultPath || getVaultPath(this.plugin.app);
+      const cliPath = this.plugin.getResolvedClaudeCliPath();
+
+      if (vaultPath && cliPath) {
+        try {
+          await this.startPersistentQuery(vaultPath, cliPath, newSessionId ?? undefined);
+        } catch (error) {
+          console.error('[Cortex] Failed to restart query for session switch:', error);
+          // Query will be restarted on next query() call
+        }
+      }
+    }
   }
 
   /** Cleanup resources. */
