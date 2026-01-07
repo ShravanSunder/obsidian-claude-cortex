@@ -95,6 +95,8 @@ function createMockPlugin(settings = {}) {
       },
       permissions: [],
       permissionMode: 'yolo',
+      excludedFolders: [],
+      excludedTags: [],
       ...settings,
     },
     app: {

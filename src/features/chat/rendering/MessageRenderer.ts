@@ -16,6 +16,8 @@ import {
 } from '../../../core/tools/toolNames';
 import type { ChatMessage, ImageAttachment } from '../../../core/types';
 import {
+  enhanceMermaidBlocks,
+  renderMermaidBlocks,
   renderStoredAskUserQuestion,
   renderStoredAsyncSubagent,
   renderStoredSubagent,
@@ -382,6 +384,12 @@ export class MessageRenderer {
   async renderContent(el: HTMLElement, markdown: string): Promise<void> {
     el.empty();
     await MarkdownRenderer.renderMarkdown(markdown, el, '', this.component);
+
+    // Render mermaid diagrams (Obsidian doesn't render in sidebar/ItemView)
+    await renderMermaidBlocks(el);
+
+    // Enhance mermaid blocks with save/copy buttons
+    enhanceMermaidBlocks(el, this.app, markdown);
 
     // Wrap pre elements and move buttons outside scroll area
     el.querySelectorAll('pre').forEach((pre) => {

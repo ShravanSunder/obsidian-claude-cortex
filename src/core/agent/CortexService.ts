@@ -30,6 +30,7 @@ import {
   type DiffContentEntry,
   type FileEditPostCallback,
   createBlocklistHook,
+  createContentRestrictionHook,
   createFileHashPostHook,
   createFileHashPreHook,
   createVaultRestrictionHook,
@@ -401,6 +402,13 @@ export class CortexService {
       getPathAccessType: (p) => this.getPathAccessType(p),
     });
 
+    const contentRestrictionHook = createContentRestrictionHook({
+      app: this.plugin.app,
+      vaultPath: cwd,
+      getExcludedFolders: () => this.plugin.settings.excludedFolders,
+      getExcludedTags: () => this.plugin.settings.excludedTags,
+    });
+
     const postCallback: FileEditPostCallback = {
       trackEditedFile: async (name, input, isError) => {
         if (name === 'Write' && !isError) {
@@ -449,7 +457,7 @@ export class CortexService {
       },
       canUseTool: this.createUnifiedToolCallback(permissionMode),
       hooks: {
-        PreToolUse: [blocklistHook, vaultRestrictionHook, fileHashPreHook],
+        PreToolUse: [blocklistHook, vaultRestrictionHook, contentRestrictionHook, fileHashPreHook],
         PostToolUse: [fileHashPostHook],
       },
       includePartialMessages: true, // For streaming deltas

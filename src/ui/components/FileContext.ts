@@ -9,6 +9,7 @@ import * as path from 'path';
 import type { App, EventRef } from 'obsidian';
 import { Notice, TFile } from 'obsidian';
 
+import { isPathExcluded } from '../../core/hooks';
 import type { McpService } from '../../features/mcp/McpService';
 import { getVaultPath, isPathWithinVault, normalizePathForFilesystem } from '../../utils/path';
 import { MentionDropdownController } from './file-context/mention/MentionDropdownController';
@@ -19,6 +20,7 @@ import { FileChipsView } from './file-context/view/FileChipsView';
 /** Callbacks for file context interactions. */
 export interface FileContextCallbacks {
   getExcludedTags: () => string[];
+  getExcludedFolders: () => string[];
   onChipsChanged?: () => void;
   getContextPaths?: () => string[];
 }
@@ -90,6 +92,13 @@ export class FileContextManager {
       getContextPaths: () => this.callbacks.getContextPaths?.() || [],
       getCachedMarkdownFiles: () => this.fileCache.getFiles(),
       normalizePathForVault: (rawPath) => this.normalizePathForVault(rawPath),
+      isFileExcluded: (file) =>
+        isPathExcluded(
+          file.path,
+          this.callbacks.getExcludedFolders(),
+          this.callbacks.getExcludedTags(),
+          this.app,
+        ),
     });
 
     this.deleteEventRef = this.app.vault.on('delete', (file) => {

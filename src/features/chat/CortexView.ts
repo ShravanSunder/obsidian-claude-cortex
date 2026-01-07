@@ -261,6 +261,7 @@ export class CortexView extends ItemView {
       this.inputEl,
       {
         getExcludedTags: () => this.plugin.settings.excludedTags,
+        getExcludedFolders: () => this.plugin.settings.excludedFolders,
         onChipsChanged: () => this.renderer?.scrollToBottomIfNeeded(),
         getContextPaths: () => this.contextPathSelector?.getContextPaths() || [],
       },

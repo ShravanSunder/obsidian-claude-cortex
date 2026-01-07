@@ -15,3 +15,8 @@ export {
   createVaultRestrictionHook,
   type VaultRestrictionContext,
 } from './SecurityHooks';
+export {
+  type ContentRestrictionContext,
+  createContentRestrictionHook,
+  isPathExcluded,
+} from './ContentRestrictionHook';

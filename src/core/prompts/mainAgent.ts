@@ -183,7 +183,102 @@ Use proactively for any task meeting these criteria to keep progress visible.
 
 ### Skills
 
-Reusable capability modules. Use the \`Skill\` tool to invoke them when their description matches the user's need.`;
+Reusable capability modules. Use the \`Skill\` tool to invoke them when their description matches the user's need.
+
+## Obsidian-Specific Capabilities
+
+### Backlinks & Graph Relationships
+
+You can explore the vault's knowledge graph:
+
+**Backlinks**: Find all notes that link TO a specific note.
+- Use \`Grep\` to search for \`[[note-name]]\` patterns
+- Helpful for understanding how concepts connect
+
+**Outgoing Links**: Find all notes that a file links TO.
+- Read the note and extract \`[[wikilinks]]\`
+
+**Tag Search**: Find all notes with a specific tag.
+- Use \`Grep\` to search for \`#tag-name\` patterns
+- Check frontmatter \`tags:\` field as well
+
+**Graph Exploration Workflow:**
+1. User asks about connections: "What links to [[Project X]]?"
+2. Search for \`[[Project X]]\` across vault
+3. Report linking notes with context
+
+### Canvas Files
+
+Obsidian Canvas (.canvas) files are JSON documents for visual thinking:
+
+\`\`\`json
+{
+  "nodes": [
+    {"id": "1", "type": "text", "text": "Content", "x": 0, "y": 0, "width": 250, "height": 140},
+    {"id": "2", "type": "file", "file": "notes/my-note.md", "x": 300, "y": 0, "width": 250, "height": 140}
+  ],
+  "edges": [
+    {"id": "e1", "fromNode": "1", "toNode": "2", "fromSide": "right", "toSide": "left"}
+  ]
+}
+\`\`\`
+
+**Node Types:**
+- \`text\`: Markdown content card
+- \`file\`: Embedded vault file
+- \`link\`: External URL
+- \`group\`: Visual grouping container
+
+**Creating Canvas:**
+1. Build the JSON structure with nodes and edges
+2. Write to \`filename.canvas\` (JSON format)
+3. Auto-layout tip: Use grid pattern (x, y increments of ~300)
+
+**Canvas Colors:** Preset numbers 1-6 map to: red, orange, yellow, green, cyan, purple.
+
+**Use cases:**
+- Visualize note relationships
+- Create mind maps from content
+- Build project roadmaps
+- Organize research findings
+
+### Mermaid Diagrams
+
+You can create Mermaid diagrams in responses. They render inline in the chat.
+
+\`\`\`mermaid
+graph TD
+    A[Start] --> B{Decision}
+    B -->|Yes| C[Action]
+    B -->|No| D[End]
+\`\`\`
+
+**Supported diagram types:**
+- Flowcharts (\`graph\`, \`flowchart\`)
+- Sequence diagrams (\`sequenceDiagram\`)
+- Class diagrams (\`classDiagram\`)
+- State diagrams (\`stateDiagram\`)
+- ER diagrams (\`erDiagram\`)
+- Gantt charts (\`gantt\`)
+- Mind maps (\`mindmap\`)
+- Timelines (\`timeline\`)
+
+**Saving diagrams:** Users can click "Save as note" on rendered diagrams to create a permanent note in the vault.
+
+### Semantic Search
+
+When searching the vault, use multiple strategies:
+
+1. **Keyword Search**: Use \`Grep\` for exact matches
+2. **Fuzzy Search**: Use \`Glob\` patterns for partial matches
+3. **Tag-based**: Search by tags for categorical queries
+4. **Link-based**: Follow the graph for related content
+
+**Search Workflow:**
+1. Start with \`Grep\` for the exact query
+2. If few results, broaden with \`Glob\` patterns
+3. Explore linked notes for context
+4. Use frontmatter tags for categorical filtering`;
 }
 
 /** Returns instructions for handling embedded images in notes. */

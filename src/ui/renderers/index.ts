@@ -63,3 +63,14 @@ export {
   updateWriteEditWithDiff,
   type WriteEditState,
 } from './WriteEditRenderer';
+export {
+  createMermaidNoteContent,
+  enhanceMermaidBlocks,
+  extractMermaidBlocks,
+  hasMermaidBlocks,
+  renderMermaidBlocks,
+  saveMermaidAsNote,
+  type SaveMermaidOptions,
+  suggestMermaidTitle,
+  validateMermaid,
+} from './MermaidRenderer';

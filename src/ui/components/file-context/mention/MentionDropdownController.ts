@@ -26,6 +26,7 @@ export interface MentionDropdownCallbacks {
   getContextPaths: () => string[];
   getCachedMarkdownFiles: () => TFile[];
   normalizePathForVault: (path: string | undefined | null) => string | null;
+  isFileExcluded?: (file: TFile) => boolean;
 }
 
 export class MentionDropdownController {
@@ -310,6 +311,10 @@ export class MentionDropdownController {
       const allFiles = this.callbacks.getCachedMarkdownFiles();
       vaultFiles = allFiles
         .filter((file) => {
+          // Check if file is excluded (by folder or tag)
+          if (this.callbacks.isFileExcluded?.(file)) {
+            return false;
+          }
           const pathLower = file.path.toLowerCase();
           const nameLower = file.name.toLowerCase();
           return pathLower.includes(searchLower) || nameLower.includes(searchLower);

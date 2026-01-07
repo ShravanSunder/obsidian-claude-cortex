@@ -11,7 +11,12 @@ import { Notice, PluginSettingTab, Setting } from 'obsidian';
 import { getCurrentPlatformKey } from '../../core/types';
 import { DEFAULT_CLAUDE_MODELS } from '../../core/types/models';
 import type CortexPlugin from '../../main';
-import { EnvSnippetManager, McpSettingsManager, SlashCommandSettings } from '../../ui';
+import {
+  CodannaSettings,
+  EnvSnippetManager,
+  McpSettingsManager,
+  SlashCommandSettings,
+} from '../../ui';
 import { getModelsFromEnvironment, parseEnvironmentVariables } from '../../utils/env';
 import { expandHomePath } from '../../utils/path';
 import { buildNavMappingText, parseNavMappings } from './keyboardNavigation';
@@ -105,6 +110,26 @@ export class CortexSettingTab extends PluginSettingTab {
             this.plugin.settings.excludedTags = value
               .split(/\r?\n/) // Handle both Unix (LF) and Windows (CRLF) line endings
               .map((s) => s.trim().replace(/^#/, '')) // Remove leading # if present
+              .filter((s) => s.length > 0);
+            await this.plugin.saveSettings();
+          });
+        text.inputEl.rows = 4;
+        text.inputEl.cols = 30;
+      });
+
+    new Setting(containerEl)
+      .setName('Excluded folders')
+      .setDesc(
+        'Folders that Claude cannot access (one per line, relative to vault root). Files in these folders are blocked from reading/writing.',
+      )
+      .addTextArea((text) => {
+        text
+          .setPlaceholder('private\n.obsidian\ndrafts')
+          .setValue(this.plugin.settings.excludedFolders.join('\n'))
+          .onChange(async (value) => {
+            this.plugin.settings.excludedFolders = value
+              .split(/\r?\n/) // Handle both Unix (LF) and Windows (CRLF) line endings
+              .map((s) => s.trim().replace(/^\//, '').replace(/\/$/, '')) // Remove leading/trailing slashes
               .filter((s) => s.length > 0);
             await this.plugin.saveSettings();
           });
@@ -288,6 +313,18 @@ export class CortexSettingTab extends PluginSettingTab {
 
     const mcpContainer = containerEl.createDiv({ cls: 'cortex-mcp-container' });
     new McpSettingsManager(mcpContainer, this.plugin);
+
+    // Semantic Search section
+    new Setting(containerEl).setName('Semantic Search').setHeading();
+
+    const codannaDesc = containerEl.createDiv({ cls: 'cortex-codanna-settings-desc' });
+    codannaDesc.createEl('p', {
+      text: 'Use AI-powered semantic search to find notes by meaning. Requires Codanna MCP server.',
+      cls: 'setting-item-description',
+    });
+
+    const codannaContainer = containerEl.createDiv({ cls: 'cortex-codanna-container' });
+    new CodannaSettings(codannaContainer, this.plugin);
 
     // Safety section
     new Setting(containerEl).setName('Safety').setHeading();
