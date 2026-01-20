@@ -26,7 +26,9 @@
   white-space: nowrap;
   opacity: 0;
   visibility: hidden;
-  transition: opacity 0.15s ease, visibility 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
   pointer-events: none;
   z-index: 100;
 }
@@ -55,7 +57,9 @@
 
 .cortex-meter-fill {
   stroke: #d97757;
-  transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease;
+  transition:
+    stroke-dashoffset 0.3s ease,
+    stroke 0.3s ease;
 }
 
 .cortex-context-meter-percent {

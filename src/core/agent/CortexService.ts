@@ -5,8 +5,6 @@
  * session persistence, permission modes, and security hooks.
  */
 
-import * as os from 'os';
-import * as path from 'path';
 import type {
   CanUseTool,
   Options,
@@ -15,25 +13,27 @@ import type {
   SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
+import * as os from 'os';
+import * as path from 'path';
 
 import type CortexPlugin from '../../main';
 import { stripCurrentNotePrefix } from '../../utils/context';
 import { getEnhancedPath, parseEnvironmentVariables } from '../../utils/env';
 import {
-  type PathAccessType,
   getPathAccessType,
   getVaultPath,
   normalizePathForFilesystem,
+  type PathAccessType,
 } from '../../utils/path';
 import { buildContextFromHistory, getLastUserMessage } from '../../utils/session';
 import {
-  type DiffContentEntry,
-  type FileEditPostCallback,
   createBlocklistHook,
   createContentRestrictionHook,
   createFileHashPostHook,
   createFileHashPreHook,
   createVaultRestrictionHook,
+  type DiffContentEntry,
+  type FileEditPostCallback,
 } from '../hooks';
 import { hydrateImagesData } from '../images/imageLoader';
 import type { McpServerManager } from '../mcp';

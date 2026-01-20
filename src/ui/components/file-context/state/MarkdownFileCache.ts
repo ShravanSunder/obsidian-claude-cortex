@@ -2,8 +2,7 @@
  * Cached markdown files for mention search.
  */
 
-import type { App } from 'obsidian';
-import type { TFile } from 'obsidian';
+import type { App, TFile } from 'obsidian';
 
 export class MarkdownFileCache {
   private app: App;

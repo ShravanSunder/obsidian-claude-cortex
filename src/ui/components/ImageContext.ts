@@ -4,9 +4,9 @@
  * Manages image attachments via drag/drop and paste.
  */
 
-import * as path from 'path';
 import type { App } from 'obsidian';
 import { Notice } from 'obsidian';
+import * as path from 'path';
 
 import { saveImageToCache } from '../../core/images/imageCache';
 import type { ImageAttachment, ImageMediaType } from '../../core/types';

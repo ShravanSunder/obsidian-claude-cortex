@@ -333,7 +333,9 @@ export function removeMermaidPlaceholders(containerEl: HTMLElement): void {
   }
 
   // Remove generating class from pre elements
-  const generatingBlocks = Array.from(containerEl.querySelectorAll('pre.cortex-mermaid-generating'));
+  const generatingBlocks = Array.from(
+    containerEl.querySelectorAll('pre.cortex-mermaid-generating'),
+  );
   for (const block of generatingBlocks) {
     block.classList.remove('cortex-mermaid-generating');
   }

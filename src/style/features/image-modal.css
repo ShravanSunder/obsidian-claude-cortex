@@ -43,7 +43,9 @@
   font-size: 20px;
   color: var(--text-muted);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .cortex-image-modal-close:hover {

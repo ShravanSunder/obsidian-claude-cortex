@@ -11,11 +11,11 @@ import type { Conversation } from '../../../core/types';
 import type CortexPlugin from '../../../main';
 import {
   type ContextPathSelector,
+  extractLastTodosFromMessages,
   type FileContextManager,
   type ImageContextManager,
   type McpServerSelector,
   type TodoPanel,
-  extractLastTodosFromMessages,
 } from '../../../ui';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { AsyncSubagentManager } from '../services/AsyncSubagentManager';

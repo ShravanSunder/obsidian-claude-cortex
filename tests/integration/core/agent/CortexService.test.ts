@@ -1,6 +1,3 @@
-import * as fs from 'fs';
-import * as os from 'os';
-import * as path from 'path';
 // eslint-disable-next-line jest/no-mocks-import
 import {
   getLastOptions,
@@ -9,6 +6,9 @@ import {
   setMockError,
   setMockMessages,
 } from '@test/__mocks__/claude-agent-sdk';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 // Mock fs module
 vi.mock('fs');
@@ -24,9 +24,9 @@ vi.mock('@/core/types', async () => {
 // Now import after all mocks are set up
 import { CortexService } from '@/core/agent/CortexService';
 import {
-  type DiffContentEntry,
   createFileHashPostHook,
   createFileHashPreHook,
+  type DiffContentEntry,
 } from '@/core/hooks/DiffTrackingHooks';
 import { createVaultRestrictionHook } from '@/core/hooks/SecurityHooks';
 import {

@@ -205,11 +205,7 @@ function createMockApp(
 }
 
 function createMockCallbacks(
-  options: {
-    contextPaths?: string[];
-    excludedTags?: string[];
-    excludedFolders?: string[];
-  } = {},
+  options: { contextPaths?: string[]; excludedTags?: string[]; excludedFolders?: string[] } = {},
 ): FileContextCallbacks {
   const { contextPaths = [], excludedTags = [], excludedFolders = [] } = options;
   return {

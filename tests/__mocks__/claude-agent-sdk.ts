@@ -124,7 +124,10 @@ async function runPreToolUseHooks(
 export function query({
   prompt,
   options,
-}: { prompt: string | AsyncIterable<any>; options: Options }): Query {
+}: {
+  prompt: string | AsyncIterable<any>;
+  options: Options;
+}): Query {
   // If an error is set, throw it immediately
   if (mockError) {
     throw mockError;

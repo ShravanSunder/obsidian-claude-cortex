@@ -2,13 +2,13 @@
  * Tests for InstructionRefineService - Refining custom instructions
  */
 
-import * as fs from 'fs';
 // eslint-disable-next-line jest/no-mocks-import
 import {
   getLastOptions,
   resetMockMessages,
   setMockMessages,
 } from '@test/__mocks__/claude-agent-sdk';
+import * as fs from 'fs';
 
 // Mock fs module
 vi.mock('fs');

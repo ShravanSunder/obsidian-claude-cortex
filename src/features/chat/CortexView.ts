@@ -15,6 +15,8 @@ import type CortexPlugin from '../../main';
 import {
   type ContextPathSelector,
   type ContextUsageMeter,
+  cleanupThinkingBlock,
+  createInputToolbar,
   FileContextManager,
   ImageContextManager,
   type InstructionModeManager,
@@ -26,8 +28,6 @@ import {
   SlashCommandDropdown,
   type ThinkingBudgetSelector,
   TodoPanel,
-  cleanupThinkingBlock,
-  createInputToolbar,
 } from '../../ui';
 import { getVaultPath } from '../../utils/path';
 import { LOGO_SVG } from './constants';

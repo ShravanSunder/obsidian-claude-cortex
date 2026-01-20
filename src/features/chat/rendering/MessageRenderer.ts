@@ -10,9 +10,9 @@ import { MarkdownRenderer, setIcon } from 'obsidian';
 
 import { getImageAttachmentDataUri } from '../../../core/images/imageLoader';
 import {
+  isWriteEditTool,
   TOOL_ASK_USER_QUESTION,
   TOOL_TODO_WRITE,
-  isWriteEditTool,
 } from '../../../core/tools/toolNames';
 import type { ChatMessage, ImageAttachment } from '../../../core/types';
 import {

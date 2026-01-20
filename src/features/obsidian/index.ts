@@ -3,17 +3,17 @@
  */
 
 export {
-  BacklinksService,
   type BacklinkEntry,
+  BacklinksService,
   type OutgoingLinkEntry,
   type TagSearchResult,
 } from './BacklinksService';
 
 export {
+  type AutoLayoutOptions,
   CANVAS_COLORS,
   CANVAS_DEFAULTS,
   CanvasService,
-  type AutoLayoutOptions,
   type CreateEdgeOptions,
   type CreateFileNodeOptions,
   type CreateGroupNodeOptions,

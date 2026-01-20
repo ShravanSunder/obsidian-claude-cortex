@@ -5,9 +5,9 @@
  * Also handles MCP server @-mentions for context-saving mode.
  */
 
-import * as path from 'path';
 import type { App, EventRef } from 'obsidian';
 import { Notice, TFile } from 'obsidian';
+import * as path from 'path';
 
 import { isPathExcluded } from '../../core/hooks';
 import type { McpService } from '../../features/mcp/McpService';

@@ -35,10 +35,7 @@ interface QueryResult {
  * Helper to send a message and collect the response.
  * Uses minimal options to isolate SDK behavior.
  */
-async function sendMessage(
-  prompt: string,
-  options?: { resume?: string },
-): Promise<QueryResult> {
+async function sendMessage(prompt: string, options?: { resume?: string }): Promise<QueryResult> {
   const response = agentQuery({
     prompt,
     options: {
@@ -173,12 +170,16 @@ describeOrSkip('SDK Session Isolation (Real CLI)', () => {
   it('should isolate rapid sequential sessions', async () => {
     // Create session A with unique context
     const SECRET_A = `ALPHA_${Date.now()}`;
-    const sessionA = await sendMessage(`In this session, the code is ${SECRET_A}. Say "Code: ${SECRET_A}".`);
+    const sessionA = await sendMessage(
+      `In this session, the code is ${SECRET_A}. Say "Code: ${SECRET_A}".`,
+    );
     expect(sessionA.sessionId).toBeTruthy();
 
     // Create session B with different context
     const SECRET_B = `BETA_${Date.now()}`;
-    const sessionB = await sendMessage(`In this session, the code is ${SECRET_B}. Say "Code: ${SECRET_B}".`);
+    const sessionB = await sendMessage(
+      `In this session, the code is ${SECRET_B}. Say "Code: ${SECRET_B}".`,
+    );
     expect(sessionB.sessionId).toBeTruthy();
     expect(sessionB.sessionId).not.toBe(sessionA.sessionId);
 

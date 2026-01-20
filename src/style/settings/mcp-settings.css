@@ -193,7 +193,9 @@
   border-radius: 4px;
   cursor: pointer;
   color: var(--text-muted);
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .cortex-mcp-action-btn:hover {

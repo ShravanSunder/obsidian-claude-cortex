@@ -1,5 +1,5 @@
-import { isPathExcluded } from '@/core/hooks/ContentRestrictionHook';
 import type { App, CachedMetadata, TFile, Vault } from 'obsidian';
+import { isPathExcluded } from '@/core/hooks/ContentRestrictionHook';
 
 // Mock Obsidian App
 function createMockApp(files: Map<string, { cache: CachedMetadata | null }> = new Map()): App {

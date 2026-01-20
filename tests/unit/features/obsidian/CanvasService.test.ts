@@ -1,5 +1,5 @@
-import { CANVAS_DEFAULTS, CanvasService, validateCanvasData } from '@/features/obsidian';
 import type { App, MetadataCache, TFile, Vault } from 'obsidian';
+import { CANVAS_DEFAULTS, CanvasService, validateCanvasData } from '@/features/obsidian';
 
 // Mock Obsidian App
 function createMockApp(options?: {

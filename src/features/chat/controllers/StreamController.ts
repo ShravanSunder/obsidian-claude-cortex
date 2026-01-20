@@ -6,19 +6,17 @@
  */
 
 import {
+  isPlanModeTool,
+  isWriteEditTool,
   TOOL_AGENT_OUTPUT,
   TOOL_ASK_USER_QUESTION,
   TOOL_TASK,
   TOOL_TODO_WRITE,
-  isPlanModeTool,
-  isWriteEditTool,
 } from '../../../core/tools/toolNames';
 import type { ChatMessage, StreamChunk, SubagentInfo, ToolCallInfo } from '../../../core/types';
 import type CortexPlugin from '../../../main';
 import {
   type AsyncSubagentState,
-  type FileContextManager,
-  type SubagentState,
   addSubagentToolCall,
   appendThinkingContent,
   createAskUserQuestionBlock,
@@ -26,6 +24,7 @@ import {
   createSubagentBlock,
   createThinkingBlock,
   createWriteEditBlock,
+  type FileContextManager,
   finalizeAskUserQuestionBlock,
   finalizeAsyncSubagent,
   finalizeSubagentBlock,
@@ -36,6 +35,7 @@ import {
   parseAskUserQuestionInput,
   parseTodoInput,
   renderToolCall,
+  type SubagentState,
   updateAsyncSubagentRunning,
   updateSubagentToolResult,
   updateToolCallResult,

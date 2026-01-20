@@ -116,7 +116,9 @@
   color: var(--text-muted);
   font-size: 14px;
   line-height: 1;
-  transition: background 0.15s ease, color 0.15s ease;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
 }
 
 .cortex-file-chip-remove:hover {

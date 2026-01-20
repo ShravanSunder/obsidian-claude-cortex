@@ -3,6 +3,11 @@
  */
 
 export {
+  type ContentRestrictionContext,
+  createContentRestrictionHook,
+  isPathExcluded,
+} from './ContentRestrictionHook';
+export {
   createFileHashPostHook,
   createFileHashPreHook,
   type DiffContentEntry,
@@ -15,8 +20,3 @@ export {
   createVaultRestrictionHook,
   type VaultRestrictionContext,
 } from './SecurityHooks';
-export {
-  type ContentRestrictionContext,
-  createContentRestrictionHook,
-  isPathExcluded,
-} from './ContentRestrictionHook';

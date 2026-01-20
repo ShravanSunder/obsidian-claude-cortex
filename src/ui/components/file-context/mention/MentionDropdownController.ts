@@ -11,7 +11,7 @@ import { getFolderName, normalizePathForComparison } from '../../../../utils/con
 import { type ContextPathFile, contextPathScanner } from '../../../../utils/contextPathScanner';
 import { extractMcpMentions } from '../../../../utils/mcp';
 import { SelectableDropdown } from '../../SelectableDropdown';
-import { type ContextPathEntry, type MentionItem, createContextPathEntry } from './types';
+import { type ContextPathEntry, createContextPathEntry, type MentionItem } from './types';
 
 export interface MentionDropdownOptions {
   fixed?: boolean;

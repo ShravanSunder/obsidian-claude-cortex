@@ -2,7 +2,6 @@
  * Tests for InlineEditService - Inline text editing with Claude
  */
 
-import * as fs from 'fs';
 // eslint-disable-next-line jest/no-mocks-import
 import {
   getLastOptions,
@@ -10,6 +9,7 @@ import {
   setMockError,
   setMockMessages,
 } from '@test/__mocks__/claude-agent-sdk';
+import * as fs from 'fs';
 
 // Mock fs module
 vi.mock('fs');

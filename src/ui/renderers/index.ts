@@ -12,15 +12,28 @@ export {
   countLineChanges,
   type DiffHunk,
   type DiffLine,
-  diffLinesToHtml,
   type DiffStats,
+  diffLinesToHtml,
   isBinaryContent,
   renderDiffContent,
   splitIntoHunks,
 } from './DiffRenderer';
 export {
-  addSubagentToolCall,
+  createMermaidNoteContent,
+  enhanceMermaidBlocks,
+  extractMermaidBlocks,
+  hasMermaidBlocks,
+  removeMermaidPlaceholders,
+  renderMermaidBlocks,
+  type SaveMermaidOptions,
+  saveMermaidAsNote,
+  showMermaidPlaceholders,
+  suggestMermaidTitle,
+  validateMermaid,
+} from './MermaidRenderer';
+export {
   type AsyncSubagentState,
+  addSubagentToolCall,
   createAsyncSubagentBlock,
   createSubagentBlock,
   finalizeAsyncSubagent,
@@ -63,16 +76,3 @@ export {
   updateWriteEditWithDiff,
   type WriteEditState,
 } from './WriteEditRenderer';
-export {
-  createMermaidNoteContent,
-  enhanceMermaidBlocks,
-  extractMermaidBlocks,
-  hasMermaidBlocks,
-  removeMermaidPlaceholders,
-  renderMermaidBlocks,
-  saveMermaidAsNote,
-  type SaveMermaidOptions,
-  showMermaidPlaceholders,
-  suggestMermaidTitle,
-  validateMermaid,
-} from './MermaidRenderer';

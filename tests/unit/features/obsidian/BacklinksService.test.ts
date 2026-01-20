@@ -1,5 +1,5 @@
-import { BacklinksService } from '@/features/obsidian/BacklinksService';
 import type { App, CachedMetadata, MetadataCache, TFile, Vault } from 'obsidian';
+import { BacklinksService } from '@/features/obsidian/BacklinksService';
 
 // Mock Obsidian App with resolved links
 function createMockApp(options: {
