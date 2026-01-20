@@ -17,6 +17,7 @@ import {
 import type { ChatMessage, ImageAttachment } from '../../../core/types';
 import {
   enhanceMermaidBlocks,
+  removeMermaidPlaceholders,
   renderMermaidBlocks,
   renderStoredAskUserQuestion,
   renderStoredAsyncSubagent,
@@ -24,6 +25,7 @@ import {
   renderStoredThinkingBlock,
   renderStoredToolCall,
   renderStoredWriteEdit,
+  showMermaidPlaceholders,
 } from '../../../ui';
 import { processFileLinks, registerFileLinkHandler } from '../../../utils/fileLink';
 
@@ -380,16 +382,27 @@ export class MessageRenderer {
 
   /**
    * Renders markdown content with code block enhancements.
+   * @param el - The container element to render into.
+   * @param markdown - The markdown content to render.
+   * @param isStreaming - If true, skip mermaid rendering and show placeholders instead.
    */
-  async renderContent(el: HTMLElement, markdown: string): Promise<void> {
+  async renderContent(el: HTMLElement, markdown: string, isStreaming = false): Promise<void> {
     el.empty();
     await MarkdownRenderer.renderMarkdown(markdown, el, '', this.component);
 
-    // Render mermaid diagrams (Obsidian doesn't render in sidebar/ItemView)
-    await renderMermaidBlocks(el);
+    if (!isStreaming) {
+      // Remove any placeholders from previous streaming state
+      removeMermaidPlaceholders(el);
 
-    // Enhance mermaid blocks with save/copy buttons
-    enhanceMermaidBlocks(el, this.app, markdown);
+      // Render mermaid diagrams (Obsidian doesn't render in sidebar/ItemView)
+      await renderMermaidBlocks(el);
+
+      // Enhance mermaid blocks with save/copy/expand buttons
+      enhanceMermaidBlocks(el, this.app, markdown);
+    } else {
+      // During streaming, show placeholder for mermaid blocks
+      showMermaidPlaceholders(el);
+    }
 
     // Wrap pre elements and move buttons outside scroll area
     el.querySelectorAll('pre').forEach((pre) => {

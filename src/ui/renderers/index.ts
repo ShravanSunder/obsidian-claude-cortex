@@ -68,9 +68,11 @@ export {
   enhanceMermaidBlocks,
   extractMermaidBlocks,
   hasMermaidBlocks,
+  removeMermaidPlaceholders,
   renderMermaidBlocks,
   saveMermaidAsNote,
   type SaveMermaidOptions,
+  showMermaidPlaceholders,
   suggestMermaidTitle,
   validateMermaid,
 } from './MermaidRenderer';

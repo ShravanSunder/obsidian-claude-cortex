@@ -329,11 +329,8 @@ export class InputController {
       streamController.hideThinkingIndicator();
       state.isStreaming = false;
       state.cancelRequested = false;
-      state.currentContentEl = null;
 
-      streamController.finalizeCurrentThinkingBlock(assistantMsg);
-      streamController.finalizeCurrentTextBlock(assistantMsg);
-      state.activeSubagents.clear();
+      await this.finalizeStreamWithMermaid(assistantMsg);
 
       await conversationController.save(true);
 
@@ -628,11 +625,8 @@ ${content}
       streamController.hideThinkingIndicator();
       state.isStreaming = false;
       state.cancelRequested = false;
-      state.currentContentEl = null;
 
-      streamController.finalizeCurrentThinkingBlock(assistantMsg);
-      streamController.finalizeCurrentTextBlock(assistantMsg);
-      state.activeSubagents.clear();
+      await this.finalizeStreamWithMermaid(assistantMsg);
 
       await conversationController.save(true);
       await this.activatePendingPlanMode();
@@ -807,6 +801,29 @@ ${content}
     this.clearQueuedMessage();
     plugin.agentService.cancel();
     streamController.hideThinkingIndicator();
+  }
+
+  /**
+   * Finalizes stream state and re-renders mermaid diagrams.
+   * Captures text block before finalization, then re-renders with isStreaming=false.
+   */
+  private async finalizeStreamWithMermaid(assistantMsg: ChatMessage): Promise<void> {
+    const { state, renderer, streamController } = this.deps;
+
+    // Capture text block state before finalization for mermaid re-render
+    const textEl = state.currentTextEl;
+    const textContent = state.currentTextContent;
+
+    state.currentContentEl = null;
+
+    streamController.finalizeCurrentThinkingBlock(assistantMsg);
+    streamController.finalizeCurrentTextBlock(assistantMsg);
+    state.activeSubagents.clear();
+
+    // Re-render text block with isStreaming=false to render mermaid diagrams
+    if (textEl && textContent) {
+      await renderer.renderContent(textEl, textContent, false);
+    }
   }
 
   // ============================================

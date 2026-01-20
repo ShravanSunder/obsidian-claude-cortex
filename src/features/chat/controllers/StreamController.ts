@@ -387,7 +387,8 @@ export class StreamController {
     }
 
     state.currentTextContent += text;
-    await renderer.renderContent(state.currentTextEl, state.currentTextContent);
+    // Pass isStreaming=true to defer mermaid rendering until stream completes
+    await renderer.renderContent(state.currentTextEl, state.currentTextContent, true);
   }
 
   /** Finalizes the current text block. */

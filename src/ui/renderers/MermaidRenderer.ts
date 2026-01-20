@@ -234,6 +234,19 @@ export function enhanceMermaidBlocks(
     // Create actions container
     const actionsEl = createEl('div', { cls: 'cortex-mermaid-actions' });
 
+    // Expand button (only for rendered diagrams with SVG)
+    if (el.classList.contains('cortex-mermaid-diagram') && el.querySelector('svg')) {
+      const expandBtn = actionsEl.createEl('button', {
+        cls: 'cortex-mermaid-btn cortex-mermaid-expand',
+        attr: { title: 'Expand diagram' },
+      });
+      setIcon(expandBtn, 'expand');
+
+      expandBtn.addEventListener('click', () => {
+        showMermaidModal(targetEl);
+      });
+    }
+
     // Save as note button
     const saveBtn = actionsEl.createEl('button', {
       cls: 'cortex-mermaid-btn cortex-mermaid-save',
@@ -281,4 +294,91 @@ export function enhanceMermaidBlocks(
  */
 export function hasMermaidBlocks(markdown: string): boolean {
   return /```mermaid\n[\s\S]*?```/.test(markdown);
+}
+
+/**
+ * Show placeholder indicators for mermaid blocks during streaming.
+ * Hides the code block and shows a "Generating diagram..." message.
+ */
+export function showMermaidPlaceholders(containerEl: HTMLElement): void {
+  const codeBlocks = Array.from(containerEl.querySelectorAll('pre > code.language-mermaid'));
+
+  for (const codeEl of codeBlocks) {
+    const preEl = codeEl.parentElement;
+    if (!preEl) continue;
+
+    // Skip if already has a placeholder
+    if (preEl.previousElementSibling?.classList.contains('cortex-mermaid-placeholder')) continue;
+
+    // Mark the pre element to hide it via CSS
+    preEl.classList.add('cortex-mermaid-generating');
+
+    // Add visual placeholder indicator
+    const placeholder = document.createElement('div');
+    placeholder.className = 'cortex-mermaid-placeholder';
+    placeholder.innerHTML =
+      '<span class="cortex-mermaid-spinner"></span> <span>Generating diagram...</span>';
+    preEl.parentElement?.insertBefore(placeholder, preEl);
+  }
+}
+
+/**
+ * Remove mermaid placeholders (called before final render).
+ */
+export function removeMermaidPlaceholders(containerEl: HTMLElement): void {
+  // Remove placeholder elements
+  const placeholders = Array.from(containerEl.querySelectorAll('.cortex-mermaid-placeholder'));
+  for (const placeholder of placeholders) {
+    placeholder.remove();
+  }
+
+  // Remove generating class from pre elements
+  const generatingBlocks = Array.from(containerEl.querySelectorAll('pre.cortex-mermaid-generating'));
+  for (const block of generatingBlocks) {
+    block.classList.remove('cortex-mermaid-generating');
+  }
+}
+
+/**
+ * Show mermaid diagram in fullscreen modal.
+ */
+function showMermaidModal(sourceEl: Element): void {
+  // Create fullscreen overlay
+  const overlay = document.body.createDiv({ cls: 'cortex-mermaid-modal-overlay' });
+  const modal = overlay.createDiv({ cls: 'cortex-mermaid-modal' });
+
+  // Clone the SVG
+  const svgEl = sourceEl.querySelector('svg');
+  if (svgEl) {
+    const svgClone = svgEl.cloneNode(true) as SVGElement;
+    // Remove size constraints in modal for full view
+    svgClone.style.maxWidth = 'none';
+    svgClone.style.width = 'auto';
+    svgClone.style.height = 'auto';
+    modal.appendChild(svgClone);
+  }
+
+  // Close button
+  const closeBtn = modal.createDiv({ cls: 'cortex-mermaid-modal-close' });
+  closeBtn.setText('\u00D7');
+
+  const close = () => {
+    document.removeEventListener('keydown', handleEsc);
+    overlay.remove();
+  };
+
+  closeBtn.addEventListener('click', close);
+
+  // Click outside to close
+  overlay.addEventListener('click', (e) => {
+    if (e.target === overlay) close();
+  });
+
+  // ESC to close
+  const handleEsc = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      close();
+    }
+  };
+  document.addEventListener('keydown', handleEsc);
 }

@@ -1,5 +1,22 @@
 /* Mermaid diagram enhancements */
 
+/* Rendered diagram container */
+.cortex-mermaid-diagram {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 8px;
+  margin: 8px 0;
+}
+
+.cortex-mermaid-diagram svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Action buttons */
 .cortex-mermaid-actions {
   display: flex;
   gap: 4px;
@@ -42,4 +59,77 @@
   background: var(--background-primary);
   border-radius: 6px;
   overflow-x: auto;
+}
+
+/* Generating placeholder (during streaming) */
+.cortex-mermaid-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin: 8px 0;
+}
+
+.cortex-mermaid-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cortex-mermaid-spin 1s linear infinite;
+}
+
+@keyframes cortex-mermaid-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hide the code block when placeholder is shown */
+.cortex-mermaid-generating {
+  display: none;
+}
+
+/* Fullscreen modal overlay */
+.cortex-mermaid-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cortex-mermaid-modal {
+  background: var(--background-primary);
+  border-radius: 8px;
+  padding: 24px;
+  max-width: 90vw;
+  max-height: 90vh;
+  overflow: auto;
+  position: relative;
+}
+
+.cortex-mermaid-modal svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.cortex-mermaid-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.cortex-mermaid-modal-close:hover {
+  color: var(--text-normal);
 }
