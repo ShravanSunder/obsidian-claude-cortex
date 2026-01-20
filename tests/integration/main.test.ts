@@ -338,14 +338,14 @@ describe('CortexPlugin', () => {
       expect(conv.title.length).toBeGreaterThan(0);
     });
 
-    it('should reset agent service session', async () => {
+    it('should switch to new session (null) for fresh context', async () => {
       await plugin.onload();
 
-      const resetSessionSpy = vi.spyOn(plugin.agentService, 'resetSession');
+      const switchSessionSpy = vi.spyOn(plugin.agentService, 'switchSession');
 
       await plugin.createConversation();
 
-      expect(resetSessionSpy).toHaveBeenCalled();
+      expect(switchSessionSpy).toHaveBeenCalledWith(null);
     });
   });
 
