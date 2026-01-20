@@ -395,7 +395,8 @@ export default class CortexPlugin extends Plugin {
 
     this.conversations.unshift(conversation);
     this.activeConversationId = conversation.id;
-    this.agentService.resetSession();
+    // Use switchSession to properly recreate query without resume (fresh context)
+    await this.agentService.switchSession(null);
 
     // Save new conversation to session file
     await this.storage.sessions.saveConversation(conversation);

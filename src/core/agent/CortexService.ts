@@ -580,6 +580,7 @@ export class CortexService {
 
   /**
    * Close the persistent query and clean up resources.
+   * This kills the subprocess - use only for full cleanup (plugin unload).
    */
   private closePersistentQuery(): void {
     if (this.persistentQuery) {
@@ -602,9 +603,44 @@ export class CortexService {
     this.currentThinkingTokens = null;
     this.currentPermissionMode = null;
     this.currentMcpServersKey = null;
+  }
 
-    // Reset preWarm state so new preWarm calls don't wait for the old one
-    this.preWarmPromise = null;
+  /**
+   * Gracefully close the persistent query for session switching.
+   * Properly awaits interrupt() to ensure clean subprocess state,
+   * then allows creating a new query without cold start penalty.
+   */
+  private async gracefulCloseQuery(): Promise<void> {
+    // First, properly await interrupt() to cleanly stop any streaming
+    if (this.persistentQuery) {
+      try {
+        await this.persistentQuery.interrupt();
+      } catch {
+        // Ignore errors - subprocess may already be stopped
+      }
+      this.persistentQuery = null;
+    }
+
+    // Now close the message channel after interrupt completes
+    if (this.messageChannel) {
+      this.messageChannel.close();
+      this.messageChannel = null;
+    }
+
+    // Abort the abort controller
+    if (this.queryAbortController) {
+      this.queryAbortController.abort();
+      this.queryAbortController = null;
+    }
+
+    this.activeResponseResolvers = [];
+    this.responseConsumerRunning = false;
+
+    // Reset tracked option values so next query re-applies them
+    this.currentModel = null;
+    this.currentThinkingTokens = null;
+    this.currentPermissionMode = null;
+    this.currentMcpServersKey = null;
   }
 
   /** Returns true if persistent query is running. */
@@ -901,49 +937,29 @@ export class CortexService {
   }
 
   /**
-   * Switches to a different session.
-   *
-   * For NEW sessions (null): Just resets session state. The subprocess stays alive,
-   * and the next message with `session_id: ""` triggers a fresh session. This is instant.
-   *
-   * For EXISTING sessions: Must restart the subprocess because sessions are bound
-   * at query creation via the `resume` option. This has cold start latency.
-   *
-   * @param newSessionId The session ID to switch to (null for new session)
-   * @param preWarmInBackground If true, start warming in background (only for existing sessions)
+   * Switches session by recreating the query with appropriate resume option.
+   * - For new sessions (null): creates query without resume for fresh context
+   * - For existing sessions: creates query with resume to restore context
+   * Properly awaits interrupt() to ensure clean subprocess state before new query.
    */
-  async switchSession(newSessionId: string | null, preWarmInBackground = true): Promise<void> {
-    const currentSessionId = this.sessionManager.getSessionId();
-
-    // Skip if already on the target session
-    if (currentSessionId === newSessionId) {
-      return;
-    }
-
-    // Clear session-related state
+  async switchSession(newSessionId: string | null): Promise<void> {
+    // Clear session-specific state
+    this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
     this.approvalManager.clearSessionApprovals();
     this.diffStore.clear();
     this.approvedPlanContent = null;
     this.currentPlanFilePath = null;
-    this.activeResponseResolvers = [];
 
-    if (newSessionId === null) {
-      // NEW SESSION: Just reset session state, keep subprocess alive
-      // Next message will have session_id: "" which triggers new session creation
-      this.sessionManager.setSessionId(null, this.plugin.settings.model);
-      // Don't close the persistent query - it stays warm!
-    } else {
-      // EXISTING SESSION: Must restart subprocess with resume option
-      this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
+    // Gracefully close the current query (properly awaits interrupt)
+    await this.gracefulCloseQuery();
 
-      if (this.persistentQuery) {
-        this.closePersistentQuery();
-      }
-
-      // Pre-warm in background so query might be ready when user sends message
-      if (preWarmInBackground) {
-        void this.preWarm(newSessionId);
-      }
+    // Pre-warm a new query in the background with the new session context
+    // This will be picked up by the next query() call
+    const vaultPath = getVaultPath(this.plugin.app);
+    const cliPath = this.plugin.getResolvedClaudeCliPath();
+    if (vaultPath && cliPath) {
+      // Start new query with resume for existing sessions, without for new
+      this.preWarmPromise = this.doPreWarm(vaultPath, cliPath, newSessionId ?? undefined);
     }
   }
 
