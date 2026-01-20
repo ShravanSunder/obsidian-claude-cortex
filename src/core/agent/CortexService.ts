@@ -572,6 +572,7 @@ export class CortexService {
 
   /**
    * Close the persistent query and clean up resources.
+   * This kills the subprocess - use only for full cleanup (plugin unload).
    */
   private closePersistentQuery(): void {
     if (this.persistentQuery) {
@@ -590,6 +591,44 @@ export class CortexService {
     this.responseConsumerRunning = false;
 
     // Reset tracked option values
+    this.currentModel = null;
+    this.currentThinkingTokens = null;
+    this.currentPermissionMode = null;
+    this.currentMcpServersKey = null;
+  }
+
+  /**
+   * Gracefully close the persistent query for session switching.
+   * Properly awaits interrupt() to ensure clean subprocess state,
+   * then allows creating a new query without cold start penalty.
+   */
+  private async gracefulCloseQuery(): Promise<void> {
+    // First, properly await interrupt() to cleanly stop any streaming
+    if (this.persistentQuery) {
+      try {
+        await this.persistentQuery.interrupt();
+      } catch {
+        // Ignore errors - subprocess may already be stopped
+      }
+      this.persistentQuery = null;
+    }
+
+    // Now close the message channel after interrupt completes
+    if (this.messageChannel) {
+      this.messageChannel.close();
+      this.messageChannel = null;
+    }
+
+    // Abort the abort controller
+    if (this.queryAbortController) {
+      this.queryAbortController.abort();
+      this.queryAbortController = null;
+    }
+
+    this.activeResponseResolvers = [];
+    this.responseConsumerRunning = false;
+
+    // Reset tracked option values so next query re-applies them
     this.currentModel = null;
     this.currentThinkingTokens = null;
     this.currentPermissionMode = null;
@@ -889,14 +928,31 @@ export class CortexService {
     this.sessionManager.setSessionId(id, this.plugin.settings.model);
   }
 
-  /** Switches session via session_id in messages, preserving subprocess. */
+  /**
+   * Switches session by recreating the query with appropriate resume option.
+   * - For new sessions (null): creates query without resume for fresh context
+   * - For existing sessions: creates query with resume to restore context
+   * Properly awaits interrupt() to ensure clean subprocess state before new query.
+   */
   async switchSession(newSessionId: string | null): Promise<void> {
+    // Clear session-specific state
     this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
     this.approvalManager.clearSessionApprovals();
     this.diffStore.clear();
     this.approvedPlanContent = null;
     this.currentPlanFilePath = null;
-    this.activeResponseResolvers = [];
+
+    // Gracefully close the current query (properly awaits interrupt)
+    await this.gracefulCloseQuery();
+
+    // Pre-warm a new query in the background with the new session context
+    // This will be picked up by the next query() call
+    const vaultPath = getVaultPath(this.plugin.app);
+    const cliPath = this.plugin.getResolvedClaudeCliPath();
+    if (vaultPath && cliPath) {
+      // Start new query with resume for existing sessions, without for new
+      this.preWarmPromise = this.doPreWarm(vaultPath, cliPath, newSessionId ?? undefined);
+    }
   }
 
   /** Cleanup resources. */

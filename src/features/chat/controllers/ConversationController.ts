@@ -148,7 +148,9 @@ export class ConversationController {
     state.messages = [...conversation.messages];
     state.usage = conversation.usage ?? null;
 
-    plugin.agentService.setSessionId(conversation.sessionId);
+    // Use switchSession() to properly close old query and create new one with correct resume option
+    // SDK guarantees: new query() without resume = fresh session
+    await plugin.agentService.switchSession(conversation.sessionId);
 
     // Restore approved plan for this conversation
     if (conversation.approvedPlan) {
