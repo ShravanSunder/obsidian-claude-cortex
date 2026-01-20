@@ -100,6 +100,7 @@ function createMockDeps(
       agentService: {
         getSessionId: vi.fn().mockReturnValue(null),
         setSessionId: vi.fn(),
+        switchSession: vi.fn().mockResolvedValue(undefined),
       },
       settings: {
         userName: '',

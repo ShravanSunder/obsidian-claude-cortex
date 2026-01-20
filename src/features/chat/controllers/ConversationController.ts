@@ -97,6 +97,10 @@ export class ConversationController {
       ? ((await plugin.switchConversation(emptyConv.id)) ?? (await plugin.createConversation()))
       : await plugin.createConversation();
 
+    // Switch to a fresh session for the new conversation
+    // (restarts persistent query without resume ID)
+    await plugin.agentService.switchSession(null);
+
     state.currentConversationId = conversation.id;
     state.clearMessages();
     state.usage = null;
@@ -148,7 +152,8 @@ export class ConversationController {
     state.messages = [...conversation.messages];
     state.usage = conversation.usage ?? null;
 
-    plugin.agentService.setSessionId(conversation.sessionId);
+    // Switch the agent session (restarts persistent query if session changed)
+    await plugin.agentService.switchSession(conversation.sessionId);
 
     // Restore approved plan for this conversation
     if (conversation.approvedPlan) {
@@ -218,6 +223,9 @@ export class ConversationController {
 
     const conversation = await plugin.switchConversation(id);
     if (!conversation) return;
+
+    // Switch the agent session (restarts persistent query with new session)
+    await plugin.agentService.switchSession(conversation.sessionId);
 
     state.currentConversationId = conversation.id;
     state.messages = [...conversation.messages];

@@ -602,6 +602,9 @@ export class CortexService {
     this.currentThinkingTokens = null;
     this.currentPermissionMode = null;
     this.currentMcpServersKey = null;
+
+    // Reset preWarm state so new preWarm calls don't wait for the old one
+    this.preWarmPromise = null;
   }
 
   /** Returns true if persistent query is running. */
@@ -897,14 +900,51 @@ export class CortexService {
     this.sessionManager.setSessionId(id, this.plugin.settings.model);
   }
 
-  /** Switches session via session_id in messages, preserving subprocess. */
-  async switchSession(newSessionId: string | null): Promise<void> {
-    this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
+  /**
+   * Switches to a different session.
+   *
+   * For NEW sessions (null): Just resets session state. The subprocess stays alive,
+   * and the next message with `session_id: ""` triggers a fresh session. This is instant.
+   *
+   * For EXISTING sessions: Must restart the subprocess because sessions are bound
+   * at query creation via the `resume` option. This has cold start latency.
+   *
+   * @param newSessionId The session ID to switch to (null for new session)
+   * @param preWarmInBackground If true, start warming in background (only for existing sessions)
+   */
+  async switchSession(newSessionId: string | null, preWarmInBackground = true): Promise<void> {
+    const currentSessionId = this.sessionManager.getSessionId();
+
+    // Skip if already on the target session
+    if (currentSessionId === newSessionId) {
+      return;
+    }
+
+    // Clear session-related state
     this.approvalManager.clearSessionApprovals();
     this.diffStore.clear();
     this.approvedPlanContent = null;
     this.currentPlanFilePath = null;
     this.activeResponseResolvers = [];
+
+    if (newSessionId === null) {
+      // NEW SESSION: Just reset session state, keep subprocess alive
+      // Next message will have session_id: "" which triggers new session creation
+      this.sessionManager.setSessionId(null, this.plugin.settings.model);
+      // Don't close the persistent query - it stays warm!
+    } else {
+      // EXISTING SESSION: Must restart subprocess with resume option
+      this.sessionManager.setSessionId(newSessionId, this.plugin.settings.model);
+
+      if (this.persistentQuery) {
+        this.closePersistentQuery();
+      }
+
+      // Pre-warm in background so query might be ready when user sends message
+      if (preWarmInBackground) {
+        void this.preWarm(newSessionId);
+      }
+    }
   }
 
   /** Cleanup resources. */
