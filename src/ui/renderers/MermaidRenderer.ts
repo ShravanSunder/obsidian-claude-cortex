@@ -19,6 +19,40 @@ mermaid.initialize({
   securityLevel: 'loose',
 });
 
+/** Information about a mermaid render error. */
+export interface MermaidRenderError {
+  /** Unique ID for this mermaid diagram. */
+  id: string;
+  /** The mermaid source code that failed. */
+  code: string;
+  /** The error message. */
+  error: string;
+  /** The DOM element containing the error. */
+  element: HTMLElement;
+}
+
+/** Result of rendering mermaid blocks. */
+export interface RenderMermaidResult {
+  /** Number of successfully rendered diagrams. */
+  rendered: number;
+  /** Array of render errors. */
+  errors: MermaidRenderError[];
+}
+
+/**
+ * Type guard to check if an element is an HTMLElement.
+ */
+function isHTMLElement(el: Element | null | undefined): el is HTMLElement {
+  return el instanceof HTMLElement;
+}
+
+/**
+ * Type guard to check if an element is an SVGElement.
+ */
+function isSVGElement(el: Element | Node | null | undefined): el is SVGElement {
+  return el instanceof SVGElement;
+}
+
 /**
  * Validate mermaid diagram syntax.
  * @param code - The mermaid diagram code to validate.
@@ -38,15 +72,40 @@ export async function validateMermaid(code: string): Promise<string | null> {
  * Call this after MarkdownRenderer.renderMarkdown() since Obsidian
  * doesn't render mermaid in sidebar/ItemView.
  * @param containerEl - The container element to search for mermaid blocks.
+ * @returns Result with count of rendered diagrams and any errors.
  */
-export async function renderMermaidBlocks(containerEl: HTMLElement): Promise<void> {
+export async function renderMermaidBlocks(containerEl: HTMLElement): Promise<RenderMermaidResult> {
   const codeBlocks = Array.from(containerEl.querySelectorAll('pre > code.language-mermaid'));
+  const result: RenderMermaidResult = { rendered: 0, errors: [] };
+
+  // Debug: Check what Obsidian created
+  const obsidianMermaid = containerEl.querySelectorAll('.mermaid, .mermaid, [class*="mermaid"]');
+  const svgs = containerEl.querySelectorAll('svg');
+  console.log(
+    '[MermaidRenderer] renderMermaidBlocks called, found',
+    codeBlocks.length,
+    'code blocks,',
+    obsidianMermaid.length,
+    'obsidian mermaid elements,',
+    svgs.length,
+    'SVGs',
+  );
+
+  // Log first few element classes for debugging
+  if (obsidianMermaid.length > 0) {
+    console.log(
+      '[MermaidRenderer] Obsidian mermaid element classes:',
+      Array.from(obsidianMermaid)
+        .slice(0, 3)
+        .map((el) => el.className),
+    );
+  }
 
   for (const codeEl of codeBlocks) {
     const preEl = codeEl.parentElement;
     if (!preEl) continue;
 
-    const code = codeEl.textContent || '';
+    const code = codeEl.textContent ?? '';
     if (!code.trim()) continue;
 
     const id = `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -55,18 +114,55 @@ export async function renderMermaidBlocks(containerEl: HTMLElement): Promise<voi
       const { svg } = await mermaid.render(id, code);
       const wrapper = document.createElement('div');
       wrapper.className = 'cortex-mermaid-diagram';
-      // Store original code for save/copy functionality
+      // Store original code and ID for save/copy functionality
       wrapper.dataset.mermaidSource = code;
+      wrapper.dataset.mermaidId = id;
       wrapper.innerHTML = svg;
       preEl.replaceWith(wrapper);
+      console.log(
+        '[MermaidRenderer] Rendered mermaid diagram, wrapper classes:',
+        wrapper.className,
+      );
+      result.rendered++;
     } catch (error) {
       // Keep original code block on error, add error indicator
       preEl.classList.add('cortex-mermaid-error');
       const errorMsg = error instanceof Error ? error.message : 'Render failed';
       preEl.setAttribute('title', `Mermaid error: ${errorMsg}`);
       console.warn('Mermaid render failed:', error);
+
+      // Track the error for auto-fix
+      result.errors.push({
+        id,
+        code,
+        error: errorMsg,
+        element: preEl,
+      });
     }
   }
+
+  return result;
+}
+
+/**
+ * Renders a single mermaid diagram and returns the wrapper element.
+ * Used for in-place replacement during auto-fix.
+ * @param code - The mermaid source code.
+ * @param id - Optional ID for the diagram (generated if not provided).
+ * @returns The wrapper HTMLElement containing the rendered SVG.
+ * @throws Error if rendering fails.
+ */
+export async function renderSingleMermaid(code: string, id?: string): Promise<HTMLElement> {
+  const mermaidId = id ?? `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const { svg } = await mermaid.render(mermaidId, code);
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'cortex-mermaid-diagram cortex-mermaid-fade-in';
+  wrapper.dataset.mermaidSource = code;
+  wrapper.dataset.mermaidId = mermaidId;
+  wrapper.innerHTML = svg;
+
+  return wrapper;
 }
 
 /** Options for saving a mermaid diagram as a note. */
@@ -154,7 +250,7 @@ export async function saveMermaidAsNote(options: SaveMermaidOptions): Promise<st
   const fileName = `${title} ${timestamp}`;
 
   // Determine folder
-  const folder = targetFolder || '';
+  const folder = targetFolder ?? '';
   const basePath = folder ? `${folder}/${fileName}` : fileName;
 
   // Find unique filename
@@ -176,11 +272,92 @@ export async function saveMermaidAsNote(options: SaveMermaidOptions): Promise<st
 }
 
 /**
+ * Convert SVG element to PNG blob.
+ */
+async function svgToPngBlob(svgEl: SVGElement, scale = 2): Promise<Blob> {
+  // Get SVG dimensions - try viewBox first, then clientWidth/Height
+  const viewBox = svgEl.getAttribute('viewBox');
+  let width = 800;
+  let height = 600;
+
+  if (viewBox) {
+    const parts = viewBox.split(/\s+/);
+    if (parts.length >= 4) {
+      width = parseFloat(parts[2]) ?? width;
+      height = parseFloat(parts[3]) ?? height;
+    }
+  } else {
+    width = svgEl.clientWidth ?? width;
+    height = svgEl.clientHeight ?? height;
+  }
+
+  // Clone SVG and set explicit dimensions
+  const clonedNode = svgEl.cloneNode(true);
+  if (!isSVGElement(clonedNode)) {
+    throw new Error('Failed to clone SVG element');
+  }
+  clonedNode.setAttribute('width', String(width));
+  clonedNode.setAttribute('height', String(height));
+
+  // Serialize to string
+  const svgData = new XMLSerializer().serializeToString(clonedNode);
+  const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+  const url = URL.createObjectURL(svgBlob);
+
+  // Draw to canvas
+  const canvas = document.createElement('canvas');
+  canvas.width = width * scale;
+  canvas.height = height * scale;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) {
+    throw new Error('Failed to get canvas context');
+  }
+  ctx.scale(scale, scale);
+
+  // Fill with white background
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, width, height);
+
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      ctx.drawImage(img, 0, 0, width, height);
+      URL.revokeObjectURL(url);
+      canvas.toBlob((blob) => {
+        if (blob) resolve(blob);
+        else reject(new Error('Failed to create PNG blob'));
+      }, 'image/png');
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      reject(new Error('Failed to load SVG image'));
+    };
+    img.src = url;
+  });
+}
+
+/**
+ * Copy SVG diagram as PNG image to clipboard.
+ */
+async function copyDiagramAsImage(svgEl: SVGElement): Promise<boolean> {
+  try {
+    const blob = await svgToPngBlob(svgEl);
+    await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+    return true;
+  } catch (error) {
+    console.error('Failed to copy diagram as image:', error);
+    return false;
+  }
+}
+
+/**
  * Enhance mermaid elements with action buttons.
  *
  * Call this after renderMermaidBlocks() to add:
- * - Save as note button
+ * - Expand button (opens in modal)
  * - Copy source button
+ * - Copy as image button
+ * - Save as note button
  *
  * Works with both:
  * - Rendered diagrams (.cortex-mermaid-diagram with data-mermaid-source)
@@ -191,33 +368,47 @@ export function enhanceMermaidBlocks(
   app: App,
   originalMarkdown?: string,
 ): void {
-  // Find rendered diagrams and unrendered code blocks
+  // Find rendered diagrams - both Cortex-rendered and Obsidian-rendered
   const mermaidEls = containerEl.querySelectorAll(
-    '.cortex-mermaid-diagram, pre.mermaid, pre code.language-mermaid',
+    '.cortex-mermaid-diagram, .mermaid, pre.mermaid, pre code.language-mermaid',
+  );
+
+  console.log(
+    '[MermaidRenderer] enhanceMermaidBlocks called, found',
+    mermaidEls.length,
+    'elements',
   );
 
   mermaidEls.forEach((el) => {
-    // Skip if already enhanced
-    if (el.parentElement?.querySelector('.cortex-mermaid-actions')) return;
+    // Skip if already enhanced or not an HTMLElement
+    if (!isHTMLElement(el)) return;
+    if (el.querySelector('.cortex-mermaid-actions')) return;
 
     let mermaidCode = '';
-    let targetEl: Element = el;
+    let targetEl: HTMLElement = el;
 
-    // Handle rendered diagram
+    // Handle Cortex-rendered diagram
     if (el.classList.contains('cortex-mermaid-diagram')) {
-      mermaidCode = (el as HTMLElement).dataset.mermaidSource || '';
+      mermaidCode = el.dataset.mermaidSource ?? '';
       targetEl = el;
-    } else {
-      // Handle unrendered code block
+    }
+    // Handle Obsidian-rendered diagram (.mermaid)
+    else if (el.classList.contains('mermaid')) {
+      // Obsidian doesn't store source, try to extract from original markdown
+      targetEl = el;
+      // We'll get mermaid code from originalMarkdown below
+    }
+    // Handle unrendered code block
+    else {
       const preEl = el.tagName === 'PRE' ? el : el.parentElement;
-      if (!preEl) return;
+      if (!isHTMLElement(preEl)) return;
       targetEl = preEl;
 
       if (el.tagName === 'CODE') {
-        mermaidCode = el.textContent || '';
+        mermaidCode = el.textContent ?? '';
       } else {
         const codeEl = preEl.querySelector('code');
-        mermaidCode = codeEl?.textContent || '';
+        mermaidCode = codeEl?.textContent ?? '';
       }
     }
 
@@ -231,60 +422,62 @@ export function enhanceMermaidBlocks(
 
     if (!mermaidCode) return;
 
-    // Create actions container
+    const svgEl = targetEl.querySelector('svg');
+    const hasSvg = isSVGElement(svgEl);
+    const isRenderedDiagram =
+      el.classList.contains('cortex-mermaid-diagram') || el.classList.contains('mermaid');
+
+    // Create actions container - position inside the diagram container
     const actionsEl = createEl('div', { cls: 'cortex-mermaid-actions' });
 
-    // Expand button (only for rendered diagrams with SVG)
-    if (el.classList.contains('cortex-mermaid-diagram') && el.querySelector('svg')) {
+    // Only show buttons for rendered diagrams with SVG
+    if (isRenderedDiagram && hasSvg) {
+      // Expand button
       const expandBtn = actionsEl.createEl('button', {
-        cls: 'cortex-mermaid-btn cortex-mermaid-expand',
-        attr: { title: 'Expand diagram' },
+        cls: 'cortex-mermaid-btn',
+        attr: { title: 'Expand' },
       });
-      setIcon(expandBtn, 'expand');
+      setIcon(expandBtn, 'maximize-2');
 
-      expandBtn.addEventListener('click', () => {
-        showMermaidModal(targetEl);
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        void showMermaidModal(targetEl, mermaidCode, app);
+      });
+
+      // Copy as 2x image button
+      const copyImageBtn = actionsEl.createEl('button', {
+        cls: 'cortex-mermaid-btn',
+        attr: { title: 'Copy 2x' },
+      });
+      setIcon(copyImageBtn, 'image');
+
+      copyImageBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        const success = await copyDiagramAsImage(svgEl);
+        if (success) {
+          copyImageBtn.classList.add('cortex-mermaid-btn-success');
+          setTimeout(() => copyImageBtn.classList.remove('cortex-mermaid-btn-success'), 1500);
+        }
+      });
+
+      // Copy code button
+      const copyCodeBtn = actionsEl.createEl('button', {
+        cls: 'cortex-mermaid-btn',
+        attr: { title: 'Copy code' },
+      });
+      setIcon(copyCodeBtn, 'code');
+
+      copyCodeBtn.addEventListener('click', async (e) => {
+        e.stopPropagation();
+        await navigator.clipboard.writeText('```mermaid\n' + mermaidCode + '\n```');
+        copyCodeBtn.classList.add('cortex-mermaid-btn-success');
+        setTimeout(() => copyCodeBtn.classList.remove('cortex-mermaid-btn-success'), 1500);
       });
     }
 
-    // Save as note button
-    const saveBtn = actionsEl.createEl('button', {
-      cls: 'cortex-mermaid-btn cortex-mermaid-save',
-      attr: { title: 'Save as note' },
-    });
-    setIcon(saveBtn, 'file-plus');
-
-    saveBtn.addEventListener('click', async () => {
-      const filePath = await saveMermaidAsNote({
-        app,
-        mermaidCode,
-      });
-
-      if (filePath) {
-        saveBtn.classList.add('cortex-mermaid-btn-success');
-        setTimeout(() => saveBtn.classList.remove('cortex-mermaid-btn-success'), 1500);
-      }
-    });
-
-    // Copy source button
-    const copyBtn = actionsEl.createEl('button', {
-      cls: 'cortex-mermaid-btn cortex-mermaid-copy',
-      attr: { title: 'Copy diagram source' },
-    });
-    setIcon(copyBtn, 'copy');
-
-    copyBtn.addEventListener('click', async () => {
-      await navigator.clipboard.writeText('```mermaid\n' + mermaidCode + '\n```');
-      copyBtn.classList.add('cortex-mermaid-btn-success');
-      setTimeout(() => copyBtn.classList.remove('cortex-mermaid-btn-success'), 1500);
-    });
-
-    // Insert actions before the target element
-    const wrapper = targetEl.parentElement;
-    if (wrapper?.classList.contains('cortex-code-wrapper')) {
-      wrapper.insertBefore(actionsEl, targetEl);
-    } else {
-      targetEl.parentElement?.insertBefore(actionsEl, targetEl);
+    // Only insert actions if there are buttons (rendered diagrams with SVG only)
+    if (isRenderedDiagram && hasSvg) {
+      targetEl.insertBefore(actionsEl, targetEl.firstChild);
     }
   });
 }
@@ -341,28 +534,238 @@ export function removeMermaidPlaceholders(containerEl: HTMLElement): void {
   }
 }
 
+// ============================================
+// Mermaid Caching Utilities
+// ============================================
+
+/** Cache entry for mermaid elements. */
+export interface MermaidCacheEntry {
+  /** Hash of the mermaid source code for matching. */
+  hash: string;
+  /** The cached DOM element (placeholder or rendered diagram). */
+  element: HTMLElement;
+  /** Whether this is a rendered diagram (vs placeholder). */
+  isRendered: boolean;
+}
+
 /**
- * Show mermaid diagram in fullscreen modal.
+ * Simple hash function for mermaid source code.
+ * Uses djb2 algorithm for fast string hashing.
  */
-function showMermaidModal(sourceEl: Element): void {
+function hashMermaidSource(source: string): string {
+  let hash = 5381;
+  for (let i = 0; i < source.length; i++) {
+    hash = (hash * 33) ^ source.charCodeAt(i);
+  }
+  return (hash >>> 0).toString(36);
+}
+
+/**
+ * Caches mermaid elements (placeholders or rendered diagrams) before el.empty().
+ * Uses content hash to match blocks across re-renders.
+ *
+ * @param containerEl - The container element to search for mermaid elements.
+ * @returns Map of hash -> cached element entry.
+ */
+export function cacheMermaidElements(containerEl: HTMLElement): Map<string, MermaidCacheEntry> {
+  const cache = new Map<string, MermaidCacheEntry>();
+
+  // Cache rendered diagrams
+  const diagrams = Array.from(containerEl.querySelectorAll('.cortex-mermaid-diagram'));
+  for (const diagram of diagrams) {
+    if (!isHTMLElement(diagram)) continue;
+    const source = diagram.dataset.mermaidSource;
+    if (!source) continue;
+
+    const hash = hashMermaidSource(source);
+    cache.set(hash, {
+      hash,
+      element: diagram.cloneNode(true) as HTMLElement,
+      isRendered: true,
+    });
+  }
+
+  // Cache placeholders with their associated code blocks
+  const placeholders = Array.from(containerEl.querySelectorAll('.cortex-mermaid-placeholder'));
+  for (const placeholder of placeholders) {
+    if (!isHTMLElement(placeholder)) continue;
+
+    // Find the associated code block (should be next sibling)
+    const codeBlock = placeholder.nextElementSibling;
+    if (!codeBlock || !isHTMLElement(codeBlock)) continue;
+
+    const codeEl = codeBlock.querySelector('code.language-mermaid');
+    if (!codeEl) continue;
+
+    const source = codeEl.textContent ?? '';
+    if (!source.trim()) continue;
+
+    const hash = hashMermaidSource(source);
+    // Only cache if not already cached (rendered diagrams take precedence)
+    if (!cache.has(hash)) {
+      cache.set(hash, {
+        hash,
+        element: placeholder.cloneNode(true) as HTMLElement,
+        isRendered: false,
+      });
+    }
+  }
+
+  return cache;
+}
+
+/**
+ * Restores cached mermaid elements after renderMarkdown().
+ * Matches by source hash and replaces new code blocks with cached elements.
+ *
+ * @param containerEl - The container element to search for mermaid code blocks.
+ * @param cache - Map of hash -> cached element entry.
+ */
+export function restoreMermaidElements(
+  containerEl: HTMLElement,
+  cache: Map<string, MermaidCacheEntry>,
+): void {
+  if (cache.size === 0) return;
+
+  const codeBlocks = Array.from(containerEl.querySelectorAll('pre > code.language-mermaid'));
+
+  for (const codeEl of codeBlocks) {
+    const preEl = codeEl.parentElement;
+    if (!preEl) continue;
+
+    const source = codeEl.textContent ?? '';
+    if (!source.trim()) continue;
+
+    const hash = hashMermaidSource(source);
+    const cached = cache.get(hash);
+
+    if (cached) {
+      if (cached.isRendered) {
+        // Restore rendered diagram with fade-in animation
+        const restored = cached.element.cloneNode(true) as HTMLElement;
+        restored.classList.add('cortex-mermaid-fade-in');
+        preEl.replaceWith(restored);
+
+        // Remove animation class after animation completes
+        setTimeout(() => {
+          restored.classList.remove('cortex-mermaid-fade-in');
+        }, 200);
+      } else {
+        // Restore placeholder - insert before the code block
+        const restored = cached.element.cloneNode(true) as HTMLElement;
+        preEl.classList.add('cortex-mermaid-generating');
+        preEl.parentElement?.insertBefore(restored, preEl);
+      }
+    }
+  }
+}
+
+/**
+ * Show mermaid diagram in fullscreen modal with action buttons.
+ * If no SVG found in sourceEl, re-renders using mermaidCode.
+ */
+async function showMermaidModal(sourceEl: Element, mermaidCode: string, app: App): Promise<void> {
   // Create fullscreen overlay
   const overlay = document.body.createDiv({ cls: 'cortex-mermaid-modal-overlay' });
   const modal = overlay.createDiv({ cls: 'cortex-mermaid-modal' });
 
-  // Clone the SVG
-  const svgEl = sourceEl.querySelector('svg');
-  if (svgEl) {
-    const svgClone = svgEl.cloneNode(true) as SVGElement;
-    // Remove size constraints in modal for full view
-    svgClone.style.maxWidth = 'none';
-    svgClone.style.width = 'auto';
-    svgClone.style.height = 'auto';
-    modal.appendChild(svgClone);
+  // Modal header with actions
+  const header = modal.createDiv({ cls: 'cortex-mermaid-modal-header' });
+  const title = header.createDiv({ cls: 'cortex-mermaid-modal-title' });
+  title.setText(suggestMermaidTitle(mermaidCode));
+
+  const actionsContainer = header.createDiv({ cls: 'cortex-mermaid-modal-actions' });
+
+  // Modal body - create first, will be populated with SVG
+  const body = modal.createDiv({ cls: 'cortex-mermaid-modal-body' });
+
+  // Get SVG - first try from sourceEl, then fallback to re-rendering
+  let svgEl = sourceEl.querySelector('svg');
+
+  // If no SVG found in sourceEl (stale reference), re-render from mermaidCode
+  if (!isSVGElement(svgEl) && mermaidCode) {
+    console.log('[MermaidRenderer] Modal: No SVG in sourceEl, re-rendering from code');
+    try {
+      const id = `mermaid-modal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const { svg } = await mermaid.render(id, mermaidCode);
+      // Create temp container to parse the SVG
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = svg;
+      svgEl = tempDiv.querySelector('svg');
+    } catch (error) {
+      console.error('[MermaidRenderer] Failed to re-render mermaid in modal:', error);
+    }
   }
 
+  // Store validated SVG element
+  const validSvgEl = isSVGElement(svgEl) ? svgEl : null;
+
+  // Copy as image button
+  if (validSvgEl) {
+    const copyImageBtn = actionsContainer.createEl('button', {
+      cls: 'cortex-mermaid-modal-btn',
+      attr: { title: 'Copy as image' },
+    });
+    setIcon(copyImageBtn, 'image');
+    copyImageBtn.createSpan({ text: 'Copy Image' });
+
+    copyImageBtn.addEventListener('click', async () => {
+      const success = await copyDiagramAsImage(validSvgEl);
+      if (success) {
+        copyImageBtn.classList.add('cortex-mermaid-modal-btn-success');
+        setTimeout(() => copyImageBtn.classList.remove('cortex-mermaid-modal-btn-success'), 1500);
+      }
+    });
+  }
+
+  // Copy code button
+  const copyCodeBtn = actionsContainer.createEl('button', {
+    cls: 'cortex-mermaid-modal-btn',
+    attr: { title: 'Copy code' },
+  });
+  setIcon(copyCodeBtn, 'code');
+  copyCodeBtn.createSpan({ text: 'Copy Code' });
+
+  copyCodeBtn.addEventListener('click', async () => {
+    await navigator.clipboard.writeText('```mermaid\n' + mermaidCode + '\n```');
+    copyCodeBtn.classList.add('cortex-mermaid-modal-btn-success');
+    setTimeout(() => copyCodeBtn.classList.remove('cortex-mermaid-modal-btn-success'), 1500);
+  });
+
+  // Save as note button
+  const saveBtn = actionsContainer.createEl('button', {
+    cls: 'cortex-mermaid-modal-btn',
+    attr: { title: 'Save as note' },
+  });
+  setIcon(saveBtn, 'file-plus');
+  saveBtn.createSpan({ text: 'Save Note' });
+
+  saveBtn.addEventListener('click', async () => {
+    const filePath = await saveMermaidAsNote({ app, mermaidCode });
+    if (filePath) {
+      saveBtn.classList.add('cortex-mermaid-modal-btn-success');
+      setTimeout(() => saveBtn.classList.remove('cortex-mermaid-modal-btn-success'), 1500);
+    }
+  });
+
   // Close button
-  const closeBtn = modal.createDiv({ cls: 'cortex-mermaid-modal-close' });
+  const closeBtn = actionsContainer.createEl('button', { cls: 'cortex-mermaid-modal-close' });
   closeBtn.setText('\u00D7');
+
+  // Populate body with SVG
+  if (validSvgEl) {
+    const clonedSvg = validSvgEl.cloneNode(true);
+    if (isSVGElement(clonedSvg)) {
+      // Remove size constraints in modal for full view
+      clonedSvg.style.maxWidth = 'none';
+      clonedSvg.style.width = 'auto';
+      clonedSvg.style.height = 'auto';
+      body.appendChild(clonedSvg);
+    }
+  } else {
+    // Show error message if no SVG available
+    body.createEl('p', { text: 'Unable to render diagram', cls: 'cortex-mermaid-modal-error' });
+  }
 
   const close = () => {
     document.removeEventListener('keydown', handleEsc);

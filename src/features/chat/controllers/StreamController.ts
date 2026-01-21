@@ -398,6 +398,13 @@ export class StreamController {
       msg.contentBlocks = msg.contentBlocks || [];
       msg.contentBlocks.push({ type: 'text', content: state.currentTextContent });
     }
+    // Save finalized text block for mermaid re-rendering at stream end
+    if (state.currentTextEl && state.currentTextContent) {
+      state.finalizedTextBlocks.push({
+        el: state.currentTextEl,
+        content: state.currentTextContent,
+      });
+    }
     state.currentTextEl = null;
     state.currentTextContent = '';
   }
@@ -413,14 +420,14 @@ export class StreamController {
 
     this.hideThinkingIndicator();
     if (!state.currentThinkingState) {
-      state.currentThinkingState = createThinkingBlock(state.currentContentEl, (el, md) =>
-        renderer.renderContent(el, md),
-      );
+      state.currentThinkingState = createThinkingBlock(state.currentContentEl, async (el, md) => {
+        await renderer.renderContent(el, md);
+      });
     }
 
-    await appendThinkingContent(state.currentThinkingState, content, (el, md) =>
-      renderer.renderContent(el, md),
-    );
+    await appendThinkingContent(state.currentThinkingState, content, async (el, md) => {
+      await renderer.renderContent(el, md);
+    });
   }
 
   /** Finalizes the current thinking block. */
@@ -726,5 +733,7 @@ export class StreamController {
     state.currentTextContent = '';
     state.currentThinkingState = null;
     state.activeSubagents.clear();
+    // Clear finalized text blocks after mermaid re-render is done
+    state.finalizedTextBlocks.length = 0;
   }
 }

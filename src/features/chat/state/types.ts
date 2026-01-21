@@ -41,6 +41,48 @@ export interface StoredSelection {
   editorView: EditorView;
 }
 
+// ============================================
+// Pending Action System
+// ============================================
+
+/** Types of pending actions that can be auto-fixed. */
+export type PendingActionType = 'mermaid-fix' | 'code-fix';
+
+/** Status of a pending action. */
+export type PendingActionStatus =
+  | 'pending' // Waiting to be processed
+  | 'fixing' // Claude is working on it
+  | 'completed' // Successfully fixed
+  | 'failed'; // Gave up after max retries
+
+/** A pending action that needs auto-fixing. */
+export interface PendingAction {
+  /** Unique ID (e.g., mermaid-abc123). */
+  id: string;
+  /** Type of action. */
+  type: PendingActionType;
+  /** Current status. */
+  status: PendingActionStatus;
+  /** Number of fix attempts made. */
+  attempts: number;
+  /** Maximum attempts before giving up. */
+  maxAttempts: number;
+  /** DOM element reference for in-place updates. */
+  elementRef?: HTMLElement;
+  /** Type-specific metadata. */
+  metadata: Record<string, unknown>;
+  /** Last error message. */
+  error?: string;
+  /** Creation timestamp. */
+  createdAt: number;
+  /** Last update timestamp. */
+  updatedAt: number;
+}
+
+// ============================================
+// Plan Mode
+// ============================================
+
 /** Plan mode state for read-only planning workflow. */
 export interface PlanModeState {
   /** Whether plan mode is currently active. */
@@ -77,6 +119,8 @@ export interface ChatStateData {
   currentThinkingState: ThinkingBlockState | null;
   thinkingEl: HTMLElement | null;
   queueIndicatorEl: HTMLElement | null;
+  // Finalized text blocks during streaming (for mermaid re-rendering)
+  finalizedTextBlocks: Array<{ el: HTMLElement; content: string }>;
 
   // Tool and subagent tracking maps
   toolCallElements: Map<string, HTMLElement>;
@@ -104,6 +148,9 @@ export interface ChatStateData {
 
   // Current todo items for the persistent bottom panel
   currentTodos: TodoItem[] | null;
+
+  // Pending actions for auto-fix system
+  pendingActions: Map<string, PendingAction>;
 }
 
 /** Callbacks for ChatState changes. */

@@ -506,8 +506,12 @@ export class CortexService {
         }
 
         // Transform SDK message to stream chunks
+        // Skip text/thinking from assistant messages because we use includePartialMessages,
+        // which means we get deltas via stream_event AND accumulated content via assistant.
+        // Processing both would cause duplicate content.
         for (const event of transformSDKMessage(message, {
           intendedModel: this.plugin.settings.model,
+          skipAssistantTextContent: true,
         })) {
           if (isSessionInitEvent(event)) {
             this.sessionManager.captureSession(event.sessionId);

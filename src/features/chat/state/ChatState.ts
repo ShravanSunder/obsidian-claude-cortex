@@ -12,6 +12,7 @@ import type {
   ChatMessage,
   ChatStateCallbacks,
   ChatStateData,
+  PendingAction,
   PlanModeState,
   QueuedMessage,
   SubagentState,
@@ -34,6 +35,7 @@ function createInitialState(): ChatStateData {
     currentThinkingState: null,
     thinkingEl: null,
     queueIndicatorEl: null,
+    finalizedTextBlocks: [],
     toolCallElements: new Map(),
     activeSubagents: new Map(),
     asyncSubagentStates: new Map(),
@@ -47,6 +49,7 @@ function createInitialState(): ChatStateData {
     planModeActivationPending: false,
     pendingPlanContent: null,
     currentTodos: null,
+    pendingActions: new Map(),
   };
 }
 
@@ -186,6 +189,10 @@ export class ChatState {
     this.state.queueIndicatorEl = value;
   }
 
+  get finalizedTextBlocks(): Array<{ el: HTMLElement; content: string }> {
+    return this.state.finalizedTextBlocks;
+  }
+
   // ============================================
   // Tool and Subagent Tracking Maps
   // ============================================
@@ -208,6 +215,10 @@ export class ChatState {
 
   get askUserQuestionStates(): Map<string, AskUserQuestionState> {
     return this.state.askUserQuestionStates;
+  }
+
+  get pendingActions(): Map<string, PendingAction> {
+    return this.state.pendingActions;
   }
 
   // ============================================
@@ -311,6 +322,7 @@ export class ChatState {
     this.state.currentThinkingState = null;
     this.state.isStreaming = false;
     this.state.cancelRequested = false;
+    this.state.finalizedTextBlocks = [];
   }
 
   /** Clears all maps for a new conversation. */
@@ -320,6 +332,7 @@ export class ChatState {
     this.state.asyncSubagentStates.clear();
     this.state.writeEditStates.clear();
     this.state.askUserQuestionStates.clear();
+    this.state.pendingActions.clear();
   }
 
   /** Resets all state for a new conversation. */

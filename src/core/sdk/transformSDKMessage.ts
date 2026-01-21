@@ -21,6 +21,14 @@ import type { TransformEvent } from './types';
 export interface TransformOptions {
   /** The intended model from settings/query (used as fallback for usage selection). */
   intendedModel?: string;
+  /**
+   * When true, skip text/thinking extraction from assistant messages.
+   * This should be enabled when using includePartialMessages, because:
+   * - stream_event messages provide incremental deltas
+   * - partial assistant messages contain accumulated content (not deltas)
+   * - Processing both would cause duplicate content
+   */
+  skipAssistantTextContent?: boolean;
 }
 
 /**
@@ -50,12 +58,16 @@ export function* transformSDKMessage(
       break;
 
     case 'assistant':
-      // Extract ALL content blocks - text, tool_use, and thinking
+      // Extract content blocks from assistant messages.
+      // When skipAssistantTextContent is true, only extract tool_use blocks because:
+      // - stream_event messages provide incremental deltas
+      // - partial assistant messages (with includePartialMessages) contain accumulated content
+      // - Processing both would cause duplicate text/thinking content
       if (message.message?.content && Array.isArray(message.message.content)) {
         for (const block of message.message.content) {
-          if (block.type === 'thinking' && block.thinking) {
+          if (block.type === 'thinking' && block.thinking && !options?.skipAssistantTextContent) {
             yield { type: 'thinking', content: block.thinking, parentToolUseId };
-          } else if (block.type === 'text' && block.text) {
+          } else if (block.type === 'text' && block.text && !options?.skipAssistantTextContent) {
             yield { type: 'text', content: block.text, parentToolUseId };
           } else if (block.type === 'tool_use') {
             yield {

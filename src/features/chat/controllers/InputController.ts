@@ -23,15 +23,19 @@ import {
   type InstructionModeManager,
   type McpServerSelector,
   type PlanBanner,
+  showActionStatus,
   showAskUserQuestionPanel,
   showPlanApprovalPanel,
 } from '../../../ui';
+import type { MermaidRenderError } from '../../../ui/renderers';
+import { extractMermaidBlocks, renderSingleMermaid } from '../../../ui/renderers';
 import { prependCurrentNote } from '../../../utils/context';
 import { type EditorSelectionContext, prependEditorContext } from '../../../utils/editor';
 import { appendMarkdownSnippet } from '../../../utils/markdown';
 import { formatSlashCommandWarnings } from '../../../utils/slashCommand';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { InstructionRefineService } from '../services/InstructionRefineService';
+import { PendingActionService } from '../services/PendingActionService';
 import type { TitleGenerationService } from '../services/TitleGenerationService';
 import type { ChatState } from '../state/ChatState';
 import type { QueryOptions } from '../state/types';
@@ -85,9 +89,11 @@ interface PlanModeSendOptions extends PlanModeResendPayload {
  */
 export class InputController {
   private deps: InputControllerDeps;
+  private pendingActionService: PendingActionService;
 
   constructor(deps: InputControllerDeps) {
     this.deps = deps;
+    this.pendingActionService = new PendingActionService(deps.state);
   }
 
   // ============================================
@@ -805,14 +811,15 @@ ${content}
 
   /**
    * Finalizes stream state and re-renders mermaid diagrams.
-   * Captures text block before finalization, then re-renders with isStreaming=false.
+   * Captures text block before finalization, then re-renders all text blocks with isStreaming=false.
+   * Collects mermaid errors and creates pending actions for auto-fix.
    */
   private async finalizeStreamWithMermaid(assistantMsg: ChatMessage): Promise<void> {
     const { state, renderer, streamController } = this.deps;
 
-    // Capture text block state before finalization for mermaid re-render
-    const textEl = state.currentTextEl;
-    const textContent = state.currentTextContent;
+    // Capture current text block state before finalization for mermaid re-render
+    const currentTextEl = state.currentTextEl;
+    const currentTextContent = state.currentTextContent;
 
     state.currentContentEl = null;
 
@@ -820,10 +827,201 @@ ${content}
     streamController.finalizeCurrentTextBlock(assistantMsg);
     state.activeSubagents.clear();
 
-    // Re-render text block with isStreaming=false to render mermaid diagrams
-    if (textEl && textContent) {
-      await renderer.renderContent(textEl, textContent, false);
+    // Collect all mermaid errors from rendering
+    const allMermaidErrors: MermaidRenderError[] = [];
+
+    // Re-render all finalized text blocks with isStreaming=false to render mermaid diagrams
+    // This ensures mermaid diagrams in earlier text blocks (before tool calls) also render
+    for (const { el, content } of state.finalizedTextBlocks) {
+      // Skip the current text block as it will be rendered below
+      if (el === currentTextEl) continue;
+      const result = await renderer.renderContent(el, content, false);
+      if (result?.errors) {
+        allMermaidErrors.push(...result.errors);
+      }
     }
+
+    // Re-render the current (last) text block with isStreaming=false
+    if (currentTextEl && currentTextContent) {
+      const result = await renderer.renderContent(currentTextEl, currentTextContent, false);
+      if (result?.errors) {
+        allMermaidErrors.push(...result.errors);
+      }
+    }
+
+    // Process mermaid errors - create pending actions and trigger auto-fix
+    if (allMermaidErrors.length > 0) {
+      await this.handleMermaidErrors(allMermaidErrors);
+    }
+  }
+
+  /**
+   * Handles mermaid render errors by creating pending actions and triggering auto-fix.
+   */
+  private async handleMermaidErrors(errors: MermaidRenderError[]): Promise<void> {
+    console.log('[InputController] Processing', errors.length, 'mermaid errors for auto-fix');
+
+    // Create pending actions for each error
+    for (const err of errors) {
+      const action = this.pendingActionService.create({
+        id: err.id,
+        type: 'mermaid-fix',
+        elementRef: err.element,
+        metadata: { code: err.code, error: err.error },
+        maxAttempts: 2,
+      });
+
+      // Show "Fixing..." status on the error element
+      this.pendingActionService.markFixing(err.id);
+      showActionStatus(err.element, action);
+    }
+
+    // Build error details for fix prompt
+    const pendingFixes = this.pendingActionService.getFixingActions('mermaid-fix');
+    if (pendingFixes.length === 0) return;
+
+    const errorDetails = pendingFixes
+      .map(
+        (a) =>
+          `Diagram ${a.id}:\nError: ${a.metadata.error}\nCode:\n\`\`\`mermaid\n${a.metadata.code}\n\`\`\``,
+      )
+      .join('\n\n');
+
+    // Send hidden follow-up to fix the errors
+    const fixPrompt = `The following mermaid diagrams failed to render. Please fix the syntax errors and provide corrected versions:
+
+${errorDetails}
+
+Provide each corrected diagram in a separate mermaid code block. Maintain the same order as the errors listed above.`;
+
+    // Trigger fix in a separate turn (after current finalization completes)
+    setTimeout(() => {
+      void this.sendMermaidFixMessage(fixPrompt);
+    }, 100);
+  }
+
+  /**
+   * Sends a hidden message to fix mermaid errors and handles the response.
+   */
+  private async sendMermaidFixMessage(fixPrompt: string): Promise<void> {
+    const { state } = this.deps;
+
+    // Check if we should still attempt fix (user might have started new conversation)
+    if (!this.pendingActionService.hasFixingActions('mermaid-fix')) {
+      console.log('[InputController] No pending mermaid fixes, skipping fix message');
+      return;
+    }
+
+    console.log('[InputController] Sending hidden mermaid fix message');
+
+    // Store current fixing actions before sending
+    const fixingActions = this.pendingActionService.getFixingActions('mermaid-fix');
+
+    // Send the fix request as a hidden message
+    await this.sendMessage({
+      hidden: true,
+      content: fixPrompt,
+    });
+
+    // After the message completes, process the fix response
+    // Note: The streaming response will be in the last assistant message
+    const lastAssistantMsg = [...state.messages].reverse().find((m) => m.role === 'assistant');
+    if (!lastAssistantMsg) {
+      // Mark all as failed if no response
+      for (const action of fixingActions) {
+        this.pendingActionService.markFailed(action.id, 'No response received');
+        const element = action.elementRef;
+        if (element) {
+          showActionStatus(element, this.pendingActionService.get(action.id)!);
+        }
+      }
+      return;
+    }
+
+    // Extract mermaid blocks from the response
+    const responseContent = lastAssistantMsg.content || '';
+    const fixedBlocks = extractMermaidBlocks(responseContent);
+
+    console.log(
+      '[InputController] Extracted',
+      fixedBlocks.length,
+      'fixed mermaid blocks for',
+      fixingActions.length,
+      'errors',
+    );
+
+    // Process each fixing action
+    for (let i = 0; i < fixingActions.length; i++) {
+      const action = fixingActions[i];
+      const fixedCode = fixedBlocks[i];
+
+      if (!fixedCode) {
+        this.pendingActionService.markFailed(action.id, 'No fix provided');
+        const element = action.elementRef;
+        if (element) {
+          showActionStatus(element, this.pendingActionService.get(action.id)!);
+        }
+        continue;
+      }
+
+      // Try to render the fix
+      const element = action.elementRef;
+      if (!element) {
+        this.pendingActionService.markFailed(action.id, 'Element no longer exists');
+        continue;
+      }
+
+      try {
+        const rendered = await renderSingleMermaid(fixedCode, action.id);
+        element.replaceWith(rendered);
+        this.pendingActionService.markCompleted(action.id);
+        console.log('[InputController] Successfully fixed mermaid diagram', action.id);
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : 'Render failed';
+        this.pendingActionService.markFailed(action.id, errorMsg);
+        const currentAction = this.pendingActionService.get(action.id);
+        if (currentAction) {
+          showActionStatus(element, currentAction);
+        }
+        console.log('[InputController] Failed to fix mermaid diagram', action.id, errorMsg);
+      }
+    }
+
+    // Check if any still need fixing (retry)
+    const stillPending = this.pendingActionService.getActionsPendingFix('mermaid-fix');
+    if (stillPending.length > 0) {
+      console.log(
+        '[InputController]',
+        stillPending.length,
+        'mermaid diagrams still need fixing, retrying',
+      );
+      // Mark for another attempt and retry
+      const retryErrorDetails = stillPending
+        .map(
+          (a) =>
+            `Diagram ${a.id}:\nError: ${a.error || a.metadata.error}\nOriginal code:\n\`\`\`mermaid\n${a.metadata.code}\n\`\`\``,
+        )
+        .join('\n\n');
+
+      for (const action of stillPending) {
+        this.pendingActionService.markFixing(action.id);
+        const element = action.elementRef;
+        if (element) {
+          showActionStatus(element, action);
+        }
+      }
+
+      const retryPrompt = `The previous fix attempt failed. Please try again with a different approach:
+
+${retryErrorDetails}`;
+
+      setTimeout(() => {
+        void this.sendMermaidFixMessage(retryPrompt);
+      }, 100);
+    }
+
+    // Cleanup completed/failed actions
+    this.pendingActionService.cleanup();
   }
 
   // ============================================

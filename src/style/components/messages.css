@@ -64,6 +64,7 @@
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+  min-width: 0; /* Allow flex shrinking for overflow to work */
   border-bottom-left-radius: 4px;
   text-align: left;
 }

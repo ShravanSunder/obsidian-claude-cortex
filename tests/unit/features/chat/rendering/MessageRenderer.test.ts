@@ -117,7 +117,7 @@ describe('MessageRenderer', () => {
     const messagesEl = createMockElement();
     const mockComponent = createMockComponent();
     const renderer = new MessageRenderer({} as any, mockComponent as any, messagesEl);
-    const renderContentSpy = vi.spyOn(renderer, 'renderContent').mockResolvedValue(undefined);
+    const renderContentSpy = vi.spyOn(renderer, 'renderContent').mockResolvedValue(null);
 
     const msg: ChatMessage = {
       id: 'm1',

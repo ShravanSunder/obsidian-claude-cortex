@@ -19,12 +19,18 @@ export {
   splitIntoHunks,
 } from './DiffRenderer';
 export {
+  cacheMermaidElements,
   createMermaidNoteContent,
   enhanceMermaidBlocks,
   extractMermaidBlocks,
   hasMermaidBlocks,
+  type MermaidCacheEntry,
+  type MermaidRenderError,
+  type RenderMermaidResult,
   removeMermaidPlaceholders,
   renderMermaidBlocks,
+  renderSingleMermaid,
+  restoreMermaidElements,
   type SaveMermaidOptions,
   saveMermaidAsNote,
   showMermaidPlaceholders,

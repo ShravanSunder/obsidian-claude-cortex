@@ -6,7 +6,7 @@
 
 import { setIcon } from 'obsidian';
 
-import { CODANNA_CONFIG, SemanticSearchService } from '../../features/search/SemanticSearchService';
+import { CODANNA_CONFIG } from '../../features/search/SemanticSearchService';
 import type CortexPlugin from '../../main';
 
 /** Codanna availability status. */
@@ -19,7 +19,6 @@ type CodannaStatus = 'checking' | 'available' | 'unavailable';
 export class CodannaSettings {
   private containerEl: HTMLElement;
   private plugin: CortexPlugin;
-  private searchService: SemanticSearchService;
   private status: CodannaStatus = 'checking';
 
   /**
@@ -30,7 +29,6 @@ export class CodannaSettings {
   constructor(containerEl: HTMLElement, plugin: CortexPlugin) {
     this.containerEl = containerEl;
     this.plugin = plugin;
-    this.searchService = new SemanticSearchService();
     this.initialize();
   }
 
@@ -44,12 +42,14 @@ export class CodannaSettings {
     this.render();
 
     try {
-      // Try to get MCP invoker from the agent service
-      const invoker = this.getMcpInvoker();
-      if (invoker) {
-        this.searchService.setMcpInvoker(invoker);
-        const available = await this.searchService.isAvailable();
-        this.status = available ? 'available' : 'unavailable';
+      // Check if Codanna server is configured and enabled in MCP settings
+      const servers = this.plugin.mcpService.getServers();
+      const codannaServer = servers.find(
+        (s) => s.name.toLowerCase() === CODANNA_CONFIG.serverName.toLowerCase(),
+      );
+
+      if (codannaServer && codannaServer.enabled) {
+        this.status = 'available';
       } else {
         this.status = 'unavailable';
       }
@@ -58,15 +58,6 @@ export class CodannaSettings {
     }
 
     this.render();
-  }
-
-  private getMcpInvoker():
-    | ((server: string, tool: string, args: Record<string, unknown>) => Promise<unknown>)
-    | null {
-    // This would need to be wired up to the actual MCP invoker
-    // For now, return null to indicate unavailable
-    // The actual implementation would come from the agent service
-    return null;
   }
 
   private render(): void {
@@ -120,7 +111,6 @@ export class CodannaSettings {
         });
         setIcon(refreshBtn, 'refresh-cw');
         refreshBtn.addEventListener('click', () => {
-          this.searchService.resetCache();
           void this.checkAvailability();
         });
         break;

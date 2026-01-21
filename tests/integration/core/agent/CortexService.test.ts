@@ -48,6 +48,14 @@ import {
   truncateToolResult,
 } from '@/utils/session';
 
+// Helper to create stream_event text message (used with includePartialMessages)
+function createStreamText(text: string) {
+  return {
+    type: 'stream_event',
+    event: { type: 'content_block_start', content_block: { type: 'text', text } },
+  };
+}
+
 // Helper to create SDK-format assistant message with tool_use
 function createAssistantWithToolUse(
   toolName: string,
@@ -319,7 +327,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -363,7 +371,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -403,7 +411,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -441,7 +449,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -483,7 +491,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -520,7 +528,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -540,7 +548,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello again' }] } },
+        createStreamText('Hello again'),
         { type: 'result' },
       ]);
 
@@ -559,13 +567,12 @@ describe('CortexService', () => {
       (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
     });
 
-    it('should transform assistant text messages', async () => {
+    it('should transform assistant text messages via stream events', async () => {
+      // Note: With includePartialMessages=true, text comes via stream_event
+      // (not from assistant messages, which would cause duplicates)
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        {
-          type: 'assistant',
-          message: { content: [{ type: 'text', text: 'This is a test response' }] },
-        },
+        createStreamText('This is a test response'),
         { type: 'result' },
       ]);
 
@@ -641,7 +648,7 @@ describe('CortexService', () => {
     it('should capture session ID from init message', async () => {
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'my-session-123' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -658,7 +665,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'resume-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'First run' }] } },
+        createStreamText('First run'),
         { type: 'result' },
       ]);
 
@@ -670,10 +677,7 @@ describe('CortexService', () => {
       // After first query, session ID should be captured
       expect(service.getSessionId()).toBe('resume-session');
 
-      setMockMessages([
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Second run' }] } },
-        { type: 'result' },
-      ]);
+      setMockMessages([createStreamText('Second run'), { type: 'result' }]);
 
       // Second query uses the same persistent connection with same session
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -685,14 +689,16 @@ describe('CortexService', () => {
       expect(service.getSessionId()).toBe('resume-session');
     });
 
-    it('should extract multiple content blocks from assistant message', async () => {
+    it('should extract text from stream events and tool_use from assistant', async () => {
+      // Note: With includePartialMessages=true, text comes via stream_event
+      // while tool_use still comes from assistant messages
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
+        createStreamText('Let me read that file.'),
         {
           type: 'assistant',
           message: {
             content: [
-              { type: 'text', text: 'Let me read that file.' },
               { type: 'tool_use', id: 'tool-abc', name: 'Read', input: { file_path: '/foo.txt' } },
             ],
           },
@@ -720,7 +726,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
       ]);
 
       const queryGenerator = service.query('hello');
@@ -734,8 +740,8 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'cancel-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Chunk 1' }] } },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Chunk 2' }] } },
+        createStreamText('Chunk 1'),
+        createStreamText('Chunk 2'),
         { type: 'result' },
       ]);
 
@@ -880,7 +886,7 @@ describe('CortexService', () => {
     it('should accept optional conversation history parameter', async () => {
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello!' }] } },
+        createStreamText('Hello!'),
         { type: 'result' },
       ]);
 
@@ -905,7 +911,7 @@ describe('CortexService', () => {
     it('should work without conversation history', async () => {
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello!' }] } },
+        createStreamText('Hello!'),
         { type: 'result' },
       ]);
 
@@ -931,7 +937,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'ok' }] } },
+        createStreamText('ok'),
         { type: 'result' },
       ]);
 
@@ -965,10 +971,7 @@ describe('CortexService', () => {
       // Simulate restoring a session ID from storage
       service.setSessionId('restored-session-id');
 
-      setMockMessages([
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Resumed!' }] } },
-        { type: 'result' },
-      ]);
+      setMockMessages([createStreamText('Resumed!'), { type: 'result' }]);
 
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       for await (const _chunk of service.query('continue')) {
@@ -984,7 +987,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'new-captured-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hello' }] } },
+        createStreamText('Hello'),
         { type: 'result' },
       ]);
 
@@ -1510,16 +1513,23 @@ describe('CortexService', () => {
       (fs.existsSync as import('vitest').Mock).mockReturnValue(true);
     });
 
-    it('should transform thinking blocks from assistant messages', async () => {
+    it('should transform thinking blocks from stream events', async () => {
+      // Note: With includePartialMessages=true, text/thinking content comes via
+      // stream_event deltas, not assistant messages (to avoid duplicates).
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
         {
-          type: 'assistant',
-          message: {
-            content: [
-              { type: 'thinking', thinking: 'Let me analyze this problem...' },
-              { type: 'text', text: 'Here is my answer.' },
-            ],
+          type: 'stream_event',
+          event: {
+            type: 'content_block_start',
+            content_block: { type: 'thinking', thinking: 'Let me analyze this problem...' },
+          },
+        },
+        {
+          type: 'stream_event',
+          event: {
+            type: 'content_block_start',
+            content_block: { type: 'text', text: 'Here is my answer.' },
           },
         },
         { type: 'result' },
@@ -1911,7 +1921,13 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Recovered' }] } },
+        {
+          type: 'stream_event',
+          event: {
+            type: 'content_block_start',
+            content_block: { type: 'text', text: 'Recovered' },
+          },
+        },
         { type: 'result' },
       ]);
 
@@ -2062,7 +2078,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'test-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hi' }] } },
+        createStreamText('Hi'),
         { type: 'result' },
       ]);
 
@@ -2084,7 +2100,7 @@ describe('CortexService', () => {
 
       setMockMessages([
         { type: 'system', subtype: 'init', session_id: 'new-session' },
-        { type: 'assistant', message: { content: [{ type: 'text', text: 'Hi' }] } },
+        createStreamText('Hi'),
         { type: 'result' },
       ]);
 

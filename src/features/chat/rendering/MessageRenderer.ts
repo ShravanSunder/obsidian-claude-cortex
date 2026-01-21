@@ -15,7 +15,9 @@ import {
   TOOL_TODO_WRITE,
 } from '../../../core/tools/toolNames';
 import type { ChatMessage, ImageAttachment } from '../../../core/types';
+import type { MermaidRenderError, RenderMermaidResult } from '../../../ui';
 import {
+  cacheMermaidElements,
   enhanceMermaidBlocks,
   removeMermaidPlaceholders,
   renderMermaidBlocks,
@@ -25,6 +27,7 @@ import {
   renderStoredThinkingBlock,
   renderStoredToolCall,
   renderStoredWriteEdit,
+  restoreMermaidElements,
   showMermaidPlaceholders,
 } from '../../../ui';
 import { processFileLinks, registerFileLinkHandler } from '../../../utils/fileLink';
@@ -236,8 +239,13 @@ export class MessageRenderer {
     if (msg.contentBlocks && msg.contentBlocks.length > 0) {
       for (const block of msg.contentBlocks) {
         if (block.type === 'thinking') {
-          renderStoredThinkingBlock(contentEl, block.content, block.durationSeconds, (el, md) =>
-            this.renderContent(el, md),
+          renderStoredThinkingBlock(
+            contentEl,
+            block.content,
+            block.durationSeconds,
+            async (el, md) => {
+              await this.renderContent(el, md);
+            },
           );
         } else if (block.type === 'text') {
           const textEl = contentEl.createDiv({ cls: 'cortex-text-block' });
@@ -385,22 +393,45 @@ export class MessageRenderer {
    * @param el - The container element to render into.
    * @param markdown - The markdown content to render.
    * @param isStreaming - If true, skip mermaid rendering and show placeholders instead.
+   * @returns Mermaid render result when not streaming, null when streaming.
    */
-  async renderContent(el: HTMLElement, markdown: string, isStreaming = false): Promise<void> {
+  async renderContent(
+    el: HTMLElement,
+    markdown: string,
+    isStreaming = false,
+  ): Promise<RenderMermaidResult | null> {
+    // Cache mermaid elements before destroying DOM to prevent flickering
+    const mermaidCache = cacheMermaidElements(el);
+    console.log(
+      '[MessageRenderer] renderContent called, isStreaming:',
+      isStreaming,
+      'cacheSize:',
+      mermaidCache.size,
+    );
+
     el.empty();
     await MarkdownRenderer.renderMarkdown(markdown, el, '', this.component);
 
+    let mermaidResult: RenderMermaidResult | null = null;
+
     if (!isStreaming) {
+      console.log('[MessageRenderer] Not streaming - processing mermaid blocks');
       // Remove any placeholders from previous streaming state
       removeMermaidPlaceholders(el);
 
-      // Render mermaid diagrams (Obsidian doesn't render in sidebar/ItemView)
-      await renderMermaidBlocks(el);
+      // Restore cached rendered diagrams to prevent re-rendering
+      restoreMermaidElements(el, mermaidCache);
+
+      // Render any new mermaid diagrams (Obsidian doesn't render in sidebar/ItemView)
+      mermaidResult = await renderMermaidBlocks(el);
 
       // Enhance mermaid blocks with save/copy/expand buttons
       enhanceMermaidBlocks(el, this.app, markdown);
     } else {
-      // During streaming, show placeholder for mermaid blocks
+      // Restore cached placeholders during streaming to prevent flicker
+      restoreMermaidElements(el, mermaidCache);
+
+      // Show placeholders for any new mermaid blocks
       showMermaidPlaceholders(el);
     }
 
@@ -442,7 +473,20 @@ export class MessageRenderer {
 
     // Process file paths to make them clickable links
     processFileLinks(this.app, el);
+
+    return mermaidResult;
   }
+
+  /**
+   * Gets the last mermaid errors for auto-fix tracking.
+   * @returns Array of mermaid render errors.
+   */
+  getLastMermaidErrors(): MermaidRenderError[] {
+    return this.lastMermaidErrors;
+  }
+
+  /** Stores the last mermaid errors for retrieval. */
+  private lastMermaidErrors: MermaidRenderError[] = [];
 
   // ============================================
   // Utilities

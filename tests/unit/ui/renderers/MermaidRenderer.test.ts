@@ -1,7 +1,9 @@
 import {
+  cacheMermaidElements,
   createMermaidNoteContent,
   extractMermaidBlocks,
   hasMermaidBlocks,
+  restoreMermaidElements,
   suggestMermaidTitle,
 } from '@/ui/renderers/MermaidRenderer';
 
@@ -141,6 +143,52 @@ const x = 1;
 
     it('should return false for empty string', () => {
       expect(hasMermaidBlocks('')).toBe(false);
+    });
+  });
+
+  // Note: DOM-dependent tests (cacheMermaidElements, restoreMermaidElements)
+  // require a browser environment and are tested via integration/E2E tests.
+  // The functions use `instanceof HTMLElement` which requires a real DOM.
+  describe('cacheMermaidElements', () => {
+    it('should return empty map for container without mermaid elements', () => {
+      // Mock container that returns empty arrays for all queries
+      const container = {
+        querySelectorAll: () => [],
+      } as unknown as HTMLElement;
+
+      const cache = cacheMermaidElements(container);
+
+      expect(cache.size).toBe(0);
+    });
+  });
+
+  describe('restoreMermaidElements', () => {
+    it('should do nothing with empty cache', () => {
+      // Create a mock container
+      const container = {
+        querySelectorAll: () => [],
+      } as unknown as HTMLElement;
+
+      const cache = new Map();
+      restoreMermaidElements(container, cache);
+
+      // Should not throw with empty cache
+      expect(cache.size).toBe(0);
+    });
+
+    it('should skip processing when cache is empty', () => {
+      // Create a mock container with some code blocks
+      const codeBlocks = [{ parentElement: {}, textContent: 'graph TD' }];
+      const container = {
+        querySelectorAll: () => codeBlocks,
+      } as unknown as HTMLElement;
+
+      const cache = new Map();
+
+      // This should return early without processing codeBlocks
+      restoreMermaidElements(container, cache);
+
+      expect(cache.size).toBe(0);
     });
   });
 });
