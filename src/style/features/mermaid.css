@@ -132,25 +132,14 @@
   display: none;
 }
 
-/* Fullscreen modal overlay */
-.cortex-mermaid-modal-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.85);
-  z-index: 10000;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 20px;
-}
+/* Mermaid modal - extends Obsidian's .modal-container and .modal classes */
+/* Only add layout needs - Obsidian's .modal handles theming */
 
 .cortex-mermaid-modal {
-  background: var(--background-primary);
-  border-radius: 8px;
+  width: 90vw;
+  height: 90vh;
   max-width: 95vw;
   max-height: 95vh;
-  overflow: auto;
-  position: relative;
   display: flex;
   flex-direction: column;
 }
@@ -163,7 +152,7 @@
   padding: 12px 16px;
   border-bottom: 1px solid var(--background-modifier-border);
   background: var(--background-secondary);
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--radius-m) var(--radius-m) 0 0;
   flex-shrink: 0;
 }
 

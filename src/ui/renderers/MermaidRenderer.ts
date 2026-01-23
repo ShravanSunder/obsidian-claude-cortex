@@ -349,6 +349,15 @@ export function enhanceMermaidBlocks(
         // Store on element for later retrieval (survives DOM rebuilds)
         el.dataset.mermaidSource = mermaidCode;
       }
+      // Assign a stable ID to the SVG for direct lookup (Obsidian doesn't set one)
+      const obsidianSvg = el.querySelector('svg');
+      if (isSVGElement(obsidianSvg) && !obsidianSvg.id) {
+        const generatedId = `mermaid-obs-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+        obsidianSvg.id = generatedId;
+        el.dataset.mermaidId = generatedId;
+      } else if (isSVGElement(obsidianSvg) && obsidianSvg.id) {
+        el.dataset.mermaidId = obsidianSvg.id;
+      }
       obsidianDiagramIndex++;
     }
     // Handle unrendered code block
@@ -649,9 +658,11 @@ async function showMermaidModal(
     return;
   }
 
-  // Create fullscreen overlay
-  const overlay = document.body.createDiv({ cls: 'cortex-mermaid-modal-overlay' });
-  const modal = overlay.createDiv({ cls: 'cortex-mermaid-modal' });
+  // Use Obsidian's native modal pattern - append to body like Obsidian does
+  const overlay = document.body.createDiv({ cls: 'modal-container mod-dim' });
+  const modalBg = overlay.createDiv({ cls: 'modal-bg' });
+  modalBg.style.opacity = '0.85';
+  const modal = overlay.createDiv({ cls: 'modal cortex-mermaid-modal' });
 
   // Modal header with actions
   const header = modal.createDiv({ cls: 'cortex-mermaid-modal-header' });
@@ -730,7 +741,9 @@ async function showMermaidModal(
     validSvgEl.style.maxWidth = 'none';
     validSvgEl.style.width = 'auto';
     validSvgEl.style.height = 'auto';
-    body.appendChild(validSvgEl);
+    // Wrap in .mermaid div so Obsidian's dark mode filter applies
+    const mermaidWrapper = body.createDiv({ cls: 'mermaid' });
+    mermaidWrapper.appendChild(validSvgEl);
   } else {
     body.createEl('p', { text: 'Unable to render diagram', cls: 'cortex-mermaid-modal-error' });
   }
