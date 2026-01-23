@@ -165,14 +165,6 @@ export async function renderSingleMermaid(code: string, id?: string): Promise<HT
   return wrapper;
 }
 
-/** Options for saving a mermaid diagram as a note. */
-export interface SaveMermaidOptions {
-  app: App;
-  mermaidCode: string;
-  suggestedTitle?: string;
-  targetFolder?: string;
-}
-
 /**
  * Extract mermaid code blocks from markdown content.
  */
@@ -225,50 +217,6 @@ export function suggestMermaidTitle(mermaidCode: string): string {
   }
 
   return 'Diagram';
-}
-
-/**
- * Create markdown content for a mermaid note.
- */
-export function createMermaidNoteContent(mermaidCode: string, title: string): string {
-  return `# ${title}
-
-\`\`\`mermaid
-${mermaidCode}
-\`\`\`
-`;
-}
-
-/**
- * Save a mermaid diagram as a new note.
- */
-export async function saveMermaidAsNote(options: SaveMermaidOptions): Promise<string | null> {
-  const { app, mermaidCode, suggestedTitle, targetFolder } = options;
-
-  const title = suggestedTitle || suggestMermaidTitle(mermaidCode);
-  const timestamp = new Date().toISOString().slice(0, 10);
-  const fileName = `${title} ${timestamp}`;
-
-  // Determine folder
-  const folder = targetFolder ?? '';
-  const basePath = folder ? `${folder}/${fileName}` : fileName;
-
-  // Find unique filename
-  let filePath = `${basePath}.md`;
-  let counter = 1;
-  while (app.vault.getAbstractFileByPath(filePath)) {
-    filePath = `${basePath} ${counter}.md`;
-    counter++;
-  }
-
-  // Create the note
-  try {
-    const content = createMermaidNoteContent(mermaidCode, title);
-    await app.vault.create(filePath, content);
-    return filePath;
-  } catch {
-    return null;
-  }
 }
 
 /**
@@ -431,18 +379,23 @@ export function enhanceMermaidBlocks(
 
     // Only show buttons for rendered diagrams with SVG
     if (isRenderedDiagram && hasSvg) {
+      // Store mermaidId for direct SVG lookup (stable across DOM rebuilds)
+      const mermaidId = el.dataset.mermaidId ?? '';
+      const capturedCode = mermaidCode;
+
       // Expand button
       const expandBtn = actionsEl.createEl('button', {
         cls: 'cortex-mermaid-btn',
         attr: { title: 'Expand' },
       });
       setIcon(expandBtn, 'maximize-2');
+      expandBtn.dataset.mermaidId = mermaidId;
 
-      // Capture mermaidCode in closure for click handler
-      const capturedCode = mermaidCode;
       expandBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        void showMermaidModal(targetEl, capturedCode, app);
+        const btnMermaidId = expandBtn.dataset.mermaidId;
+        const svg = btnMermaidId ? document.getElementById(btnMermaidId) : null;
+        void showMermaidModal(svg, capturedCode, app);
       });
 
       // Copy as 2x image button
@@ -451,13 +404,34 @@ export function enhanceMermaidBlocks(
         attr: { title: 'Copy 2x' },
       });
       setIcon(copyImageBtn, 'image');
+      copyImageBtn.dataset.mermaidId = mermaidId;
 
       copyImageBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        const success = await copyDiagramAsImage(svgEl);
-        if (success) {
-          copyImageBtn.classList.add('cortex-mermaid-btn-success');
-          setTimeout(() => copyImageBtn.classList.remove('cortex-mermaid-btn-success'), 1500);
+        try {
+          const btnMermaidId = copyImageBtn.dataset.mermaidId;
+          let currentSvg: Element | null = btnMermaidId
+            ? document.getElementById(btnMermaidId)
+            : null;
+
+          // Fallback: re-render if SVG not found (stale element)
+          if (!isSVGElement(currentSvg) && capturedCode) {
+            const id = `mermaid-copy-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+            const { svg } = await mermaid.render(id, capturedCode);
+            const tempDiv = document.createElement('div');
+            tempDiv.innerHTML = svg;
+            currentSvg = tempDiv.querySelector('svg');
+          }
+
+          if (isSVGElement(currentSvg)) {
+            const success = await copyDiagramAsImage(currentSvg);
+            if (success) {
+              copyImageBtn.classList.add('cortex-mermaid-btn-success');
+              setTimeout(() => copyImageBtn.classList.remove('cortex-mermaid-btn-success'), 1500);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to copy diagram as image:', error);
         }
       });
 
@@ -663,10 +637,13 @@ export function restoreMermaidElements(
 
 /**
  * Show mermaid diagram in fullscreen modal with action buttons.
- * Always re-renders from mermaidCode for reliability (element refs may be stale).
+ * Clones the provided SVG element when available, falls back to re-rendering.
  */
-async function showMermaidModal(_sourceEl: Element, mermaidCode: string, app: App): Promise<void> {
-  // Always render fresh from code - element references are unreliable after DOM rebuilds
+async function showMermaidModal(
+  sourceSvg: Element | null,
+  mermaidCode: string,
+  _app: App,
+): Promise<void> {
   if (!mermaidCode) {
     console.error('[MermaidRenderer] showMermaidModal: No mermaidCode provided');
     return;
@@ -686,17 +663,29 @@ async function showMermaidModal(_sourceEl: Element, mermaidCode: string, app: Ap
   // Modal body
   const body = modal.createDiv({ cls: 'cortex-mermaid-modal-body' });
 
-  // Always render fresh from mermaidCode
+  // Clone the provided SVG element directly
   let validSvgEl: SVGElement | null = null;
-  try {
-    const id = `mermaid-modal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-    const { svg } = await mermaid.render(id, mermaidCode);
-    const tempDiv = document.createElement('div');
-    tempDiv.innerHTML = svg;
-    const svgEl = tempDiv.querySelector('svg');
-    validSvgEl = isSVGElement(svgEl) ? svgEl : null;
-  } catch (error) {
-    console.error('[MermaidRenderer] Failed to render mermaid in modal:', error);
+  if (isSVGElement(sourceSvg)) {
+    const cloned = sourceSvg.cloneNode(true);
+    if (isSVGElement(cloned)) {
+      validSvgEl = cloned;
+    }
+  }
+
+  // Fallback: re-render only if no SVG found
+  if (!validSvgEl && mermaidCode) {
+    try {
+      const id = `mermaid-modal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+      const { svg } = await mermaid.render(id, mermaidCode);
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = svg;
+      const rendered = tempDiv.querySelector('svg');
+      if (isSVGElement(rendered)) {
+        validSvgEl = rendered;
+      }
+    } catch (error) {
+      console.error('[MermaidRenderer] Fallback render failed:', error);
+    }
   }
 
   // Copy as image button
@@ -729,22 +718,6 @@ async function showMermaidModal(_sourceEl: Element, mermaidCode: string, app: Ap
     await navigator.clipboard.writeText('```mermaid\n' + mermaidCode + '\n```');
     copyCodeBtn.classList.add('cortex-mermaid-modal-btn-success');
     setTimeout(() => copyCodeBtn.classList.remove('cortex-mermaid-modal-btn-success'), 1500);
-  });
-
-  // Save as note button
-  const saveBtn = actionsContainer.createEl('button', {
-    cls: 'cortex-mermaid-modal-btn',
-    attr: { title: 'Save as note' },
-  });
-  setIcon(saveBtn, 'file-plus');
-  saveBtn.createSpan({ text: 'Save Note' });
-
-  saveBtn.addEventListener('click', async () => {
-    const filePath = await saveMermaidAsNote({ app, mermaidCode });
-    if (filePath) {
-      saveBtn.classList.add('cortex-mermaid-modal-btn-success');
-      setTimeout(() => saveBtn.classList.remove('cortex-mermaid-modal-btn-success'), 1500);
-    }
   });
 
   // Close button

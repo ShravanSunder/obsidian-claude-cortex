@@ -1,6 +1,5 @@
 import {
   cacheMermaidElements,
-  createMermaidNoteContent,
   extractMermaidBlocks,
   hasMermaidBlocks,
   restoreMermaidElements,
@@ -92,28 +91,6 @@ graph TD
 
     it('should return Diagram for unknown types', () => {
       expect(suggestMermaidTitle('unknownType\nContent')).toBe('Diagram');
-    });
-  });
-
-  describe('createMermaidNoteContent', () => {
-    it('should create note with title and mermaid block', () => {
-      const content = createMermaidNoteContent('graph TD\nA --> B', 'My Flowchart');
-
-      expect(content).toContain('# My Flowchart');
-      expect(content).toContain('```mermaid');
-      expect(content).toContain('graph TD');
-      expect(content).toContain('A --> B');
-      expect(content).toContain('```');
-    });
-
-    it('should preserve mermaid code exactly', () => {
-      const mermaidCode = `sequenceDiagram
-    Alice->>Bob: Hello Bob
-    Bob-->>Alice: Hi Alice`;
-
-      const content = createMermaidNoteContent(mermaidCode, 'Sequence');
-
-      expect(content).toContain(mermaidCode);
     });
   });
 

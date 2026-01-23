@@ -20,7 +20,6 @@ export {
 } from './DiffRenderer';
 export {
   cacheMermaidElements,
-  createMermaidNoteContent,
   enhanceMermaidBlocks,
   extractMermaidBlocks,
   hasMermaidBlocks,
@@ -31,8 +30,6 @@ export {
   renderMermaidBlocks,
   renderSingleMermaid,
   restoreMermaidElements,
-  type SaveMermaidOptions,
-  saveMermaidAsNote,
   showMermaidPlaceholders,
   suggestMermaidTitle,
   validateMermaid,
