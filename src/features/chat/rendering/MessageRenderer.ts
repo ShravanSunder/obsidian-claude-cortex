@@ -15,7 +15,6 @@ import {
   TOOL_TODO_WRITE,
 } from '../../../core/tools/toolNames';
 import type { ChatMessage, ImageAttachment } from '../../../core/types';
-import type { MermaidRenderError, RenderMermaidResult } from '../../../ui';
 import {
   cacheMermaidElements,
   enhanceMermaidBlocks,
@@ -393,29 +392,15 @@ export class MessageRenderer {
    * @param el - The container element to render into.
    * @param markdown - The markdown content to render.
    * @param isStreaming - If true, skip mermaid rendering and show placeholders instead.
-   * @returns Mermaid render result when not streaming, null when streaming.
    */
-  async renderContent(
-    el: HTMLElement,
-    markdown: string,
-    isStreaming = false,
-  ): Promise<RenderMermaidResult | null> {
+  async renderContent(el: HTMLElement, markdown: string, isStreaming = false): Promise<void> {
     // Cache mermaid elements before destroying DOM to prevent flickering
     const mermaidCache = cacheMermaidElements(el);
-    console.log(
-      '[MessageRenderer] renderContent called, isStreaming:',
-      isStreaming,
-      'cacheSize:',
-      mermaidCache.size,
-    );
 
     el.empty();
     await MarkdownRenderer.renderMarkdown(markdown, el, '', this.component);
 
-    let mermaidResult: RenderMermaidResult | null = null;
-
     if (!isStreaming) {
-      console.log('[MessageRenderer] Not streaming - processing mermaid blocks');
       // Remove any placeholders from previous streaming state
       removeMermaidPlaceholders(el);
 
@@ -423,7 +408,7 @@ export class MessageRenderer {
       restoreMermaidElements(el, mermaidCache);
 
       // Render any new mermaid diagrams (Obsidian doesn't render in sidebar/ItemView)
-      mermaidResult = await renderMermaidBlocks(el);
+      await renderMermaidBlocks(el);
 
       // Enhance mermaid blocks with save/copy/expand buttons
       enhanceMermaidBlocks(el, this.app, markdown);
@@ -473,20 +458,7 @@ export class MessageRenderer {
 
     // Process file paths to make them clickable links
     processFileLinks(this.app, el);
-
-    return mermaidResult;
   }
-
-  /**
-   * Gets the last mermaid errors for auto-fix tracking.
-   * @returns Array of mermaid render errors.
-   */
-  getLastMermaidErrors(): MermaidRenderError[] {
-    return this.lastMermaidErrors;
-  }
-
-  /** Stores the last mermaid errors for retrieval. */
-  private lastMermaidErrors: MermaidRenderError[] = [];
 
   // ============================================
   // Utilities

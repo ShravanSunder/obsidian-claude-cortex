@@ -19,24 +19,10 @@ mermaid.initialize({
   securityLevel: 'loose',
 });
 
-/** Information about a mermaid render error. */
-export interface MermaidRenderError {
-  /** Unique ID for this mermaid diagram. */
-  id: string;
-  /** The mermaid source code that failed. */
-  code: string;
-  /** The error message. */
-  error: string;
-  /** The DOM element containing the error. */
-  element: HTMLElement;
-}
-
 /** Result of rendering mermaid blocks. */
 export interface RenderMermaidResult {
   /** Number of successfully rendered diagrams. */
   rendered: number;
-  /** Array of render errors. */
-  errors: MermaidRenderError[];
 }
 
 /**
@@ -72,34 +58,11 @@ export async function validateMermaid(code: string): Promise<string | null> {
  * Call this after MarkdownRenderer.renderMarkdown() since Obsidian
  * doesn't render mermaid in sidebar/ItemView.
  * @param containerEl - The container element to search for mermaid blocks.
- * @returns Result with count of rendered diagrams and any errors.
+ * @returns Result with count of rendered diagrams.
  */
 export async function renderMermaidBlocks(containerEl: HTMLElement): Promise<RenderMermaidResult> {
   const codeBlocks = Array.from(containerEl.querySelectorAll('pre > code.language-mermaid'));
-  const result: RenderMermaidResult = { rendered: 0, errors: [] };
-
-  // Debug: Check what Obsidian created
-  const obsidianMermaid = containerEl.querySelectorAll('.mermaid, .mermaid, [class*="mermaid"]');
-  const svgs = containerEl.querySelectorAll('svg');
-  console.log(
-    '[MermaidRenderer] renderMermaidBlocks called, found',
-    codeBlocks.length,
-    'code blocks,',
-    obsidianMermaid.length,
-    'obsidian mermaid elements,',
-    svgs.length,
-    'SVGs',
-  );
-
-  // Log first few element classes for debugging
-  if (obsidianMermaid.length > 0) {
-    console.log(
-      '[MermaidRenderer] Obsidian mermaid element classes:',
-      Array.from(obsidianMermaid)
-        .slice(0, 3)
-        .map((el) => el.className),
-    );
-  }
+  const result: RenderMermaidResult = { rendered: 0 };
 
   for (const codeEl of codeBlocks) {
     const preEl = codeEl.parentElement;
@@ -119,50 +82,16 @@ export async function renderMermaidBlocks(containerEl: HTMLElement): Promise<Ren
       wrapper.dataset.mermaidId = id;
       wrapper.innerHTML = svg;
       preEl.replaceWith(wrapper);
-      console.log(
-        '[MermaidRenderer] Rendered mermaid diagram, wrapper classes:',
-        wrapper.className,
-      );
       result.rendered++;
     } catch (error) {
       // Keep original code block on error, add error indicator
       preEl.classList.add('cortex-mermaid-error');
       const errorMsg = error instanceof Error ? error.message : 'Render failed';
       preEl.setAttribute('title', `Mermaid error: ${errorMsg}`);
-      console.warn('Mermaid render failed:', error);
-
-      // Track the error for auto-fix
-      result.errors.push({
-        id,
-        code,
-        error: errorMsg,
-        element: preEl,
-      });
     }
   }
 
   return result;
-}
-
-/**
- * Renders a single mermaid diagram and returns the wrapper element.
- * Used for in-place replacement during auto-fix.
- * @param code - The mermaid source code.
- * @param id - Optional ID for the diagram (generated if not provided).
- * @returns The wrapper HTMLElement containing the rendered SVG.
- * @throws Error if rendering fails.
- */
-export async function renderSingleMermaid(code: string, id?: string): Promise<HTMLElement> {
-  const mermaidId = id ?? `mermaid-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  const { svg } = await mermaid.render(mermaidId, code);
-
-  const wrapper = document.createElement('div');
-  wrapper.className = 'cortex-mermaid-diagram cortex-mermaid-fade-in';
-  wrapper.dataset.mermaidSource = code;
-  wrapper.dataset.mermaidId = mermaidId;
-  wrapper.innerHTML = svg;
-
-  return wrapper;
 }
 
 /**

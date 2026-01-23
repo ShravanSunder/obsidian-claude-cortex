@@ -12,7 +12,6 @@ import type {
   ChatMessage,
   ChatStateCallbacks,
   ChatStateData,
-  PendingAction,
   PlanModeState,
   QueuedMessage,
   SubagentState,
@@ -49,7 +48,6 @@ function createInitialState(): ChatStateData {
     planModeActivationPending: false,
     pendingPlanContent: null,
     currentTodos: null,
-    pendingActions: new Map(),
   };
 }
 
@@ -217,10 +215,6 @@ export class ChatState {
     return this.state.askUserQuestionStates;
   }
 
-  get pendingActions(): Map<string, PendingAction> {
-    return this.state.pendingActions;
-  }
-
   // ============================================
   // Usage State
   // ============================================
@@ -332,7 +326,6 @@ export class ChatState {
     this.state.asyncSubagentStates.clear();
     this.state.writeEditStates.clear();
     this.state.askUserQuestionStates.clear();
-    this.state.pendingActions.clear();
   }
 
   /** Resets all state for a new conversation. */

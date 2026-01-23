@@ -1,12 +1,6 @@
 /** Cortex UI components - barrel export. */
 
 export {
-  hideActionStatus,
-  showActionStatus,
-  showFailedStatus,
-  showFixingStatus,
-} from './ActionStatusBanner';
-export {
   AskUserQuestionPanel,
   type AskUserQuestionPanelOptions,
   type AskUserQuestionPanelResult,
