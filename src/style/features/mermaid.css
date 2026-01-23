@@ -80,8 +80,8 @@
 }
 
 .cortex-mermaid-btn-success {
-  background: var(--color-green) !important;
-  color: var(--text-on-accent) !important;
+  background: var(--color-green, var(--interactive-success, #2ecc71)) !important;
+  color: var(--text-on-accent, #fff) !important;
 }
 
 .cortex-mermaid-btn svg {
@@ -199,8 +199,8 @@
 }
 
 .cortex-mermaid-modal-btn-success {
-  background: var(--color-green) !important;
-  color: var(--text-on-accent) !important;
+  background: var(--color-green, var(--interactive-success, #2ecc71)) !important;
+  color: var(--text-on-accent, #fff) !important;
 }
 
 .cortex-mermaid-modal-btn svg {

@@ -373,11 +373,11 @@ export function enhanceMermaidBlocks(
     '.cortex-mermaid-diagram, .mermaid, pre.mermaid, pre code.language-mermaid',
   );
 
-  console.log(
-    '[MermaidRenderer] enhanceMermaidBlocks called, found',
-    mermaidEls.length,
-    'elements',
-  );
+  // Pre-extract mermaid blocks from original markdown for index matching
+  const markdownBlocks = originalMarkdown ? extractMermaidBlocks(originalMarkdown) : [];
+
+  // Track index for Obsidian-rendered diagrams that need fallback to markdown blocks
+  let obsidianDiagramIndex = 0;
 
   mermaidEls.forEach((el) => {
     // Skip if already enhanced or not an HTMLElement
@@ -394,9 +394,14 @@ export function enhanceMermaidBlocks(
     }
     // Handle Obsidian-rendered diagram (.mermaid)
     else if (el.classList.contains('mermaid')) {
-      // Obsidian doesn't store source, try to extract from original markdown
       targetEl = el;
-      // We'll get mermaid code from originalMarkdown below
+      // Use corresponding block from originalMarkdown by index
+      if (markdownBlocks.length > obsidianDiagramIndex) {
+        mermaidCode = markdownBlocks[obsidianDiagramIndex];
+        // Store on element for later retrieval (survives DOM rebuilds)
+        el.dataset.mermaidSource = mermaidCode;
+      }
+      obsidianDiagramIndex++;
     }
     // Handle unrendered code block
     else {
@@ -412,15 +417,9 @@ export function enhanceMermaidBlocks(
       }
     }
 
-    // If we have original markdown, extract from there as fallback
-    if (!mermaidCode && originalMarkdown) {
-      const blocks = extractMermaidBlocks(originalMarkdown);
-      if (blocks.length > 0) {
-        mermaidCode = blocks[0];
-      }
+    if (!mermaidCode) {
+      return;
     }
-
-    if (!mermaidCode) return;
 
     const svgEl = targetEl.querySelector('svg');
     const hasSvg = isSVGElement(svgEl);
@@ -439,9 +438,11 @@ export function enhanceMermaidBlocks(
       });
       setIcon(expandBtn, 'maximize-2');
 
+      // Capture mermaidCode in closure for click handler
+      const capturedCode = mermaidCode;
       expandBtn.addEventListener('click', (e) => {
         e.stopPropagation();
-        void showMermaidModal(targetEl, mermaidCode, app);
+        void showMermaidModal(targetEl, capturedCode, app);
       });
 
       // Copy as 2x image button
@@ -662,9 +663,15 @@ export function restoreMermaidElements(
 
 /**
  * Show mermaid diagram in fullscreen modal with action buttons.
- * If no SVG found in sourceEl, re-renders using mermaidCode.
+ * Always re-renders from mermaidCode for reliability (element refs may be stale).
  */
-async function showMermaidModal(sourceEl: Element, mermaidCode: string, app: App): Promise<void> {
+async function showMermaidModal(_sourceEl: Element, mermaidCode: string, app: App): Promise<void> {
+  // Always render fresh from code - element references are unreliable after DOM rebuilds
+  if (!mermaidCode) {
+    console.error('[MermaidRenderer] showMermaidModal: No mermaidCode provided');
+    return;
+  }
+
   // Create fullscreen overlay
   const overlay = document.body.createDiv({ cls: 'cortex-mermaid-modal-overlay' });
   const modal = overlay.createDiv({ cls: 'cortex-mermaid-modal' });
@@ -676,29 +683,21 @@ async function showMermaidModal(sourceEl: Element, mermaidCode: string, app: App
 
   const actionsContainer = header.createDiv({ cls: 'cortex-mermaid-modal-actions' });
 
-  // Modal body - create first, will be populated with SVG
+  // Modal body
   const body = modal.createDiv({ cls: 'cortex-mermaid-modal-body' });
 
-  // Get SVG - first try from sourceEl, then fallback to re-rendering
-  let svgEl = sourceEl.querySelector('svg');
-
-  // If no SVG found in sourceEl (stale reference), re-render from mermaidCode
-  if (!isSVGElement(svgEl) && mermaidCode) {
-    console.log('[MermaidRenderer] Modal: No SVG in sourceEl, re-rendering from code');
-    try {
-      const id = `mermaid-modal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-      const { svg } = await mermaid.render(id, mermaidCode);
-      // Create temp container to parse the SVG
-      const tempDiv = document.createElement('div');
-      tempDiv.innerHTML = svg;
-      svgEl = tempDiv.querySelector('svg');
-    } catch (error) {
-      console.error('[MermaidRenderer] Failed to re-render mermaid in modal:', error);
-    }
+  // Always render fresh from mermaidCode
+  let validSvgEl: SVGElement | null = null;
+  try {
+    const id = `mermaid-modal-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    const { svg } = await mermaid.render(id, mermaidCode);
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = svg;
+    const svgEl = tempDiv.querySelector('svg');
+    validSvgEl = isSVGElement(svgEl) ? svgEl : null;
+  } catch (error) {
+    console.error('[MermaidRenderer] Failed to render mermaid in modal:', error);
   }
-
-  // Store validated SVG element
-  const validSvgEl = isSVGElement(svgEl) ? svgEl : null;
 
   // Copy as image button
   if (validSvgEl) {
@@ -754,16 +753,12 @@ async function showMermaidModal(sourceEl: Element, mermaidCode: string, app: App
 
   // Populate body with SVG
   if (validSvgEl) {
-    const clonedSvg = validSvgEl.cloneNode(true);
-    if (isSVGElement(clonedSvg)) {
-      // Remove size constraints in modal for full view
-      clonedSvg.style.maxWidth = 'none';
-      clonedSvg.style.width = 'auto';
-      clonedSvg.style.height = 'auto';
-      body.appendChild(clonedSvg);
-    }
+    // Set size for modal view
+    validSvgEl.style.maxWidth = 'none';
+    validSvgEl.style.width = 'auto';
+    validSvgEl.style.height = 'auto';
+    body.appendChild(validSvgEl);
   } else {
-    // Show error message if no SVG available
     body.createEl('p', { text: 'Unable to render diagram', cls: 'cortex-mermaid-modal-error' });
   }
 

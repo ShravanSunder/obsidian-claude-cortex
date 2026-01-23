@@ -41,12 +41,12 @@
 }
 
 .cortex-action-status-error {
-  color: var(--color-red);
-  background: var(--background-modifier-error);
+  color: var(--color-red, #e74c3c);
+  background: var(--background-modifier-error, rgba(231, 76, 60, 0.1));
 }
 
 .cortex-action-status-error-icon {
-  color: var(--color-red);
+  color: var(--color-red, #e74c3c);
 }
 
 .cortex-action-status-error-detail {
