@@ -16,7 +16,7 @@ import { setIcon } from 'obsidian';
 mermaid.initialize({
   startOnLoad: false,
   theme: 'default',
-  securityLevel: 'loose',
+  securityLevel: 'strict',
 });
 
 /** Result of rendering mermaid blocks. */

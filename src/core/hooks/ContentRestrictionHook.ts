@@ -67,42 +67,39 @@ function hasExcludedTag(app: App, filePath: string, excludedTags: string[]): str
   // Only check markdown files
   if (!filePath.endsWith('.md')) return null;
 
-  const file = app.vault.getAbstractFileByPath(filePath);
-  if (!(file instanceof app.vault.adapter.constructor)) {
-    // Check if it's a TFile
-    const tfile = app.vault.getFileByPath(filePath);
-    if (!tfile) return null;
+  // Get file from vault
+  const tfile = app.vault.getFileByPath(filePath);
+  if (!tfile) return null;
 
-    const cache = app.metadataCache.getFileCache(tfile);
-    if (!cache) return null;
+  const cache = app.metadataCache.getFileCache(tfile);
+  if (!cache) return null;
 
-    const fileTags: string[] = [];
+  const fileTags: string[] = [];
 
-    // Frontmatter tags
-    if (cache.frontmatter?.tags) {
-      const fmTags = cache.frontmatter.tags;
-      if (Array.isArray(fmTags)) {
-        fileTags.push(...fmTags.map((t: string) => String(t).replace(/^#/, '').toLowerCase()));
-      } else if (typeof fmTags === 'string') {
-        fileTags.push(fmTags.replace(/^#/, '').toLowerCase());
-      }
+  // Frontmatter tags
+  if (cache.frontmatter?.tags) {
+    const fmTags = cache.frontmatter.tags;
+    if (Array.isArray(fmTags)) {
+      fileTags.push(...fmTags.map((t: string) => String(t).replace(/^#/, '').toLowerCase()));
+    } else if (typeof fmTags === 'string') {
+      fileTags.push(fmTags.replace(/^#/, '').toLowerCase());
     }
+  }
 
-    // Inline tags from cache
-    if (cache.tags) {
-      fileTags.push(...cache.tags.map((t) => t.tag.replace(/^#/, '').toLowerCase()));
+  // Inline tags from cache
+  if (cache.tags) {
+    fileTags.push(...cache.tags.map((t) => t.tag.replace(/^#/, '').toLowerCase()));
+  }
+
+  // Check against excluded tags
+  for (const excludedTag of excludedTags) {
+    const normalizedExcluded = excludedTag.replace(/^#/, '').toLowerCase();
+    if (fileTags.includes(normalizedExcluded)) {
+      return excludedTag;
     }
-
-    // Check against excluded tags
-    for (const excludedTag of excludedTags) {
-      const normalizedExcluded = excludedTag.replace(/^#/, '').toLowerCase();
-      if (fileTags.includes(normalizedExcluded)) {
-        return excludedTag;
-      }
-      // Also check for nested tags (e.g., #parent matches #parent/child)
-      if (fileTags.some((t) => t.startsWith(normalizedExcluded + '/'))) {
-        return excludedTag;
-      }
+    // Also check for nested tags (e.g., #parent matches #parent/child)
+    if (fileTags.some((t) => t.startsWith(normalizedExcluded + '/'))) {
+      return excludedTag;
     }
   }
 

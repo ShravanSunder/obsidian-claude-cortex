@@ -42,12 +42,9 @@ export class BacklinksService {
    * Get all files that link TO the specified file (backlinks).
    */
   getBacklinks(filePath: string, options?: { includeContext?: boolean }): BacklinkEntry[] {
-    const file = this.app.vault.getAbstractFileByPath(filePath);
-    if (!(file instanceof this.app.vault.constructor) && !(file as TFile)?.path) {
-      // Not a file
-      const tfile = this.app.vault.getFileByPath(filePath);
-      if (!tfile) return [];
-    }
+    // Verify the file exists
+    const tfile = this.app.vault.getFileByPath(filePath);
+    if (!tfile) return [];
 
     const backlinks: BacklinkEntry[] = [];
 

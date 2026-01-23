@@ -132,6 +132,22 @@ export function validateCanvasData(data: unknown): string[] {
     }
   }
 
+  // Collect node IDs for uniqueness check and edge reference validation
+  const nodeIds = new Set<string>();
+  if (Array.isArray(canvas.nodes)) {
+    for (const [i, node] of canvas.nodes.entries()) {
+      if (node && typeof node === 'object') {
+        const n = node as Record<string, unknown>;
+        if (typeof n.id === 'string') {
+          if (nodeIds.has(n.id)) {
+            errors.push(`Node ${i}: duplicate node ID "${n.id}"`);
+          }
+          nodeIds.add(n.id);
+        }
+      }
+    }
+  }
+
   // Validate edges array
   if (!Array.isArray(canvas.edges)) {
     errors.push('Canvas must have an edges array');
@@ -143,8 +159,16 @@ export function validateCanvasData(data: unknown): string[] {
       }
       const e = edge as Record<string, unknown>;
       if (typeof e.id !== 'string') errors.push(`Edge ${i}: missing id`);
-      if (typeof e.fromNode !== 'string') errors.push(`Edge ${i}: missing fromNode`);
-      if (typeof e.toNode !== 'string') errors.push(`Edge ${i}: missing toNode`);
+      if (typeof e.fromNode !== 'string') {
+        errors.push(`Edge ${i}: missing fromNode`);
+      } else if (!nodeIds.has(e.fromNode)) {
+        errors.push(`Edge ${i}: fromNode "${e.fromNode}" references non-existent node`);
+      }
+      if (typeof e.toNode !== 'string') {
+        errors.push(`Edge ${i}: missing toNode`);
+      } else if (!nodeIds.has(e.toNode)) {
+        errors.push(`Edge ${i}: toNode "${e.toNode}" references non-existent node`);
+      }
     }
   }
 

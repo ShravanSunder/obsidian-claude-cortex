@@ -218,7 +218,8 @@ export class SemanticSearchService {
       }
 
       return result.map(normalizeSearchResult).filter((r) => r.filePath !== '');
-    } catch {
+    } catch (error) {
+      console.error('[SemanticSearchService] Search failed:', error);
       return [];
     }
   }
