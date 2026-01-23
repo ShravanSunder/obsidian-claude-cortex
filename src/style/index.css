@@ -19,6 +19,7 @@
 @import "./components/plan-banner.css";
 @import "./components/input.css";
 @import "./components/context-footer.css";
+@import "./components/action-status.css";
 
 /* Toolbar */
 @import "./toolbar/model-selector.css";
@@ -35,6 +36,7 @@
 @import "./features/inline-edit.css";
 @import "./features/diff.css";
 @import "./features/slash-commands.css";
+@import "./features/mermaid.css";
 
 /* Modals */
 @import "./modals/approval.css";

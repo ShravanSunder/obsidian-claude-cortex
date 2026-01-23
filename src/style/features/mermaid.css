@@ -1,0 +1,258 @@
+/* Mermaid diagram enhancements */
+
+/* Rendered diagram container - both Cortex and Obsidian rendered */
+.cortex-mermaid-diagram,
+.cortex-message-content .mermaid {
+  width: fit-content;
+  max-width: 100%; /* Stay within container */
+  min-width: 0; /* Allow flex shrinking for overflow to work */
+  overflow-x: auto; /* Allow horizontal scroll for wide diagrams */
+  overflow-y: visible;
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 4px;
+  padding: 12px;
+  margin: 8px 0;
+  position: relative;
+  background: var(--background-primary);
+}
+
+/* Ensure parent containers don't prevent overflow scrolling */
+.cortex-text-block:has(.cortex-mermaid-diagram),
+.cortex-text-block:has(.mermaid),
+.cortex-message-content:has(.cortex-mermaid-diagram),
+.cortex-message-content:has(.mermaid) {
+  min-width: 0;
+  overflow: visible;
+}
+
+.cortex-mermaid-diagram svg,
+.cortex-message-content .mermaid svg {
+  /* Allow SVG to maintain natural width for horizontal scrolling */
+  max-width: none;
+  width: auto;
+  height: auto !important;
+  display: block;
+}
+
+/* Action buttons - positioned in top right corner, hidden until hover */
+.cortex-mermaid-actions {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  display: flex;
+  gap: 4px;
+  z-index: 100;
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity 0.15s ease,
+    visibility 0.15s ease;
+  pointer-events: none;
+}
+
+.cortex-mermaid-diagram:hover .cortex-mermaid-actions,
+.cortex-message-content .mermaid:hover .cortex-mermaid-actions {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+
+.cortex-mermaid-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  border-radius: 4px;
+  background: var(--background-secondary-alt);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition:
+    background 0.1s ease,
+    color 0.1s ease;
+}
+
+.cortex-mermaid-btn:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.cortex-mermaid-btn-success {
+  background: var(--color-green, var(--interactive-success, #2ecc71)) !important;
+  color: var(--text-on-accent, #fff) !important;
+}
+
+.cortex-mermaid-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Ensure mermaid diagrams have proper spacing */
+.cortex-text-block pre.mermaid {
+  margin: 8px 0;
+  padding: 16px;
+  background: var(--background-primary);
+  border-radius: 6px;
+  overflow-x: auto;
+}
+
+/* Generating placeholder (during streaming) */
+.cortex-mermaid-placeholder {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: var(--background-secondary);
+  border-radius: 4px;
+  color: var(--text-muted);
+  font-size: 0.9em;
+  margin: 8px 0;
+  min-height: 60px; /* Prevent layout shift */
+}
+
+.cortex-mermaid-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--text-muted);
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: cortex-mermaid-spin 1s linear infinite;
+}
+
+@keyframes cortex-mermaid-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Hide the code block when placeholder is shown */
+.cortex-mermaid-generating {
+  display: none;
+}
+
+/* Mermaid modal - extends Obsidian's .modal-container and .modal classes */
+/* Only add layout needs - Obsidian's .modal handles theming */
+
+.cortex-mermaid-modal {
+  width: 90vw;
+  height: 90vh;
+  max-width: 95vw;
+  max-height: 95vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Modal header with action buttons */
+.cortex-mermaid-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--background-modifier-border);
+  background: var(--background-secondary);
+  border-radius: var(--radius-m) var(--radius-m) 0 0;
+  flex-shrink: 0;
+}
+
+.cortex-mermaid-modal-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.cortex-mermaid-modal-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.cortex-mermaid-modal-btn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: none;
+  border-radius: 4px;
+  background: var(--background-modifier-hover);
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  font-size: 12px;
+}
+
+.cortex-mermaid-modal-btn:hover {
+  background: var(--interactive-accent);
+  color: var(--text-on-accent);
+}
+
+.cortex-mermaid-modal-btn-success {
+  background: var(--color-green, var(--interactive-success, #2ecc71)) !important;
+  color: var(--text-on-accent, #fff) !important;
+}
+
+.cortex-mermaid-modal-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.cortex-mermaid-modal-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  margin-left: 8px;
+}
+
+.cortex-mermaid-modal-close:hover {
+  background: var(--background-modifier-hover);
+  color: var(--text-normal);
+}
+
+/* Modal body with diagram */
+.cortex-mermaid-modal-body {
+  padding: 24px;
+  overflow: auto;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 200px;
+}
+
+.cortex-mermaid-modal-body svg {
+  max-width: 100%;
+  max-height: calc(95vh - 100px);
+  width: auto;
+  height: auto;
+}
+
+.cortex-mermaid-modal-error {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+/* Fade-in animation for rendered diagrams */
+.cortex-mermaid-fade-in {
+  animation: cortex-mermaid-appear 0.2s ease-out;
+}
+
+@keyframes cortex-mermaid-appear {
+  from {
+    opacity: 0.5;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

@@ -64,6 +64,7 @@
   align-self: stretch;
   width: 100%;
   max-width: 100%;
+  min-width: 0; /* Allow flex shrinking for overflow to work */
   border-bottom-left-radius: 4px;
   text-align: left;
 }
@@ -73,6 +74,7 @@
   line-height: 1.5;
   user-select: text;
   -webkit-user-select: text;
+  min-width: 0; /* Allow flex shrinking for overflow to work */
 }
 
 /* Interrupted message */
@@ -87,6 +89,7 @@
 /* Text blocks within message content */
 .cortex-text-block {
   margin: 0;
+  min-width: 0; /* Allow flex shrinking for overflow to work */
 }
 
 .cortex-text-block + .cortex-tool-call {

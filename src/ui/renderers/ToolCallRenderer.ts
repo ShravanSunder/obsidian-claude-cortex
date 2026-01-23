@@ -6,7 +6,7 @@
 
 import { setIcon } from 'obsidian';
 
-import { MCP_ICON_MARKER, getToolIcon } from '../../core/tools/toolIcons';
+import { getToolIcon, MCP_ICON_MARKER } from '../../core/tools/toolIcons';
 import type { ToolCallInfo } from '../../core/types';
 import { MCP_ICON_SVG } from '../../features/chat/constants';
 import { setupCollapsible } from '../utils/collapsible';

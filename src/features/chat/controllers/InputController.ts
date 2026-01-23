@@ -329,11 +329,8 @@ export class InputController {
       streamController.hideThinkingIndicator();
       state.isStreaming = false;
       state.cancelRequested = false;
-      state.currentContentEl = null;
 
-      streamController.finalizeCurrentThinkingBlock(assistantMsg);
-      streamController.finalizeCurrentTextBlock(assistantMsg);
-      state.activeSubagents.clear();
+      await this.finalizeStreamWithMermaid(assistantMsg);
 
       await conversationController.save(true);
 
@@ -628,11 +625,8 @@ ${content}
       streamController.hideThinkingIndicator();
       state.isStreaming = false;
       state.cancelRequested = false;
-      state.currentContentEl = null;
 
-      streamController.finalizeCurrentThinkingBlock(assistantMsg);
-      streamController.finalizeCurrentTextBlock(assistantMsg);
-      state.activeSubagents.clear();
+      await this.finalizeStreamWithMermaid(assistantMsg);
 
       await conversationController.save(true);
       await this.activatePendingPlanMode();
@@ -807,6 +801,37 @@ ${content}
     this.clearQueuedMessage();
     plugin.agentService.cancel();
     streamController.hideThinkingIndicator();
+  }
+
+  /**
+   * Finalizes stream state and re-renders mermaid diagrams.
+   * Captures text block before finalization, then re-renders all text blocks with isStreaming=false.
+   */
+  private async finalizeStreamWithMermaid(assistantMsg: ChatMessage): Promise<void> {
+    const { state, renderer, streamController } = this.deps;
+
+    // Capture current text block state before finalization for mermaid re-render
+    const currentTextEl = state.currentTextEl;
+    const currentTextContent = state.currentTextContent;
+
+    state.currentContentEl = null;
+
+    streamController.finalizeCurrentThinkingBlock(assistantMsg);
+    streamController.finalizeCurrentTextBlock(assistantMsg);
+    state.activeSubagents.clear();
+
+    // Re-render all finalized text blocks with isStreaming=false to render mermaid diagrams
+    // This ensures mermaid diagrams in earlier text blocks (before tool calls) also render
+    for (const { el, content } of state.finalizedTextBlocks) {
+      // Skip the current text block as it will be rendered below
+      if (el === currentTextEl) continue;
+      await renderer.renderContent(el, content, false);
+    }
+
+    // Re-render the current (last) text block with isStreaming=false
+    if (currentTextEl && currentTextContent) {
+      await renderer.renderContent(currentTextEl, currentTextContent, false);
+    }
   }
 
   // ============================================

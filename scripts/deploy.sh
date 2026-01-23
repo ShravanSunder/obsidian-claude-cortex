@@ -59,6 +59,8 @@ fi
 
 # Deploy
 echo "Deploying to $INSTALL_DEST..."
+echo
+echo "cp main.js manifest.json styles.css "$INSTALL_DEST/""
 cp main.js manifest.json styles.css "$INSTALL_DEST/"
 
 echo "Done! Reload Obsidian to see changes."

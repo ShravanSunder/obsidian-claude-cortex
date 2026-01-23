@@ -34,7 +34,9 @@
   background: var(--text-muted);
   top: 2px;
   left: 2px;
-  transition: transform 0.2s ease, background 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    background 0.2s ease;
 }
 
 .cortex-toggle-switch:hover {

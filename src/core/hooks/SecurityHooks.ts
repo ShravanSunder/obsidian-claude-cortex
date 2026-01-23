@@ -11,8 +11,8 @@ import type { PathCheckContext } from '../security/BashPathValidator';
 import { findBashCommandPathViolation } from '../security/BashPathValidator';
 import { isCommandBlocked } from '../security/BlocklistChecker';
 import { getPathFromToolInput } from '../tools/toolInput';
-import { TOOL_BASH, isEditTool, isFileTool } from '../tools/toolNames';
-import { type PlatformBlockedCommands, getBashToolBlockedCommands } from '../types';
+import { isEditTool, isFileTool, TOOL_BASH } from '../tools/toolNames';
+import { getBashToolBlockedCommands, type PlatformBlockedCommands } from '../types';
 
 /** Context for blocklist checking. */
 export interface BlocklistContext {

@@ -1,5 +1,6 @@
 /** Cortex UI settings - barrel export. */
 
+export { CodannaSettings } from './CodannaSettings';
 export {
   EnvSnippetManager,
   EnvSnippetModal,

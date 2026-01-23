@@ -136,6 +136,7 @@ export interface CortexSettings {
   lastNonPlanPermissionMode?: NonPlanPermissionMode;
   permissions: Permission[];
   excludedTags: string[];
+  excludedFolders: string[];
   mediaFolder: string;
   environmentVariables: string;
   envSnippets: EnvSnippet[];
@@ -164,6 +165,7 @@ export const DEFAULT_SETTINGS: CortexSettings = {
   lastNonPlanPermissionMode: 'yolo',
   permissions: [],
   excludedTags: [],
+  excludedFolders: [],
   mediaFolder: '',
   environmentVariables: '',
   envSnippets: [],

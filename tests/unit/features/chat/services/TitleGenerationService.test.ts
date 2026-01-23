@@ -13,6 +13,7 @@ import {
   type TitleGenerationResult,
   TitleGenerationService,
 } from '@/features/chat/services/TitleGenerationService';
+
 function createMockPlugin(settings = {}) {
   return {
     settings: {

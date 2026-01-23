@@ -11,12 +11,12 @@ import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
 import { getInlineEditSystemPrompt } from '../../core/prompts/inlineEdit';
 import { getPathFromToolInput } from '../../core/tools/toolInput';
 import {
+  isReadOnlyTool,
   READ_ONLY_TOOLS,
   TOOL_GLOB,
   TOOL_GREP,
   TOOL_LS,
   TOOL_READ,
-  isReadOnlyTool,
 } from '../../core/tools/toolNames';
 import { THINKING_BUDGETS } from '../../core/types';
 import type CortexPlugin from '../../main';

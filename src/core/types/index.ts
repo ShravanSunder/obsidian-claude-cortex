@@ -4,6 +4,13 @@
  * Re-exports all types from modular type files.
  */
 
+// AskUserQuestion types
+export type {
+  AskUserQuestionCallback,
+  AskUserQuestionInput,
+  AskUserQuestionOption,
+  AskUserQuestionQuestion,
+} from './askUserQuestion';
 // Chat types
 export {
   type ChatMessage,
@@ -16,7 +23,22 @@ export {
   type UsageInfo,
   VIEW_TYPE_CORTEX,
 } from './chat';
-
+// MCP types
+export {
+  type CortexMcpConfigFile,
+  type CortexMcpServer,
+  DEFAULT_MCP_SERVER,
+  getMcpServerType,
+  inferMcpServerType,
+  isValidMcpServerConfig,
+  type McpConfigFile,
+  type McpHttpServerConfig,
+  type McpServerConfig,
+  type McpServerType,
+  type McpSSEServerConfig,
+  type McpStdioServerConfig,
+  type ParsedMcpConfig,
+} from './mcp';
 // Model types
 export {
   type ClaudeModel,
@@ -25,7 +47,6 @@ export {
   THINKING_BUDGETS,
   type ThinkingBudget,
 } from './models';
-
 // SDK types
 export type {
   ModelUsageInfo,
@@ -34,7 +55,6 @@ export type {
   SDKMessageContent,
   SDKStreamEvent,
 } from './sdk';
-
 // Settings types
 export {
   type CortexSettings,
@@ -52,7 +72,6 @@ export {
   type PlatformBlockedCommands,
   type SlashCommand,
 } from './settings';
-
 // Tool types
 export type {
   AsyncSubagentStatus,
@@ -61,28 +80,3 @@ export type {
   ToolCallInfo,
   ToolDiffData,
 } from './tools';
-
-// MCP types
-export {
-  type CortexMcpConfigFile,
-  type CortexMcpServer,
-  DEFAULT_MCP_SERVER,
-  getMcpServerType,
-  inferMcpServerType,
-  isValidMcpServerConfig,
-  type McpConfigFile,
-  type McpHttpServerConfig,
-  type McpServerConfig,
-  type McpServerType,
-  type McpSSEServerConfig,
-  type McpStdioServerConfig,
-  type ParsedMcpConfig,
-} from './mcp';
-
-// AskUserQuestion types
-export type {
-  AskUserQuestionCallback,
-  AskUserQuestionInput,
-  AskUserQuestionOption,
-  AskUserQuestionQuestion,
-} from './askUserQuestion';

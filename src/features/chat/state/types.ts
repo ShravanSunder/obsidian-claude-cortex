@@ -41,6 +41,10 @@ export interface StoredSelection {
   editorView: EditorView;
 }
 
+// ============================================
+// Plan Mode
+// ============================================
+
 /** Plan mode state for read-only planning workflow. */
 export interface PlanModeState {
   /** Whether plan mode is currently active. */
@@ -77,6 +81,8 @@ export interface ChatStateData {
   currentThinkingState: ThinkingBlockState | null;
   thinkingEl: HTMLElement | null;
   queueIndicatorEl: HTMLElement | null;
+  // Finalized text blocks during streaming (for mermaid re-rendering)
+  finalizedTextBlocks: Array<{ el: HTMLElement; content: string }>;
 
   // Tool and subagent tracking maps
   toolCallElements: Map<string, HTMLElement>;

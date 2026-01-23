@@ -5,8 +5,6 @@
  * session persistence, permission modes, and security hooks.
  */
 
-import * as os from 'os';
-import * as path from 'path';
 import type {
   CanUseTool,
   Options,
@@ -15,24 +13,27 @@ import type {
   SDKUserMessage,
 } from '@anthropic-ai/claude-agent-sdk';
 import { query as agentQuery } from '@anthropic-ai/claude-agent-sdk';
+import * as os from 'os';
+import * as path from 'path';
 
 import type CortexPlugin from '../../main';
 import { stripCurrentNotePrefix } from '../../utils/context';
 import { getEnhancedPath, parseEnvironmentVariables } from '../../utils/env';
 import {
-  type PathAccessType,
   getPathAccessType,
   getVaultPath,
   normalizePathForFilesystem,
+  type PathAccessType,
 } from '../../utils/path';
 import { buildContextFromHistory, getLastUserMessage } from '../../utils/session';
 import {
-  type DiffContentEntry,
-  type FileEditPostCallback,
   createBlocklistHook,
+  createContentRestrictionHook,
   createFileHashPostHook,
   createFileHashPreHook,
   createVaultRestrictionHook,
+  type DiffContentEntry,
+  type FileEditPostCallback,
 } from '../hooks';
 import { hydrateImagesData } from '../images/imageLoader';
 import type { McpServerManager } from '../mcp';
@@ -401,6 +402,13 @@ export class CortexService {
       getPathAccessType: (p) => this.getPathAccessType(p),
     });
 
+    const contentRestrictionHook = createContentRestrictionHook({
+      app: this.plugin.app,
+      vaultPath: cwd,
+      getExcludedFolders: () => this.plugin.settings.excludedFolders,
+      getExcludedTags: () => this.plugin.settings.excludedTags,
+    });
+
     const postCallback: FileEditPostCallback = {
       trackEditedFile: async (name, input, isError) => {
         if (name === 'Write' && !isError) {
@@ -449,7 +457,7 @@ export class CortexService {
       },
       canUseTool: this.createUnifiedToolCallback(permissionMode),
       hooks: {
-        PreToolUse: [blocklistHook, vaultRestrictionHook, fileHashPreHook],
+        PreToolUse: [blocklistHook, vaultRestrictionHook, contentRestrictionHook, fileHashPreHook],
         PostToolUse: [fileHashPostHook],
       },
       includePartialMessages: true, // For streaming deltas
@@ -498,8 +506,12 @@ export class CortexService {
         }
 
         // Transform SDK message to stream chunks
+        // Skip text/thinking from assistant messages because we use includePartialMessages,
+        // which means we get deltas via stream_event AND accumulated content via assistant.
+        // Processing both would cause duplicate content.
         for (const event of transformSDKMessage(message, {
           intendedModel: this.plugin.settings.model,
+          skipAssistantTextContent: true,
         })) {
           if (isSessionInitEvent(event)) {
             this.sessionManager.captureSession(event.sessionId);

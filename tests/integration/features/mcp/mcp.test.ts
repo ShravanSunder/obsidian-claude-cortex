@@ -36,8 +36,8 @@ import { MCP_CONFIG_PATH, McpStorage } from '@/core/storage/McpStorage';
 import type {
   CortexMcpServer,
   McpHttpServerConfig,
-  McpSSEServerConfig,
   McpServerConfig,
+  McpSSEServerConfig,
   McpStdioServerConfig,
 } from '@/core/types/mcp';
 import {

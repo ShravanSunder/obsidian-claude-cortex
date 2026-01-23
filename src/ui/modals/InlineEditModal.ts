@@ -6,9 +6,9 @@
  * - Diff replaces the selected text visually (like VS Code/Cursor)
  */
 
-import * as path from 'path';
 import type { App, Editor } from 'obsidian';
 import { MarkdownView, Notice } from 'obsidian';
+import * as path from 'path';
 
 import { SlashCommandManager } from '../../core/commands';
 import { isCommandBlocked } from '../../core/security/BlocklistChecker';
@@ -23,14 +23,15 @@ import type { CursorContext } from '../../utils/editor';
 import { escapeHtml, normalizeInsertionText } from '../../utils/inlineEdit';
 import { getVaultPath, isPathWithinVault, normalizePathForFilesystem } from '../../utils/path';
 import { formatSlashCommandWarnings } from '../../utils/slashCommand';
+import { MentionDropdownController } from '../components/file-context/mention/MentionDropdownController';
 import { hideSelectionHighlight, showSelectionHighlight } from '../components/SelectionHighlight';
 import { SlashCommandDropdown } from '../components/SlashCommandDropdown';
-import { MentionDropdownController } from '../components/file-context/mention/MentionDropdownController';
 import { ApprovalModal } from './ApprovalModal';
 
 export type InlineEditContext =
   | { mode: 'selection'; selectedText: string }
   | { mode: 'cursor'; cursorContext: CursorContext };
+
 import { RangeSetBuilder, StateEffect, StateField } from '@codemirror/state';
 import type { DecorationSet } from '@codemirror/view';
 import { Decoration, EditorView, WidgetType } from '@codemirror/view';

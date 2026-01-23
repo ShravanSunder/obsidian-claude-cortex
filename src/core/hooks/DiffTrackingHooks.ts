@@ -4,9 +4,9 @@
  * Pre/Post ToolUse hooks for capturing file content before and after edits.
  */
 
+import type { HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 import * as fs from 'fs';
 import * as path from 'path';
-import type { HookCallbackMatcher } from '@anthropic-ai/claude-agent-sdk';
 
 import { normalizePathForFilesystem } from '../../utils/path';
 import { TOOL_EDIT, TOOL_WRITE } from '../tools/toolNames';

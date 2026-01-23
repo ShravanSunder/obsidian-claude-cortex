@@ -11,9 +11,9 @@ import { Modal, Notice, Setting } from 'obsidian';
 import type {
   CortexMcpServer,
   McpHttpServerConfig,
-  McpSSEServerConfig,
   McpServerConfig,
   McpServerType,
+  McpSSEServerConfig,
   McpStdioServerConfig,
 } from '../../core/types';
 import { DEFAULT_MCP_SERVER, getMcpServerType } from '../../core/types';

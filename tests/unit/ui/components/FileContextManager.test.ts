@@ -205,14 +205,12 @@ function createMockApp(
 }
 
 function createMockCallbacks(
-  options: {
-    contextPaths?: string[];
-    excludedTags?: string[];
-  } = {},
+  options: { contextPaths?: string[]; excludedTags?: string[]; excludedFolders?: string[] } = {},
 ): FileContextCallbacks {
-  const { contextPaths = [], excludedTags = [] } = options;
+  const { contextPaths = [], excludedTags = [], excludedFolders = [] } = options;
   return {
     getExcludedTags: vi.fn(() => excludedTags),
+    getExcludedFolders: vi.fn(() => excludedFolders),
     getContextPaths: vi.fn(() => contextPaths),
   };
 }

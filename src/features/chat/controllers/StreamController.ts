@@ -6,19 +6,17 @@
  */
 
 import {
+  isPlanModeTool,
+  isWriteEditTool,
   TOOL_AGENT_OUTPUT,
   TOOL_ASK_USER_QUESTION,
   TOOL_TASK,
   TOOL_TODO_WRITE,
-  isPlanModeTool,
-  isWriteEditTool,
 } from '../../../core/tools/toolNames';
 import type { ChatMessage, StreamChunk, SubagentInfo, ToolCallInfo } from '../../../core/types';
 import type CortexPlugin from '../../../main';
 import {
   type AsyncSubagentState,
-  type FileContextManager,
-  type SubagentState,
   addSubagentToolCall,
   appendThinkingContent,
   createAskUserQuestionBlock,
@@ -26,6 +24,7 @@ import {
   createSubagentBlock,
   createThinkingBlock,
   createWriteEditBlock,
+  type FileContextManager,
   finalizeAskUserQuestionBlock,
   finalizeAsyncSubagent,
   finalizeSubagentBlock,
@@ -36,6 +35,7 @@ import {
   parseAskUserQuestionInput,
   parseTodoInput,
   renderToolCall,
+  type SubagentState,
   updateAsyncSubagentRunning,
   updateSubagentToolResult,
   updateToolCallResult,
@@ -387,7 +387,8 @@ export class StreamController {
     }
 
     state.currentTextContent += text;
-    await renderer.renderContent(state.currentTextEl, state.currentTextContent);
+    // Pass isStreaming=true to defer mermaid rendering until stream completes
+    await renderer.renderContent(state.currentTextEl, state.currentTextContent, true);
   }
 
   /** Finalizes the current text block. */
@@ -396,6 +397,13 @@ export class StreamController {
     if (msg && state.currentTextContent) {
       msg.contentBlocks = msg.contentBlocks || [];
       msg.contentBlocks.push({ type: 'text', content: state.currentTextContent });
+    }
+    // Save finalized text block for mermaid re-rendering at stream end
+    if (state.currentTextEl && state.currentTextContent) {
+      state.finalizedTextBlocks.push({
+        el: state.currentTextEl,
+        content: state.currentTextContent,
+      });
     }
     state.currentTextEl = null;
     state.currentTextContent = '';
@@ -412,14 +420,14 @@ export class StreamController {
 
     this.hideThinkingIndicator();
     if (!state.currentThinkingState) {
-      state.currentThinkingState = createThinkingBlock(state.currentContentEl, (el, md) =>
-        renderer.renderContent(el, md),
-      );
+      state.currentThinkingState = createThinkingBlock(state.currentContentEl, async (el, md) => {
+        await renderer.renderContent(el, md);
+      });
     }
 
-    await appendThinkingContent(state.currentThinkingState, content, (el, md) =>
-      renderer.renderContent(el, md),
-    );
+    await appendThinkingContent(state.currentThinkingState, content, async (el, md) => {
+      await renderer.renderContent(el, md);
+    });
   }
 
   /** Finalizes the current thinking block. */
@@ -725,5 +733,7 @@ export class StreamController {
     state.currentTextContent = '';
     state.currentThinkingState = null;
     state.activeSubagents.clear();
+    // Clear finalized text blocks after mermaid re-render is done
+    state.finalizedTextBlocks.length = 0;
   }
 }

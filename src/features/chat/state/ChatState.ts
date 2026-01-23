@@ -34,6 +34,7 @@ function createInitialState(): ChatStateData {
     currentThinkingState: null,
     thinkingEl: null,
     queueIndicatorEl: null,
+    finalizedTextBlocks: [],
     toolCallElements: new Map(),
     activeSubagents: new Map(),
     asyncSubagentStates: new Map(),
@@ -186,6 +187,10 @@ export class ChatState {
     this.state.queueIndicatorEl = value;
   }
 
+  get finalizedTextBlocks(): Array<{ el: HTMLElement; content: string }> {
+    return this.state.finalizedTextBlocks;
+  }
+
   // ============================================
   // Tool and Subagent Tracking Maps
   // ============================================
@@ -311,6 +316,7 @@ export class ChatState {
     this.state.currentThinkingState = null;
     this.state.isStreaming = false;
     this.state.cancelRequested = false;
+    this.state.finalizedTextBlocks = [];
   }
 
   /** Clears all maps for a new conversation. */
