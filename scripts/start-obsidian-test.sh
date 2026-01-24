@@ -4,7 +4,7 @@
 export DISPLAY="${DISPLAY:-:99}"
 VAULT_PATH="${VAULT_PATH:-/tmp/test-vault}"
 CDP_PORT="${CDP_PORT:-9222}"
-OBSIDIAN="${OBSIDIAN:-/opt/obsidian/Obsidian.AppImage}"
+OBSIDIAN="${OBSIDIAN:-/usr/local/bin/obsidian}"
 
 echo "=== Obsidian Test Environment ==="
 echo "DISPLAY=$DISPLAY"

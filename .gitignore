@@ -74,6 +74,7 @@ coverage/
 # Temporary folders
 tmp/
 temp/
+.tmp/
 
 # Obsidian specific
 *.obsidian
@@ -81,6 +82,9 @@ data.json
 
 # Test artifacts
 test-results/
+playwright-report/
+*.png
+!src/**/*.png
 
 # Development files
 dev/archive

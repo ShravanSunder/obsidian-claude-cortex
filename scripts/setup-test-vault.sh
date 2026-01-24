@@ -7,6 +7,9 @@ PROJECT_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 echo "Setting up test vault at: $VAULT_PATH"
 echo "Project root: $PROJECT_ROOT"
 
+# Create .tmp folder for test artifacts (screenshots, etc.)
+mkdir -p "$PROJECT_ROOT/.tmp/screenshots"
+
 # Create vault structure
 mkdir -p "$VAULT_PATH/.obsidian/plugins/cortex"
 mkdir -p "$VAULT_PATH/.obsidian/plugins/hot-reload"
