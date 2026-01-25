@@ -1,0 +1,21 @@
+# .config/wt.toml
+[post-start]
+install_ts = "pnpm install"
+
+copy-envs = """
+find {{ repo_path }} -name '.env*' -type f | while read src; do
+  rel=${src#{{ repo_path }}/}
+  mkdir -p "$(dirname "$rel")"
+  cp "$src" "$rel"
+done
+"""
+
+copy-tmp-dirs = """
+find {{ repo_path }} -name 'tmp' -type d -not -path '*/.*' | while read src; do
+  rel=${src#{{ repo_path }}/}
+  mkdir -p "$rel"
+  cp -r "$src/." "$rel/"
+done
+"""
+
+setup-sidecar = "run-agent-sidecar.sh --no-run"
