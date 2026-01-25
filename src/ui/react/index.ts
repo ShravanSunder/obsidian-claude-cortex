@@ -5,6 +5,8 @@
  * It exports everything needed to mount React within an Obsidian ItemView.
  */
 
+// Bridge
+export { ChatBridge } from './bridge/ChatBridge';
 export {
   BlockRenderer,
   type BlockRendererProps,
@@ -19,6 +21,11 @@ export {
 } from './components/blocks';
 // Components
 export { ChatContainer, type ChatContainerProps } from './components/ChatContainer';
+export {
+  ConversationLoader,
+  type ConversationLoaderProps,
+  useConversationPromise,
+} from './components/ConversationLoader';
 export {
   ChatInput,
   type ChatInputProps,
@@ -43,6 +50,12 @@ export {
   type StreamingMessageProps,
   type StreamingMessageRef,
 } from './components/StreamingMessage';
+export {
+  ConversationSkeleton,
+  type ConversationSkeletonProps,
+  MessageSkeleton,
+  type MessageSkeletonProps,
+} from './components/skeletons/MessageSkeleton';
 export { ThinkingBlock, type ThinkingBlockProps } from './components/thinking';
 export {
   SubagentBlock,
@@ -55,6 +68,14 @@ export {
 } from './components/tools';
 // Context
 export { AppContext } from './context/AppContext';
+export {
+  type ChatAction,
+  ChatContext,
+  type ChatContextState,
+  ChatProvider,
+  type ChatProviderProps,
+  useChatContext,
+} from './context/ChatContext';
 // Hooks
 export { useApp } from './hooks/useApp';
 export { type UseObsidianRenderResult, useObsidianRender } from './hooks/useObsidianRender';

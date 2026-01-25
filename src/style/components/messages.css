@@ -1,11 +1,92 @@
-/* Messages area */
+/* React rendering container */
+.cortex-react-container {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0; /* Allow flex shrinking */
+}
+
+.cortex-react-root {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.cortex-message-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px;
+  position: relative;
+}
+
+.cortex-message-list-content {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Scroll to bottom button */
+.cortex-scroll-to-bottom {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--background-secondary);
+  border: 1px solid var(--background-modifier-border);
+  color: var(--text-normal);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: background-color 0.15s ease;
+}
+
+.cortex-scroll-to-bottom:hover {
+  background: var(--background-modifier-hover);
+}
+
+/* Empty state */
+.cortex-empty-state {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-muted);
+}
+
+.cortex-empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.cortex-empty-text {
+  font-size: 16px;
+  font-weight: 500;
+}
+
+/* Messages area (legacy DOM rendering) */
+/* HIDDEN: React rendering is now active. Old DOM container disabled. */
 .cortex-messages {
+  display: none !important;
+  /* Original styles preserved for reference:
   flex: 1;
   overflow-y: auto;
   padding: 12px 0;
   display: flex;
   flex-direction: column;
   gap: 12px;
+  */
 }
 
 /* Focusable messages panel for vim-style navigation */

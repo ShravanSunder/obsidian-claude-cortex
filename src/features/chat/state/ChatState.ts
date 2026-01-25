@@ -35,6 +35,11 @@ function createInitialState(): ChatStateData {
     thinkingEl: null,
     queueIndicatorEl: null,
     finalizedTextBlocks: [],
+    // React-only streaming state
+    currentThinkingContent: '',
+    currentThinkingStartTime: null,
+    activeSubagentInfos: new Map(),
+    // Legacy DOM tracking maps
     toolCallElements: new Map(),
     activeSubagents: new Map(),
     asyncSubagentStates: new Map(),
@@ -192,6 +197,30 @@ export class ChatState {
   }
 
   // ============================================
+  // React-Only Streaming State
+  // ============================================
+
+  get currentThinkingContent(): string {
+    return this.state.currentThinkingContent;
+  }
+
+  set currentThinkingContent(value: string) {
+    this.state.currentThinkingContent = value;
+  }
+
+  get currentThinkingStartTime(): number | null {
+    return this.state.currentThinkingStartTime;
+  }
+
+  set currentThinkingStartTime(value: number | null) {
+    this.state.currentThinkingStartTime = value;
+  }
+
+  get activeSubagentInfos(): Map<string, import('../../../core/types').SubagentInfo> {
+    return this.state.activeSubagentInfos;
+  }
+
+  // ============================================
   // Tool and Subagent Tracking Maps
   // ============================================
 
@@ -317,6 +346,10 @@ export class ChatState {
     this.state.isStreaming = false;
     this.state.cancelRequested = false;
     this.state.finalizedTextBlocks = [];
+    // React-only streaming state
+    this.state.currentThinkingContent = '';
+    this.state.currentThinkingStartTime = null;
+    this.state.activeSubagentInfos.clear();
   }
 
   /** Clears all maps for a new conversation. */
@@ -326,6 +359,7 @@ export class ChatState {
     this.state.asyncSubagentStates.clear();
     this.state.writeEditStates.clear();
     this.state.askUserQuestionStates.clear();
+    this.state.activeSubagentInfos.clear();
   }
 
   /** Resets all state for a new conversation. */

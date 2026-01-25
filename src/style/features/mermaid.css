@@ -1,5 +1,120 @@
 /* Mermaid diagram enhancements */
 
+/* ============================ */
+/* React MermaidBlock Component */
+/* ============================ */
+
+/* Main container with state-based styling */
+.cortex-mermaid-block {
+  border: 1px solid var(--background-modifier-border);
+  border-radius: 6px;
+  margin: 8px 0;
+  overflow: hidden;
+  background: var(--background-primary);
+}
+
+/* Header with label and status */
+.cortex-mermaid-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  background: var(--background-secondary);
+  border-bottom: 1px solid var(--background-modifier-border);
+}
+
+.cortex-mermaid-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.cortex-mermaid-status {
+  font-size: 11px;
+  color: var(--text-faint);
+}
+
+/* Raw code during streaming */
+.cortex-mermaid-code {
+  margin: 0;
+  padding: 12px;
+  background: var(--background-primary);
+  overflow-x: auto;
+  font-family: var(--font-monospace);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--text-normal);
+}
+
+.cortex-mermaid-code code {
+  background: transparent;
+  padding: 0;
+}
+
+/* Rendered SVG container */
+.cortex-mermaid-svg {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+  animation: cortex-mermaid-appear 0.3s ease-out;
+}
+
+.cortex-mermaid-svg svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Error state */
+.cortex-mermaid-error {
+  padding: 12px;
+}
+
+.cortex-mermaid-error-message {
+  color: var(--text-error, #e74c3c);
+  font-size: 13px;
+  margin-bottom: 8px;
+  padding: 8px;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 4px;
+}
+
+/* State-specific styling */
+.cortex-mermaid-streaming .cortex-mermaid-code {
+  border-left: 3px solid var(--interactive-accent);
+}
+
+.cortex-mermaid-pending,
+.cortex-mermaid-loading {
+  min-height: 200px;
+}
+
+/* Streaming cursor */
+.cortex-mermaid-code .cortex-streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1em;
+  background: var(--text-accent);
+  margin-left: 2px;
+  animation: cortex-cursor-blink 1s infinite;
+}
+
+@keyframes cortex-cursor-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ============================ */
+/* Legacy DOM Mermaid Rendering */
+/* ============================ */
+
 /* Rendered diagram container - both Cortex and Obsidian rendered */
 .cortex-mermaid-diagram,
 .cortex-message-content .mermaid {

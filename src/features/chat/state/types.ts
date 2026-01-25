@@ -74,7 +74,7 @@ export interface ChatStateData {
   // Queued message
   queuedMessage: QueuedMessage | null;
 
-  // Active streaming DOM state
+  // Active streaming DOM state (legacy - kept for thinking indicator)
   currentContentEl: HTMLElement | null;
   currentTextEl: HTMLElement | null;
   currentTextContent: string;
@@ -84,7 +84,12 @@ export interface ChatStateData {
   // Finalized text blocks during streaming (for mermaid re-rendering)
   finalizedTextBlocks: Array<{ el: HTMLElement; content: string }>;
 
-  // Tool and subagent tracking maps
+  // React-only streaming state
+  currentThinkingContent: string;
+  currentThinkingStartTime: number | null;
+  activeSubagentInfos: Map<string, SubagentInfo>;
+
+  // Tool and subagent tracking maps (legacy DOM - kept for compatibility)
   toolCallElements: Map<string, HTMLElement>;
   activeSubagents: Map<string, SubagentState>;
   asyncSubagentStates: Map<string, AsyncSubagentState>;

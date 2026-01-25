@@ -300,7 +300,7 @@ describe('StreamController - Text Content', () => {
       expect(msg.toolCalls![0].status).toBe('running');
       expect(msg.contentBlocks).toHaveLength(1);
       expect(msg.contentBlocks![0]).toEqual({ type: 'tool_use', toolId: 'tool-1' });
-      expect(deps.updateQueueIndicator).toHaveBeenCalled();
+      // Note: updateQueueIndicator no longer called - React renders via bridge
     });
 
     it('should update tool_result status', async () => {
@@ -382,9 +382,8 @@ describe('StreamController - Text Content', () => {
       expect(msg.subagents![0].id).toBe('task-1');
     });
 
-    it('should render as raw tool call when TodoWrite parsing fails', async () => {
+    it('should track as content block when TodoWrite parsing fails', async () => {
       const parseTodoInput = vi.mocked(uiModule.parseTodoInput);
-      const renderToolCall = vi.mocked(uiModule.renderToolCall);
       parseTodoInput.mockReturnValue(null); // Simulate parse failure
       const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
@@ -402,10 +401,9 @@ describe('StreamController - Text Content', () => {
           msg,
         );
 
-        // Should fall back to rendering as tool call
+        // Should fall back to tracking as content block (React renders via bridge)
         expect(msg.contentBlocks).toHaveLength(1);
         expect(msg.contentBlocks![0]).toEqual({ type: 'tool_use', toolId: 'todo-1' });
-        expect(renderToolCall).toHaveBeenCalled();
 
         // Should not update currentTodos
         expect(deps.state.currentTodos).toBeNull();

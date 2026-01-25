@@ -16,31 +16,12 @@ import {
 import type { ChatMessage, StreamChunk, SubagentInfo, ToolCallInfo } from '../../../core/types';
 import type CortexPlugin from '../../../main';
 import {
-  type AsyncSubagentState,
-  addSubagentToolCall,
-  appendThinkingContent,
-  createAskUserQuestionBlock,
-  createAsyncSubagentBlock,
-  createSubagentBlock,
-  createThinkingBlock,
-  createWriteEditBlock,
   type FileContextManager,
-  finalizeAskUserQuestionBlock,
-  finalizeAsyncSubagent,
-  finalizeSubagentBlock,
-  finalizeThinkingBlock,
-  finalizeWriteEditBlock,
   isBlockedToolResult,
-  markAsyncSubagentOrphaned,
   parseAskUserQuestionInput,
   parseTodoInput,
-  renderToolCall,
-  type SubagentState,
-  updateAsyncSubagentRunning,
-  updateSubagentToolResult,
-  updateToolCallResult,
-  updateWriteEditWithDiff,
 } from '../../../ui';
+import type { ChatBridge } from '../../../ui/react';
 import { FLAVOR_TEXTS } from '../constants';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { AsyncSubagentManager } from '../services/AsyncSubagentManager';
@@ -57,6 +38,8 @@ export interface StreamControllerDeps {
   updateQueueIndicator: () => void;
   /** Callback to set plan mode active (for UI toggle sync). */
   setPlanModeActive: (active: boolean) => void;
+  /** Get ChatBridge for syncing streaming state to React. */
+  getChatBridge?: () => ChatBridge | null;
 }
 
 /**
@@ -67,6 +50,37 @@ export class StreamController {
 
   constructor(deps: StreamControllerDeps) {
     this.deps = deps;
+  }
+
+  /**
+   * Syncs streaming state to React via the ChatBridge.
+   */
+  syncStreamingToReact(isStreaming: boolean, message?: ChatMessage): void {
+    const chatBridge = this.deps.getChatBridge?.();
+    if (!chatBridge?.isConnected()) return;
+
+    chatBridge.setStreaming(isStreaming);
+    if (message) {
+      chatBridge.setStreamingMessage(isStreaming ? message : null);
+    } else if (!isStreaming) {
+      chatBridge.setStreamingMessage(null);
+    }
+  }
+
+  /**
+   * Updates the streaming message content in React.
+   * Call this after updating the message object during streaming.
+   */
+  updateStreamingMessageInReact(message: ChatMessage): void {
+    const chatBridge = this.deps.getChatBridge?.();
+    if (chatBridge?.isConnected()) {
+      chatBridge.updateStreamingMessage({
+        content: message.content,
+        toolCalls: message.toolCalls,
+        subagents: message.subagents,
+        contentBlocks: message.contentBlocks,
+      });
+    }
   }
 
   // ============================================
@@ -86,25 +100,25 @@ export class StreamController {
 
     switch (chunk.type) {
       case 'thinking':
-        if (state.currentTextEl) {
+        // Finalize any pending text block before starting thinking
+        if (state.currentTextContent) {
           this.finalizeCurrentTextBlock(msg);
         }
         await this.appendThinking(chunk.content, msg);
         break;
 
       case 'text':
-        if (state.currentThinkingState) {
+        // Finalize any pending thinking block before text
+        if (state.currentThinkingContent) {
           this.finalizeCurrentThinkingBlock(msg);
         }
         msg.content += chunk.content;
         await this.appendText(chunk.content);
-        if (state.currentContentEl) {
-          this.showThinkingIndicator(state.currentContentEl);
-        }
         break;
 
       case 'tool_use': {
-        if (state.currentThinkingState) {
+        // Finalize pending blocks before tool use
+        if (state.currentThinkingContent) {
           this.finalizeCurrentThinkingBlock(msg);
         }
         this.finalizeCurrentTextBlock(msg);
@@ -208,38 +222,24 @@ export class StreamController {
     msg.toolCalls = msg.toolCalls || [];
     msg.toolCalls.push(toolCall);
 
-    // TodoWrite always updates the persistent bottom panel
+    // TodoWrite updates the persistent todo state
     if (chunk.name === TOOL_TODO_WRITE) {
       const todos = parseTodoInput(chunk.input);
       if (todos) {
-        this.deps.state.currentTodos = todos;
+        state.currentTodos = todos;
       } else {
         console.warn('[StreamController] TodoWrite input parsing failed', {
           toolId: chunk.id,
           inputKeys: Object.keys(chunk.input),
         });
-        // Parsing failed - render as raw tool call for debugging
-        if (state.currentContentEl) {
-          msg.contentBlocks = msg.contentBlocks || [];
-          msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
-          renderToolCall(state.currentContentEl, toolCall, state.toolCallElements);
-        }
+        // Track as content block for rendering fallback
+        msg.contentBlocks = msg.contentBlocks || [];
+        msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
       }
     } else {
+      // Track as content block (React renders via bridge)
       msg.contentBlocks = msg.contentBlocks || [];
       msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
-
-      if (isWriteEditTool(chunk.name)) {
-        const writeEditState = createWriteEditBlock(state.currentContentEl!, toolCall);
-        state.writeEditStates.set(chunk.id, writeEditState);
-        state.toolCallElements.set(chunk.id, writeEditState.wrapperEl);
-      } else {
-        renderToolCall(state.currentContentEl!, toolCall, state.toolCallElements);
-      }
-    }
-
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
     }
   }
 
@@ -248,9 +248,6 @@ export class StreamController {
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
     msg: ChatMessage,
   ): void {
-    const { state } = this.deps;
-    if (!state.currentContentEl) return;
-
     const toolCall: ToolCallInfo = {
       id: chunk.id,
       name: chunk.name,
@@ -261,16 +258,9 @@ export class StreamController {
     msg.toolCalls = msg.toolCalls || [];
     msg.toolCalls.push(toolCall);
 
+    // Track as content block (React renders via bridge)
     msg.contentBlocks = msg.contentBlocks || [];
     msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
-
-    const askQuestionState = createAskUserQuestionBlock(state.currentContentEl, toolCall);
-    state.askUserQuestionStates.set(chunk.id, askQuestionState);
-    state.toolCallElements.set(chunk.id, askQuestionState.wrapperEl);
-
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
-    }
   }
 
   /** Handles tool_result chunks. */
@@ -281,94 +271,58 @@ export class StreamController {
     const { plugin, state } = this.deps;
 
     // Check if it's a sync subagent result
-    const subagentState = state.activeSubagents.get(chunk.id);
-    if (subagentState) {
-      this.finalizeSubagent(chunk, msg, subagentState);
+    const subagentInfo = state.activeSubagentInfos.get(chunk.id);
+    if (subagentInfo) {
+      this.finalizeSubagent(chunk, msg, subagentInfo);
       return;
     }
 
     // Check if it's an async task result
     if (this.handleAsyncTaskToolResult(chunk, msg)) {
-      if (state.currentContentEl) {
-        this.showThinkingIndicator(state.currentContentEl);
-      }
       return;
     }
 
     // Check if it's an agent output result
     if (this.handleAgentOutputToolResult(chunk, msg)) {
-      if (state.currentContentEl) {
-        this.showThinkingIndicator(state.currentContentEl);
-      }
       return;
     }
 
     const existingToolCall = msg.toolCalls?.find((tc) => tc.id === chunk.id);
-    const askQuestionState = state.askUserQuestionStates.get(chunk.id);
 
     // Check if it's an AskUserQuestion result
-    if (existingToolCall?.name === TOOL_ASK_USER_QUESTION || askQuestionState) {
+    if (existingToolCall?.name === TOOL_ASK_USER_QUESTION) {
       const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
-      if (existingToolCall) {
-        existingToolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
-        existingToolCall.result = chunk.content;
-      }
+      existingToolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
+      existingToolCall.result = chunk.content;
 
       // Get answers from stored map (set by CortexService callback)
       const storedAnswers = plugin.agentService.getAskUserQuestionAnswers(chunk.id);
-      const parsed = existingToolCall ? parseAskUserQuestionInput(existingToolCall.input) : null;
+      const parsed = parseAskUserQuestionInput(existingToolCall.input);
 
       // Use stored answers, or fall back to parsed from input
       const answers = storedAnswers || parsed?.answers;
 
       // Store answers back into input for session persistence
-      if (existingToolCall && answers) {
+      if (answers) {
         existingToolCall.input = { ...existingToolCall.input, answers };
-      }
-
-      if (askQuestionState && existingToolCall) {
-        finalizeAskUserQuestionBlock(
-          askQuestionState,
-          answers,
-          chunk.isError || isBlocked,
-          parsed?.questions,
-        );
-      }
-
-      if (askQuestionState) {
-        state.askUserQuestionStates.delete(chunk.id);
-      }
-
-      if (state.currentContentEl) {
-        this.showThinkingIndicator(state.currentContentEl);
       }
       return;
     }
 
-    // Regular tool result
+    // Regular tool result (React renders via bridge)
     const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
 
     if (existingToolCall) {
       existingToolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
       existingToolCall.result = chunk.content;
 
-      const writeEditState = state.writeEditStates.get(chunk.id);
-      if (writeEditState && isWriteEditTool(existingToolCall.name)) {
-        if (!chunk.isError && !isBlocked) {
-          const diffData = plugin.agentService.getDiffData(chunk.id);
-          if (diffData) {
-            existingToolCall.diffData = diffData;
-            updateWriteEditWithDiff(writeEditState, diffData);
-          }
+      // Get diff data for Write/Edit tools
+      if (isWriteEditTool(existingToolCall.name) && !chunk.isError && !isBlocked) {
+        const diffData = plugin.agentService.getDiffData(chunk.id);
+        if (diffData) {
+          existingToolCall.diffData = diffData;
         }
-        finalizeWriteEditBlock(writeEditState, chunk.isError || isBlocked);
-      } else {
-        updateToolCallResult(chunk.id, existingToolCall, state.toolCallElements);
       }
-    }
-
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
     }
   }
 
@@ -378,17 +332,10 @@ export class StreamController {
 
   /** Appends text to the current text block. */
   async appendText(text: string): Promise<void> {
-    const { state, renderer } = this.deps;
-    if (!state.currentContentEl) return;
+    const { state } = this.deps;
 
-    if (!state.currentTextEl) {
-      state.currentTextEl = state.currentContentEl.createDiv({ cls: 'cortex-text-block' });
-      state.currentTextContent = '';
-    }
-
+    // Track text content for message data (React renders via bridge)
     state.currentTextContent += text;
-    // Pass isStreaming=true to defer mermaid rendering until stream completes
-    await renderer.renderContent(state.currentTextEl, state.currentTextContent, true);
   }
 
   /** Finalizes the current text block. */
@@ -398,14 +345,7 @@ export class StreamController {
       msg.contentBlocks = msg.contentBlocks || [];
       msg.contentBlocks.push({ type: 'text', content: state.currentTextContent });
     }
-    // Save finalized text block for mermaid re-rendering at stream end
-    if (state.currentTextEl && state.currentTextContent) {
-      state.finalizedTextBlocks.push({
-        el: state.currentTextEl,
-        content: state.currentTextContent,
-      });
-    }
-    state.currentTextEl = null;
+    // Reset text state (React handles rendering)
     state.currentTextContent = '';
   }
 
@@ -415,41 +355,40 @@ export class StreamController {
 
   /** Appends thinking content. */
   async appendThinking(content: string, _msg: ChatMessage): Promise<void> {
-    const { state, renderer } = this.deps;
-    if (!state.currentContentEl) return;
+    const { state } = this.deps;
 
     this.hideThinkingIndicator();
-    if (!state.currentThinkingState) {
-      state.currentThinkingState = createThinkingBlock(state.currentContentEl, async (el, md) => {
-        await renderer.renderContent(el, md);
-      });
-    }
 
-    await appendThinkingContent(state.currentThinkingState, content, async (el, md) => {
-      await renderer.renderContent(el, md);
-    });
+    // Track thinking content for message data (React renders via bridge)
+    if (!state.currentThinkingContent) {
+      state.currentThinkingContent = '';
+      state.currentThinkingStartTime = Date.now();
+    }
+    state.currentThinkingContent += content;
   }
 
   /** Finalizes the current thinking block. */
   finalizeCurrentThinkingBlock(msg?: ChatMessage): void {
     const { state } = this.deps;
-    if (!state.currentThinkingState) return;
+    if (!state.currentThinkingContent) return;
 
-    const durationSeconds = finalizeThinkingBlock(state.currentThinkingState);
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
-    }
+    // Calculate duration
+    const durationSeconds = state.currentThinkingStartTime
+      ? (Date.now() - state.currentThinkingStartTime) / 1000
+      : 0;
 
-    if (msg && state.currentThinkingState.content) {
+    if (msg && state.currentThinkingContent) {
       msg.contentBlocks = msg.contentBlocks || [];
       msg.contentBlocks.push({
         type: 'thinking',
-        content: state.currentThinkingState.content,
+        content: state.currentThinkingContent,
         durationSeconds,
       });
     }
 
-    state.currentThinkingState = null;
+    // Reset thinking state (React handles rendering)
+    state.currentThinkingContent = '';
+    state.currentThinkingStartTime = null;
   }
 
   // ============================================
@@ -462,20 +401,24 @@ export class StreamController {
     msg: ChatMessage,
   ): Promise<void> {
     const { state } = this.deps;
-    if (!state.currentContentEl) return;
 
-    const subagentState = createSubagentBlock(state.currentContentEl, chunk.id, chunk.input);
-    state.activeSubagents.set(chunk.id, subagentState);
+    // Create subagent info for message data (React renders via bridge)
+    const subagentInfo: SubagentInfo = {
+      id: chunk.id,
+      description: String(chunk.input.description || 'Running task...'),
+      status: 'running',
+      isExpanded: false,
+      toolCalls: [],
+    };
+
+    // Track in active subagents map for routing nested chunks
+    state.activeSubagentInfos.set(chunk.id, subagentInfo);
 
     msg.subagents = msg.subagents || [];
-    msg.subagents.push(subagentState.info);
+    msg.subagents.push(subagentInfo);
 
     msg.contentBlocks = msg.contentBlocks || [];
     msg.contentBlocks.push({ type: 'subagent', subagentId: chunk.id });
-
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
-    }
   }
 
   /** Routes chunks from subagents. */
@@ -485,9 +428,9 @@ export class StreamController {
     }
     const parentToolUseId = chunk.parentToolUseId;
     const { state } = this.deps;
-    const subagentState = state.activeSubagents.get(parentToolUseId);
+    const subagentInfo = state.activeSubagentInfos.get(parentToolUseId);
 
-    if (!subagentState) {
+    if (!subagentInfo) {
       return;
     }
 
@@ -500,20 +443,18 @@ export class StreamController {
           status: 'running',
           isExpanded: false,
         };
-        addSubagentToolCall(subagentState, toolCall);
-        if (state.currentContentEl) {
-          this.showThinkingIndicator(state.currentContentEl);
-        }
+        // Add tool call to subagent info (React renders via bridge)
+        subagentInfo.toolCalls.push(toolCall);
         break;
       }
 
       case 'tool_result': {
-        const toolCall = subagentState.info.toolCalls.find((tc) => tc.id === chunk.id);
+        const toolCall = subagentInfo.toolCalls.find((tc) => tc.id === chunk.id);
         if (toolCall) {
           const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
           toolCall.status = isBlocked ? 'blocked' : chunk.isError ? 'error' : 'completed';
           toolCall.result = chunk.content;
-          updateSubagentToolResult(subagentState, chunk.id, toolCall);
+          // Get diff data for Write/Edit tools
           this.deps.plugin.agentService.getDiffData(chunk.id);
         }
         break;
@@ -529,23 +470,23 @@ export class StreamController {
   private finalizeSubagent(
     chunk: { type: 'tool_result'; id: string; content: string; isError?: boolean },
     msg: ChatMessage,
-    subagentState: SubagentState,
+    subagentInfo: SubagentInfo,
   ): void {
     const { state } = this.deps;
     const isError = chunk.isError || false;
-    finalizeSubagentBlock(subagentState, chunk.content, isError);
 
-    const subagentInfo = msg.subagents?.find((s) => s.id === chunk.id);
-    if (subagentInfo) {
-      subagentInfo.status = isError ? 'error' : 'completed';
-      subagentInfo.result = chunk.content;
+    // Update subagent info (React renders via bridge)
+    subagentInfo.status = isError ? 'error' : 'completed';
+    subagentInfo.result = chunk.content;
+
+    // Also update in message's subagents array
+    const msgSubagentInfo = msg.subagents?.find((s) => s.id === chunk.id);
+    if (msgSubagentInfo) {
+      msgSubagentInfo.status = subagentInfo.status;
+      msgSubagentInfo.result = chunk.content;
     }
 
-    state.activeSubagents.delete(chunk.id);
-
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
-    }
+    state.activeSubagentInfos.delete(chunk.id);
   }
 
   // ============================================
@@ -557,23 +498,16 @@ export class StreamController {
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
     msg: ChatMessage,
   ): Promise<void> {
-    const { state, asyncSubagentManager } = this.deps;
-    if (!state.currentContentEl) return;
+    const { asyncSubagentManager } = this.deps;
 
+    // Create async subagent info (React renders via bridge)
     const subagentInfo = asyncSubagentManager.createAsyncSubagent(chunk.id, chunk.input);
-
-    const asyncState = createAsyncSubagentBlock(state.currentContentEl, chunk.id, chunk.input);
-    state.asyncSubagentStates.set(chunk.id, asyncState);
 
     msg.subagents = msg.subagents || [];
     msg.subagents.push(subagentInfo);
 
     msg.contentBlocks = msg.contentBlocks || [];
     msg.contentBlocks.push({ type: 'subagent', subagentId: chunk.id, mode: 'async' });
-
-    if (state.currentContentEl) {
-      this.showThinkingIndicator(state.currentContentEl);
-    }
   }
 
   /** Handles AgentOutputTool tool_use (invisible, links to async subagent). */
@@ -625,41 +559,7 @@ export class StreamController {
 
   /** Callback from AsyncSubagentManager when state changes. */
   onAsyncSubagentStateChange(subagent: SubagentInfo): void {
-    const { state } = this.deps;
-    let asyncState = state.asyncSubagentStates.get(subagent.id);
-
-    if (!asyncState) {
-      for (const s of state.asyncSubagentStates.values()) {
-        if (s.info.agentId === subagent.agentId) {
-          asyncState = s;
-          break;
-        }
-      }
-      if (!asyncState) return;
-    }
-
-    this.updateAsyncSubagentUI(asyncState, subagent);
-  }
-
-  /** Updates async subagent UI based on state. */
-  private updateAsyncSubagentUI(asyncState: AsyncSubagentState, subagent: SubagentInfo): void {
-    asyncState.info = subagent;
-
-    switch (subagent.asyncStatus) {
-      case 'running':
-        updateAsyncSubagentRunning(asyncState, subagent.agentId || '');
-        break;
-
-      case 'completed':
-      case 'error':
-        finalizeAsyncSubagent(asyncState, subagent.result || '', subagent.asyncStatus === 'error');
-        break;
-
-      case 'orphaned':
-        markAsyncSubagentOrphaned(asyncState);
-        break;
-    }
-
+    // Update subagent in messages array (React renders via bridge)
     this.updateSubagentInMessages(subagent);
     this.scrollToBottom();
   }
@@ -728,12 +628,11 @@ export class StreamController {
   resetStreamingState(): void {
     const { state } = this.deps;
     this.hideThinkingIndicator();
-    state.currentContentEl = null;
-    state.currentTextEl = null;
+    // Reset text/thinking tracking
     state.currentTextContent = '';
-    state.currentThinkingState = null;
-    state.activeSubagents.clear();
-    // Clear finalized text blocks after mermaid re-render is done
-    state.finalizedTextBlocks.length = 0;
+    state.currentThinkingContent = '';
+    state.currentThinkingStartTime = null;
+    // Clear active subagent tracking
+    state.activeSubagentInfos.clear();
   }
 }

@@ -1,0 +1,97 @@
+/* Skeleton loading states for React components */
+
+/* Base skeleton animation */
+@keyframes cortex-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Message skeleton */
+.cortex-message-skeleton {
+  display: flex;
+  gap: 12px;
+  padding: 12px 16px;
+  animation: cortex-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.cortex-message-skeleton-user {
+  flex-direction: row-reverse;
+}
+
+.cortex-skeleton-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--background-modifier-hover);
+  flex-shrink: 0;
+}
+
+.cortex-skeleton-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 80%;
+}
+
+.cortex-message-skeleton-user .cortex-skeleton-content {
+  align-items: flex-end;
+  max-width: 60%;
+}
+
+.cortex-skeleton-line {
+  height: 14px;
+  border-radius: 4px;
+  background: var(--background-modifier-hover);
+}
+
+/* Conversation skeleton */
+.cortex-conversation-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+/* Message list skeleton */
+.cortex-messages-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px;
+}
+
+.cortex-messages-skeleton .cortex-skeleton-message {
+  height: 80px;
+  border-radius: 8px;
+  background: var(--background-modifier-hover);
+  animation: cortex-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.cortex-messages-skeleton .cortex-skeleton-message:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+/* Block skeleton (existing, but adding enhancements) */
+.cortex-block-skeleton {
+  min-height: 100px;
+  border-radius: 8px;
+  background: var(--background-modifier-hover);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: cortex-skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.cortex-block-skeleton-mermaid {
+  min-height: 200px;
+}
+
+.cortex-block-skeleton-code {
+  min-height: 80px;
+}

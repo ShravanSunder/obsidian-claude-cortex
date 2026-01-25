@@ -17,6 +17,7 @@ import {
   type McpServerSelector,
   type TodoPanel,
 } from '../../../ui';
+import type { ChatBridge } from '../../../ui/react';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { AsyncSubagentManager } from '../services/AsyncSubagentManager';
 import type { TitleGenerationService } from '../services/TitleGenerationService';
@@ -61,6 +62,8 @@ export interface ConversationControllerDeps {
   setPlanModeActive: (active: boolean) => void;
   /** Get TodoPanel for remounting after messagesEl.empty(). */
   getTodoPanel: () => TodoPanel | null;
+  /** Get ChatBridge for syncing messages to React. */
+  getChatBridge?: () => ChatBridge | null;
 }
 
 /**
@@ -73,6 +76,19 @@ export class ConversationController {
   constructor(deps: ConversationControllerDeps, callbacks: ConversationCallbacks = {}) {
     this.deps = deps;
     this.callbacks = callbacks;
+  }
+
+  /**
+   * Syncs messages to React via the ChatBridge.
+   * Should be called after state.messages is updated.
+   */
+  private syncMessagesToReact(): void {
+    const chatBridge = this.deps.getChatBridge?.();
+    if (chatBridge?.isConnected()) {
+      chatBridge.setMessages(this.deps.state.messages);
+      chatBridge.setConversationId(this.deps.state.currentConversationId);
+      chatBridge.setUsage(this.deps.state.usage);
+    }
   }
 
   // ============================================
@@ -195,6 +211,9 @@ export class ConversationController {
     this.deps.setWelcomeEl(welcomeEl);
     this.updateWelcomeVisibility();
 
+    // Sync messages to React
+    this.syncMessagesToReact();
+
     // Restore todo panel from loaded conversation
     state.currentTodos = extractLastTodosFromMessages(state.messages);
 
@@ -266,6 +285,9 @@ export class ConversationController {
 
     const welcomeEl = renderer.renderMessages(state.messages, () => this.getGreeting());
     this.deps.setWelcomeEl(welcomeEl);
+
+    // Sync messages to React
+    this.syncMessagesToReact();
 
     // Restore todo panel from switched conversation
     state.currentTodos = extractLastTodosFromMessages(state.messages);

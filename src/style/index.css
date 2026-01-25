@@ -20,6 +20,7 @@
 @import "./components/input.css";
 @import "./components/context-footer.css";
 @import "./components/action-status.css";
+@import "./components/skeleton.css";
 
 /* Toolbar */
 @import "./toolbar/model-selector.css";

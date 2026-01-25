@@ -35,7 +35,10 @@ export default class CortexPlugin extends Plugin {
   mcpService: McpService;
   storage: StorageService;
   cliResolver: ClaudeCliResolver;
+  /** Lazily loaded conversations - only populated on demand */
   private conversations: Conversation[] = [];
+  /** Conversation metadata for quick listing (loaded at startup) */
+  private conversationMetas: ConversationMeta[] = [];
   private activeConversationId: string | null = null;
   private runtimeEnvironmentVariables = '';
   private hasNotifiedEnvChange = false;
@@ -153,19 +156,28 @@ export default class CortexPlugin extends Plugin {
       slashCommands,
     };
 
-    // Load all conversations from session files
-    this.conversations = await this.storage.sessions.loadAllConversations();
+    // Load only conversation metadata at startup (lazy loading)
+    // Full conversations are loaded on-demand via ensureConversationLoaded()
+    this.conversationMetas = await this.storage.sessions.listConversations();
+    this.conversations = []; // Empty - loaded on demand
     this.activeConversationId = state.activeConversationId;
 
-    // Validate active conversation exists
+    // Validate active conversation exists in metadata
     if (
       this.activeConversationId &&
-      !this.conversations.find((c) => c.id === this.activeConversationId)
+      !this.conversationMetas.find((c) => c.id === this.activeConversationId)
     ) {
       this.activeConversationId = null;
     }
 
-    const backfilledConversations = this.backfillConversationResponseTimestamps();
+    // Pre-load the active conversation so getActiveConversation() works synchronously
+    const backfilledConversations: Conversation[] = [];
+    if (this.activeConversationId) {
+      const activeConv = await this.ensureConversationLoaded(this.activeConversationId);
+      if (activeConv && activeConv.lastResponseAt == null && activeConv.messages.length > 0) {
+        // backfillConversationResponseTimestamps logic already in ensureConversationLoaded
+      }
+    }
 
     this.runtimeEnvironmentVariables = this.settings.environmentVariables || '';
     const { changed, invalidatedConversations } = this.reconcileModelWithEnvironment(
@@ -382,6 +394,38 @@ export default class CortexPlugin extends Plugin {
     return firstUserMsg.content.substring(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '');
   }
 
+  /**
+   * Lazily loads a conversation by ID if not already in cache.
+   * Returns the conversation or null if it doesn't exist.
+   */
+  async ensureConversationLoaded(id: string): Promise<Conversation | null> {
+    // Check if already in cache
+    const cached = this.conversations.find((c) => c.id === id);
+    if (cached) return cached;
+
+    // Check if it exists in metadata
+    const meta = this.conversationMetas.find((m) => m.id === id);
+    if (!meta) return null;
+
+    // Load from storage
+    const conversation = await this.storage.sessions.loadConversation(id);
+    if (conversation) {
+      // Backfill lastResponseAt if needed
+      if (conversation.lastResponseAt == null && conversation.messages.length > 0) {
+        for (let i = conversation.messages.length - 1; i >= 0; i--) {
+          const msg = conversation.messages[i];
+          if (msg.role === 'assistant') {
+            conversation.lastResponseAt = msg.timestamp;
+            await this.storage.sessions.saveConversation(conversation);
+            break;
+          }
+        }
+      }
+      this.conversations.push(conversation);
+    }
+    return conversation;
+  }
+
   /** Creates a new conversation and sets it as active. */
   async createConversation(): Promise<Conversation> {
     const conversation: Conversation = {
@@ -394,6 +438,15 @@ export default class CortexPlugin extends Plugin {
     };
 
     this.conversations.unshift(conversation);
+    // Also add to metadata list
+    this.conversationMetas.unshift({
+      id: conversation.id,
+      title: conversation.title,
+      createdAt: conversation.createdAt,
+      updatedAt: conversation.updatedAt,
+      messageCount: 0,
+      preview: 'New conversation',
+    });
     this.activeConversationId = conversation.id;
     // Use switchSession to properly recreate query without resume (fresh context)
     await this.agentService.switchSession(null);
@@ -405,9 +458,10 @@ export default class CortexPlugin extends Plugin {
     return conversation;
   }
 
-  /** Switches to an existing conversation by ID. */
+  /** Switches to an existing conversation by ID (lazy loads if needed). */
   async switchConversation(id: string): Promise<Conversation | null> {
-    const conversation = this.conversations.find((c) => c.id === id);
+    // Use lazy loading to ensure conversation is available
+    const conversation = await this.ensureConversationLoaded(id);
     if (!conversation) return null;
 
     this.activeConversationId = id;
@@ -420,19 +474,31 @@ export default class CortexPlugin extends Plugin {
 
   /** Deletes a conversation and switches to another if necessary. */
   async deleteConversation(id: string): Promise<void> {
-    const index = this.conversations.findIndex((c) => c.id === id);
-    if (index === -1) return;
+    // Check if it exists in metadata first
+    const metaIndex = this.conversationMetas.findIndex((m) => m.id === id);
+    if (metaIndex === -1) return;
 
-    const conversation = this.conversations[index];
-    this.cleanupConversationImages(conversation);
-    this.conversations.splice(index, 1);
+    // Try to load conversation to clean up images (if not already loaded)
+    const conversation = await this.ensureConversationLoaded(id);
+    if (conversation) {
+      this.cleanupConversationImages(conversation);
+    }
+
+    // Remove from loaded conversations cache
+    const convIndex = this.conversations.findIndex((c) => c.id === id);
+    if (convIndex !== -1) {
+      this.conversations.splice(convIndex, 1);
+    }
+
+    // Remove from metadata list
+    this.conversationMetas.splice(metaIndex, 1);
 
     // Delete the session file
     await this.storage.sessions.deleteConversation(id);
 
     if (this.activeConversationId === id) {
-      if (this.conversations.length > 0) {
-        await this.switchConversation(this.conversations[0].id);
+      if (this.conversationMetas.length > 0) {
+        await this.switchConversation(this.conversationMetas[0].id);
       } else {
         await this.createConversation();
       }
@@ -441,21 +507,58 @@ export default class CortexPlugin extends Plugin {
 
   /** Renames a conversation. */
   async renameConversation(id: string, title: string): Promise<void> {
-    const conversation = this.conversations.find((c) => c.id === id);
-    if (!conversation) return;
+    const newTitle = title.trim() || this.generateDefaultTitle();
+    const now = Date.now();
 
-    conversation.title = title.trim() || this.generateDefaultTitle();
-    conversation.updatedAt = Date.now();
-    await this.storage.sessions.saveConversation(conversation);
+    // Update in loaded conversations cache if present
+    const conversation = this.conversations.find((c) => c.id === id);
+    if (conversation) {
+      conversation.title = newTitle;
+      conversation.updatedAt = now;
+      await this.storage.sessions.saveConversation(conversation);
+    } else {
+      // Load, update, and save
+      const conv = await this.ensureConversationLoaded(id);
+      if (conv) {
+        conv.title = newTitle;
+        conv.updatedAt = now;
+        await this.storage.sessions.saveConversation(conv);
+      }
+    }
+
+    // Update metadata list
+    const meta = this.conversationMetas.find((m) => m.id === id);
+    if (meta) {
+      meta.title = newTitle;
+      meta.updatedAt = now;
+    }
   }
 
   /** Updates conversation properties (messages, sessionId, etc.). */
   async updateConversation(id: string, updates: Partial<Conversation>): Promise<void> {
-    const conversation = this.conversations.find((c) => c.id === id);
+    // Must be loaded first - use ensureConversationLoaded if not
+    let conversation: Conversation | null = this.conversations.find((c) => c.id === id) ?? null;
+    if (!conversation) {
+      conversation = await this.ensureConversationLoaded(id);
+    }
     if (!conversation) return;
 
-    Object.assign(conversation, updates, { updatedAt: Date.now() });
+    const now = Date.now();
+    Object.assign(conversation, updates, { updatedAt: now });
     await this.storage.sessions.saveConversation(conversation);
+
+    // Update metadata if title or timestamps changed
+    const meta = this.conversationMetas.find((m) => m.id === id);
+    if (meta) {
+      if (updates.title !== undefined) meta.title = updates.title;
+      if (updates.lastResponseAt !== undefined) meta.lastResponseAt = updates.lastResponseAt;
+      meta.updatedAt = now;
+      meta.messageCount = conversation.messages.length;
+      // Update preview from first user message
+      if (updates.messages !== undefined) {
+        meta.preview = this.getConversationPreview(conversation);
+      }
+    }
   }
 
   /** Returns the current active conversation. */
@@ -468,23 +571,15 @@ export default class CortexPlugin extends Plugin {
     return this.conversations.find((c) => c.id === id) || null;
   }
 
-  /** Finds an existing empty conversation (no messages). */
-  findEmptyConversation(): Conversation | null {
-    return this.conversations.find((c) => c.messages.length === 0) || null;
+  /** Finds an existing empty conversation (no messages) from metadata. */
+  findEmptyConversation(): ConversationMeta | null {
+    return this.conversationMetas.find((m) => m.messageCount === 0) || null;
   }
 
   /** Returns conversation metadata list for the history dropdown. */
   getConversationList(): ConversationMeta[] {
-    return this.conversations.map((c) => ({
-      id: c.id,
-      title: c.title,
-      createdAt: c.createdAt,
-      updatedAt: c.updatedAt,
-      lastResponseAt: c.lastResponseAt,
-      messageCount: c.messages.length,
-      preview: this.getConversationPreview(c),
-      titleGenerationStatus: c.titleGenerationStatus,
-    }));
+    // Use pre-loaded metadata (no need to load full conversations)
+    return [...this.conversationMetas];
   }
 
   /** Returns the active Cortex view from workspace, if open. */
