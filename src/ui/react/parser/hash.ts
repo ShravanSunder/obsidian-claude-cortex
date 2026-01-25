@@ -29,11 +29,7 @@ export function djb2Hash(str: string): string {
  * @param type - Block type
  * @returns Stable identifier string
  */
-export function generateBlockId(
-  content: string,
-  index: number,
-  type: string,
-): string {
+export function generateBlockId(content: string, index: number, type: string): string {
   // Use first 50 chars of content for identity
   // This provides stability while streaming continues
   const contentPrefix = content.slice(0, 50);
