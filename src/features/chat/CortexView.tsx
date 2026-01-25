@@ -7,6 +7,8 @@
 
 import type { WorkspaceLeaf } from 'obsidian';
 import { ItemView, setIcon } from 'obsidian';
+import { StrictMode } from 'react';
+import { createRoot, type Root } from 'react-dom/client';
 
 import { SlashCommandManager } from '../../core/commands';
 import type { ClaudeModel, ThinkingBudget } from '../../core/types';
@@ -29,6 +31,7 @@ import {
   type ThinkingBudgetSelector,
   TodoPanel,
 } from '../../ui';
+import { AppContext, ChatContainer } from '../../ui/react';
 import { getVaultPath } from '../../utils/path';
 import { LOGO_SVG } from './constants';
 import {
@@ -47,6 +50,10 @@ import { ChatState } from './state';
 /** Main sidebar chat view for interacting with Claude. */
 export class CortexView extends ItemView {
   private plugin: CortexPlugin;
+
+  // React root for the new rendering engine
+  private reactRoot: Root | null = null;
+  private reactContainerEl: HTMLElement | null = null;
 
   // State - public for test access
   public readonly state: ChatState;
@@ -122,6 +129,23 @@ export class CortexView extends ItemView {
     const header = container.createDiv({ cls: 'cortex-header' });
     this.buildHeader(header);
 
+    // Mount React rendering engine (Phase 1: placeholder only)
+    this.reactContainerEl = container.createDiv({ cls: 'cortex-react-container' });
+    try {
+      this.reactRoot = createRoot(this.reactContainerEl);
+      this.reactRoot.render(
+        <StrictMode>
+          <AppContext.Provider value={this.app}>
+            <ChatContainer />
+          </AppContext.Provider>
+        </StrictMode>,
+      );
+    } catch (error) {
+      console.error('[Cortex] Failed to mount React:', error);
+      // Fallback: show simple message without React
+      this.reactContainerEl.textContent = 'React rendering failed';
+    }
+
     // Create plan banner (mounted to container, inserts before messages)
     this.planBanner = new PlanBanner({
       app: this.plugin.app,
@@ -160,6 +184,15 @@ export class CortexView extends ItemView {
   }
 
   async onClose() {
+    // Unmount React root
+    try {
+      this.reactRoot?.unmount();
+    } catch (error) {
+      console.error('[Cortex] Failed to unmount React:', error);
+    }
+    this.reactRoot = null;
+    this.reactContainerEl = null;
+
     // Stop polling
     this.selectionController?.stop();
     this.selectionController?.clear();

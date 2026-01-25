@@ -81,6 +81,41 @@ All classes use `.cortex-` prefix. Key patterns:
 | Plan mode | `-plan-banner`, `-plan-approval-panel`, `-plan-approval-actions`, `-plan-badge` |
 | Modals | `-approval-modal`, `-instruction-modal`, `-mcp-modal` |
 
+## Testing with Real Obsidian (Container Environment)
+
+In the agent sidecar container, Obsidian is pre-installed at `/usr/local/bin/obsidian`. Use this to get real plugin feedback:
+
+```bash
+# 1. Build the plugin
+pnpm run build
+
+# 2. Setup test vault (creates /tmp/test-vault with hot-reload enabled)
+./scripts/setup-test-vault.sh
+
+# 3. Start Obsidian headlessly with CDP
+./scripts/start-obsidian-test.sh
+
+# CDP endpoint available at http://localhost:9222
+```
+
+**Hot-reload workflow**: After `setup-test-vault.sh`, the test vault has hot-reload enabled. Rebuild with `pnpm run build` and the plugin auto-reloads in Obsidian.
+
+**Screenshots**: Use CDP or Playwright to capture screenshots. Store in `.tmp/screenshots/` (gitignored).
+
+**Debugging via CDP**:
+```bash
+# Check Obsidian is running
+curl -s http://localhost:9222/json/version
+
+# List available pages/targets
+curl -s http://localhost:9222/json/list
+```
+
+**Environment variables**:
+- `VAULT_PATH` - Custom vault location (default: `/tmp/test-vault`)
+- `CDP_PORT` - CDP port (default: `9222`)
+- `DISPLAY` - X display (default: `:99`, Xvfb)
+
 ## Development Notes
 
 - Test Driven Development
