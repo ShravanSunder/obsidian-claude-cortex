@@ -5,11 +5,12 @@
  * This is the key fix - React components auto-update as text streams in.
  */
 
-import { useEffect } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { ChatMessage, ContentBlock } from '../../../core/types';
 import { useChatStore } from '../../../features/chat/store';
 import { useStreamingParser } from '../hooks/useStreamingParser';
+import { StreamingMarkdownParser } from '../parser';
 import { BlockRenderer } from './blocks';
 
 export interface StreamingMessageLiveProps {
@@ -40,12 +41,24 @@ export const StreamingMessageLive = ({
 
   // Use the streaming parser for the current text content
   const { blocks, push, reset } = useStreamingParser();
+  const lastPushedLengthRef = useRef(0);
 
-  // Push streaming text to parser whenever it changes
+  // Push ONLY new content incrementally (not entire text on every chunk)
   useEffect(() => {
-    reset();
-    if (streamingText) {
-      push(streamingText);
+    if (!streamingText) {
+      // Reset when streaming stops
+      if (lastPushedLengthRef.current > 0) {
+        reset();
+        lastPushedLengthRef.current = 0;
+      }
+      return;
+    }
+
+    // Only push new characters, not the entire text
+    const newContent = streamingText.slice(lastPushedLengthRef.current);
+    if (newContent) {
+      push(newContent);
+      lastPushedLengthRef.current = streamingText.length;
     }
   }, [streamingText, push, reset]);
 
@@ -111,22 +124,20 @@ interface FinalizedBlockRendererProps {
 }
 
 const FinalizedBlockRenderer = ({ block, sourcePath }: FinalizedBlockRendererProps) => {
-  // Use the streaming parser to render finalized text blocks
-  const { blocks, push, end, reset } = useStreamingParser();
-
-  useEffect(() => {
-    if (block.type === 'text') {
-      reset();
-      push(block.content);
-      end();
-    }
-  }, [block, push, end, reset]);
+  // For text blocks, parse once and render (no streaming parser needed)
+  const parsedBlocks = useMemo(() => {
+    if (block.type !== 'text') return [];
+    const parser = new StreamingMarkdownParser();
+    parser.push(block.content);
+    parser.end();
+    return parser.getAllBlocks();
+  }, [block.type, block.type === 'text' ? block.content : '']);
 
   switch (block.type) {
     case 'text':
       return (
         <>
-          {blocks.map((b) => (
+          {parsedBlocks.map((b) => (
             <BlockRenderer key={b.id} block={b} sourcePath={sourcePath} />
           ))}
         </>

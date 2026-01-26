@@ -57,14 +57,12 @@ export function useStreamingParser(): UseStreamingParserResult {
 
   const push = useCallback(
     (chunk: string): BlockEvent[] => {
-      if (!isStreaming) {
-        setIsStreaming(true);
-      }
+      setIsStreaming(true); // React will skip if unchanged
       const events = parserRef.current.push(chunk);
       updateBlocks();
       return events;
     },
-    [isStreaming, updateBlocks],
+    [updateBlocks],
   );
 
   const end = useCallback((): BlockEvent[] => {
