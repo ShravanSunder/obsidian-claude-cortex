@@ -50,13 +50,17 @@ export const MermaidBlock = ({ content, isStreaming = false, className }: Mermai
   const [isVisible, setIsVisible] = useState(false);
   const [measuredHeight, setMeasuredHeight] = useState(MIN_SKELETON_HEIGHT);
 
-  // Reset state when streaming starts
+  // Handle streaming state transitions
   useEffect(() => {
     if (isStreaming) {
+      // Entering streaming mode - reset everything
       setState('streaming');
       setSvg('');
       setError('');
       setIsVisible(false);
+    } else {
+      // Exiting streaming mode - transition to pending
+      setState((prev) => (prev === 'streaming' ? 'pending' : prev));
     }
   }, [isStreaming]);
 
