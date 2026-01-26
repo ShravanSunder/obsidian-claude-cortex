@@ -17,11 +17,11 @@ import {
   type McpServerSelector,
   type TodoPanel,
 } from '../../../ui';
-import type { ChatBridge } from '../../../ui/react';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { AsyncSubagentManager } from '../services/AsyncSubagentManager';
 import type { TitleGenerationService } from '../services/TitleGenerationService';
 import type { ChatState } from '../state/ChatState';
+import { useChatStore } from '../store';
 
 /** Callbacks for conversation events. */
 export interface ConversationCallbacks {
@@ -62,8 +62,6 @@ export interface ConversationControllerDeps {
   setPlanModeActive: (active: boolean) => void;
   /** Get TodoPanel for remounting after messagesEl.empty(). */
   getTodoPanel: () => TodoPanel | null;
-  /** Get ChatBridge for syncing messages to React. */
-  getChatBridge?: () => ChatBridge | null;
 }
 
 /**
@@ -79,16 +77,14 @@ export class ConversationController {
   }
 
   /**
-   * Syncs messages to React via the ChatBridge.
+   * Syncs messages to React via the Zustand store.
    * Should be called after state.messages is updated.
    */
   private syncMessagesToReact(): void {
-    const chatBridge = this.deps.getChatBridge?.();
-    if (chatBridge?.isConnected()) {
-      chatBridge.setMessages(this.deps.state.messages);
-      chatBridge.setConversationId(this.deps.state.currentConversationId);
-      chatBridge.setUsage(this.deps.state.usage);
-    }
+    const store = useChatStore.getState();
+    store.setMessages([...this.deps.state.messages]);
+    store.setConversationId(this.deps.state.currentConversationId);
+    store.setUsage(this.deps.state.usage);
   }
 
   // ============================================
@@ -98,7 +94,8 @@ export class ConversationController {
   /** Creates a new conversation, or switches to an existing empty one. */
   async createNew(): Promise<void> {
     const { plugin, state, asyncSubagentManager } = this.deps;
-    if (state.isStreaming) return;
+    const store = useChatStore.getState();
+    if (store.isStreaming) return;
 
     if (state.messages.length > 0) {
       await this.save();
@@ -117,6 +114,10 @@ export class ConversationController {
     state.clearMessages();
     state.usage = null;
     state.currentTodos = null;
+
+    // Reset Zustand store for new conversation
+    store.resetForNewConversation();
+    store.setConversationId(conversation.id);
 
     // Clear approved plan and pending plan for new conversation
     this.deps.setApprovedPlan(null);
@@ -228,9 +229,10 @@ export class ConversationController {
   /** Switches to a different conversation. */
   async switchTo(id: string): Promise<void> {
     const { plugin, state, renderer, asyncSubagentManager } = this.deps;
+    const store = useChatStore.getState();
 
     if (id === state.currentConversationId) return;
-    if (state.isStreaming) return;
+    if (store.isStreaming) return;
 
     await this.save();
 
@@ -470,7 +472,7 @@ export class ConversationController {
       deleteBtn.setAttribute('aria-label', 'Delete');
       deleteBtn.addEventListener('click', async (e) => {
         e.stopPropagation();
-        if (state.isStreaming) return;
+        if (useChatStore.getState().isStreaming) return;
         await plugin.deleteConversation(conv.id);
         this.updateHistoryDropdown();
 

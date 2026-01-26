@@ -21,11 +21,11 @@ import {
   parseAskUserQuestionInput,
   parseTodoInput,
 } from '../../../ui';
-import type { ChatBridge } from '../../../ui/react';
 import { FLAVOR_TEXTS } from '../constants';
 import type { MessageRenderer } from '../rendering/MessageRenderer';
 import type { AsyncSubagentManager } from '../services/AsyncSubagentManager';
 import type { ChatState } from '../state/ChatState';
+import { useChatStore } from '../store';
 
 /** Dependencies for StreamController. */
 export interface StreamControllerDeps {
@@ -38,8 +38,6 @@ export interface StreamControllerDeps {
   updateQueueIndicator: () => void;
   /** Callback to set plan mode active (for UI toggle sync). */
   setPlanModeActive: (active: boolean) => void;
-  /** Get ChatBridge for syncing streaming state to React. */
-  getChatBridge?: () => ChatBridge | null;
 }
 
 /**
@@ -52,36 +50,8 @@ export class StreamController {
     this.deps = deps;
   }
 
-  /**
-   * Syncs streaming state to React via the ChatBridge.
-   */
-  syncStreamingToReact(isStreaming: boolean, message?: ChatMessage): void {
-    const chatBridge = this.deps.getChatBridge?.();
-    if (!chatBridge?.isConnected()) return;
-
-    chatBridge.setStreaming(isStreaming);
-    if (message) {
-      chatBridge.setStreamingMessage(isStreaming ? message : null);
-    } else if (!isStreaming) {
-      chatBridge.setStreamingMessage(null);
-    }
-  }
-
-  /**
-   * Updates the streaming message content in React.
-   * Call this after updating the message object during streaming.
-   */
-  updateStreamingMessageInReact(message: ChatMessage): void {
-    const chatBridge = this.deps.getChatBridge?.();
-    if (chatBridge?.isConnected()) {
-      chatBridge.updateStreamingMessage({
-        content: message.content,
-        toolCalls: message.toolCalls,
-        subagents: message.subagents,
-        contentBlocks: message.contentBlocks,
-      });
-    }
-  }
+  // Note: syncStreamingToReact and updateStreamingMessageInReact removed
+  // Zustand store handles React synchronization automatically via selectors
 
   // ============================================
   // Stream Chunk Handling
@@ -99,25 +69,49 @@ export class StreamController {
     }
 
     switch (chunk.type) {
-      case 'thinking':
+      case 'thinking': {
         // Finalize any pending text block before starting thinking
-        if (state.currentTextContent) {
-          this.finalizeCurrentTextBlock(msg);
+        const store = useChatStore.getState();
+        if (store.streaming.textContent) {
+          store.finalizeTextBlock();
         }
-        await this.appendThinking(chunk.content, msg);
-        break;
+        // THE FIX: Use Zustand store - React auto-updates!
+        store.appendStreamingThinking(chunk.content);
 
-      case 'text':
-        // Finalize any pending thinking block before text
-        if (state.currentThinkingContent) {
-          this.finalizeCurrentThinkingBlock(msg);
+        // Also update legacy state for compatibility
+        state.currentThinkingContent += chunk.content;
+        if (!state.currentThinkingStartTime) {
+          state.currentThinkingStartTime = Date.now();
         }
-        msg.content += chunk.content;
-        await this.appendText(chunk.content);
+        this.hideThinkingIndicator();
         break;
+      }
+
+      case 'text': {
+        // Finalize any pending thinking block before text
+        const store = useChatStore.getState();
+        if (store.streaming.thinkingContent) {
+          store.finalizeThinkingBlock();
+        }
+        // THE FIX: Use Zustand store - React auto-updates!
+        store.appendStreamingText(chunk.content);
+
+        // Also update legacy state for compatibility
+        msg.content += chunk.content;
+        state.currentTextContent += chunk.content;
+        break;
+      }
 
       case 'tool_use': {
         // Finalize pending blocks before tool use
+        const store = useChatStore.getState();
+        if (store.streaming.thinkingContent) {
+          store.finalizeThinkingBlock();
+        }
+        if (store.streaming.textContent) {
+          store.finalizeTextBlock();
+        }
+        // Also update legacy state
         if (state.currentThinkingContent) {
           this.finalizeCurrentThinkingBlock(msg);
         }
@@ -205,6 +199,7 @@ export class StreamController {
     msg: ChatMessage,
   ): void {
     const { plugin, state } = this.deps;
+    const store = useChatStore.getState();
 
     // Skip rendering Write/Edit tools during plan mode (read-only mode)
     const isPlanMode = plugin.settings.permissionMode === 'plan';
@@ -222,11 +217,15 @@ export class StreamController {
     msg.toolCalls = msg.toolCalls || [];
     msg.toolCalls.push(toolCall);
 
+    // Update Zustand store
+    store.addToolCallToStreamingMessage(toolCall);
+
     // TodoWrite updates the persistent todo state
     if (chunk.name === TOOL_TODO_WRITE) {
       const todos = parseTodoInput(chunk.input);
       if (todos) {
         state.currentTodos = todos;
+        store.setCurrentTodos(todos);
       } else {
         console.warn('[StreamController] TodoWrite input parsing failed', {
           toolId: chunk.id,
@@ -235,11 +234,13 @@ export class StreamController {
         // Track as content block for rendering fallback
         msg.contentBlocks = msg.contentBlocks || [];
         msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
+        store.addContentBlockToStreamingMessage({ type: 'tool_use', toolId: chunk.id });
       }
     } else {
-      // Track as content block (React renders via bridge)
+      // Track as content block
       msg.contentBlocks = msg.contentBlocks || [];
       msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
+      store.addContentBlockToStreamingMessage({ type: 'tool_use', toolId: chunk.id });
     }
   }
 
@@ -248,6 +249,7 @@ export class StreamController {
     chunk: { type: 'tool_use'; id: string; name: string; input: Record<string, unknown> },
     msg: ChatMessage,
   ): void {
+    const store = useChatStore.getState();
     const toolCall: ToolCallInfo = {
       id: chunk.id,
       name: chunk.name,
@@ -258,9 +260,13 @@ export class StreamController {
     msg.toolCalls = msg.toolCalls || [];
     msg.toolCalls.push(toolCall);
 
-    // Track as content block (React renders via bridge)
+    // Update Zustand store
+    store.addToolCallToStreamingMessage(toolCall);
+
+    // Track as content block
     msg.contentBlocks = msg.contentBlocks || [];
     msg.contentBlocks.push({ type: 'tool_use', toolId: chunk.id });
+    store.addContentBlockToStreamingMessage({ type: 'tool_use', toolId: chunk.id });
   }
 
   /** Handles tool_result chunks. */
@@ -269,6 +275,7 @@ export class StreamController {
     msg: ChatMessage,
   ): void {
     const { plugin, state } = this.deps;
+    const store = useChatStore.getState();
 
     // Check if it's a sync subagent result
     const subagentInfo = state.activeSubagentInfos.get(chunk.id);
@@ -306,10 +313,17 @@ export class StreamController {
       if (answers) {
         existingToolCall.input = { ...existingToolCall.input, answers };
       }
+
+      // Update Zustand store
+      store.updateToolCallInStreamingMessage(chunk.id, {
+        status: existingToolCall.status,
+        result: chunk.content,
+        input: existingToolCall.input,
+      });
       return;
     }
 
-    // Regular tool result (React renders via bridge)
+    // Regular tool result
     const isBlocked = isBlockedToolResult(chunk.content, chunk.isError);
 
     if (existingToolCall) {
@@ -323,6 +337,13 @@ export class StreamController {
           existingToolCall.diffData = diffData;
         }
       }
+
+      // Update Zustand store
+      store.updateToolCallInStreamingMessage(chunk.id, {
+        status: existingToolCall.status,
+        result: chunk.content,
+        diffData: existingToolCall.diffData,
+      });
     }
   }
 
@@ -401,8 +422,9 @@ export class StreamController {
     msg: ChatMessage,
   ): Promise<void> {
     const { state } = this.deps;
+    const store = useChatStore.getState();
 
-    // Create subagent info for message data (React renders via bridge)
+    // Create subagent info for message data
     const subagentInfo: SubagentInfo = {
       id: chunk.id,
       description: String(chunk.input.description || 'Running task...'),
@@ -413,12 +435,17 @@ export class StreamController {
 
     // Track in active subagents map for routing nested chunks
     state.activeSubagentInfos.set(chunk.id, subagentInfo);
+    store.setActiveSubagent(chunk.id, subagentInfo);
 
     msg.subagents = msg.subagents || [];
     msg.subagents.push(subagentInfo);
 
     msg.contentBlocks = msg.contentBlocks || [];
     msg.contentBlocks.push({ type: 'subagent', subagentId: chunk.id });
+
+    // Update Zustand store
+    store.addSubagentToStreamingMessage(subagentInfo);
+    store.addContentBlockToStreamingMessage({ type: 'subagent', subagentId: chunk.id });
   }
 
   /** Routes chunks from subagents. */
@@ -473,9 +500,10 @@ export class StreamController {
     subagentInfo: SubagentInfo,
   ): void {
     const { state } = this.deps;
+    const store = useChatStore.getState();
     const isError = chunk.isError || false;
 
-    // Update subagent info (React renders via bridge)
+    // Update subagent info
     subagentInfo.status = isError ? 'error' : 'completed';
     subagentInfo.result = chunk.content;
 
@@ -487,6 +515,13 @@ export class StreamController {
     }
 
     state.activeSubagentInfos.delete(chunk.id);
+    store.deleteActiveSubagent(chunk.id);
+
+    // Update Zustand store
+    store.updateSubagentInStreamingMessage(chunk.id, {
+      status: subagentInfo.status,
+      result: chunk.content,
+    });
   }
 
   // ============================================
@@ -499,8 +534,9 @@ export class StreamController {
     msg: ChatMessage,
   ): Promise<void> {
     const { asyncSubagentManager } = this.deps;
+    const store = useChatStore.getState();
 
-    // Create async subagent info (React renders via bridge)
+    // Create async subagent info
     const subagentInfo = asyncSubagentManager.createAsyncSubagent(chunk.id, chunk.input);
 
     msg.subagents = msg.subagents || [];
@@ -508,6 +544,14 @@ export class StreamController {
 
     msg.contentBlocks = msg.contentBlocks || [];
     msg.contentBlocks.push({ type: 'subagent', subagentId: chunk.id, mode: 'async' });
+
+    // Update Zustand store
+    store.addSubagentToStreamingMessage(subagentInfo);
+    store.addContentBlockToStreamingMessage({
+      type: 'subagent',
+      subagentId: chunk.id,
+      mode: 'async',
+    });
   }
 
   /** Handles AgentOutputTool tool_use (invisible, links to async subagent). */
@@ -634,5 +678,8 @@ export class StreamController {
     state.currentThinkingStartTime = null;
     // Clear active subagent tracking
     state.activeSubagentInfos.clear();
+
+    // Also reset Zustand store streaming state
+    useChatStore.getState().resetStreamingState();
   }
 }

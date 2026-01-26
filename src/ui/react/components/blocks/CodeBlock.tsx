@@ -28,7 +28,7 @@ export const CodeBlock = ({
   isStreaming = false,
   className,
 }: CodeBlockProps) => {
-  const app = useApp();
+  const ctx = useApp();
   const codeRef = useRef<HTMLElement>(null);
   const [isHighlighted, setIsHighlighted] = useState(false);
 
@@ -44,9 +44,9 @@ export const CodeBlock = ({
 
       try {
         // Try to use Obsidian's highlighting if available
-        if (app && language) {
+        if (ctx && language) {
+          const { app, Component, MarkdownRenderer } = ctx;
           // Obsidian uses Prism internally
-          const { MarkdownRenderer, Component } = await import('obsidian');
           const container = document.createElement('div');
           const component = new Component();
           component.load();
@@ -72,7 +72,7 @@ export const CodeBlock = ({
     };
 
     void highlight();
-  }, [app, content, language, isStreaming]);
+  }, [ctx, content, language, isStreaming]);
 
   const handleCopy = useCallback(() => {
     void navigator.clipboard.writeText(content);

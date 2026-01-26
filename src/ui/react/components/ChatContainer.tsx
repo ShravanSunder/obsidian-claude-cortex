@@ -2,62 +2,56 @@
  * Root chat container component
  *
  * Main React component containing the full chat interface.
- * Connects the ChatBridge to React context and renders messages.
+ * Uses Zustand store for state management - no bridge needed.
  */
 
-import { useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
+import { useShallow } from 'zustand/shallow';
+
 import type { ChatMessage } from '../../../core/types';
-import type { ChatBridge } from '../bridge/ChatBridge';
-import { useChatContext } from '../context/ChatContext';
+import {
+  selectIsStreaming,
+  selectStreamingMessage,
+  useChatStore,
+} from '../../../features/chat/store';
 import { Message } from './Message';
 import { MessageList } from './MessageList';
 import { StreamingMessage } from './StreamingMessage';
+import { StreamingMessageLive } from './StreamingMessageLive';
 
 export interface ChatContainerProps {
-  /** Bridge for connecting imperative state updates */
-  chatBridge?: ChatBridge;
   /** Optional class name for additional styling */
   className?: string;
 }
 
 /**
  * Root container for the React-based chat UI.
- * Renders messages from context and handles streaming.
+ * Renders messages from Zustand store and handles streaming.
  */
-export const ChatContainer = ({ chatBridge, className }: ChatContainerProps) => {
-  const { state, dispatch } = useChatContext();
+export const ChatContainer = ({ className }: ChatContainerProps) => {
+  // Subscribe to messages with shallow comparison to prevent infinite loops
+  const messages = useChatStore(useShallow((s) => s.messages));
+  const isStreaming = useChatStore(selectIsStreaming);
+  const streamingMessage = useChatStore(selectStreamingMessage);
 
-  // Connect bridge to dispatch when mounted
-  useEffect(() => {
-    if (chatBridge) {
-      chatBridge.connect(dispatch);
-      return () => chatBridge.disconnect();
-    }
-  }, [chatBridge, dispatch]);
-
-  // Memoize visible messages (filter hidden ones)
-  const visibleMessages = useMemo(
-    () => state.messages.filter((msg) => !msg.hidden),
-    [state.messages],
-  );
+  // Filter visible messages with memoization
+  const visibleMessages = useMemo(() => messages.filter((msg) => !msg.hidden), [messages]);
 
   const classNames = ['cortex-react-root', className].filter(Boolean).join(' ');
 
   return (
     <div className={classNames}>
-      <MessageList autoScroll={state.autoScrollEnabled}>
+      <MessageList autoScroll={true}>
         {/* Render completed messages */}
         {visibleMessages.map((msg) => (
           <MessageContent key={msg.id} message={msg} />
         ))}
 
-        {/* Render streaming message if active */}
-        {state.isStreaming && state.currentStreamingMessage && (
-          <StreamingMessageFromChat message={state.currentStreamingMessage} />
-        )}
+        {/* Render streaming message if active - uses live subscription! */}
+        {isStreaming && streamingMessage && <StreamingMessageLive message={streamingMessage} />}
 
         {/* Empty state */}
-        {visibleMessages.length === 0 && !state.isStreaming && (
+        {visibleMessages.length === 0 && !isStreaming && (
           <div className="cortex-empty-state">
             <div className="cortex-empty-icon">💬</div>
             <div className="cortex-empty-text">Start a conversation</div>
@@ -108,17 +102,4 @@ const MessageContent = ({ message }: MessageContentProps) => {
       className={message.isPlanMessage ? 'cortex-plan-message' : undefined}
     />
   );
-};
-
-/**
- * Renders a streaming message that's currently being built
- */
-interface StreamingMessageFromChatProps {
-  message: ChatMessage;
-}
-
-const StreamingMessageFromChat = ({ message }: StreamingMessageFromChatProps) => {
-  // Use StreamingMessage with the current content
-  // The streaming message component handles parsing and block rendering
-  return <StreamingMessage initialContent={message.content} className="cortex-streaming-active" />;
 };

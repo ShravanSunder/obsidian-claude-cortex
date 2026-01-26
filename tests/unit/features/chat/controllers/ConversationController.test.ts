@@ -7,6 +7,12 @@ import {
   type ConversationControllerDeps,
 } from '@/features/chat/controllers/ConversationController';
 import { ChatState } from '@/features/chat/state/ChatState';
+import { useChatStore } from '@/features/chat/store';
+
+// Reset Zustand store before each test
+beforeEach(() => {
+  useChatStore.getState().resetForNewConversation();
+});
 
 // Helper to create mock DOM element
 function createMockElement(): any {
@@ -176,7 +182,7 @@ describe('ConversationController - Queue Management', () => {
     });
 
     it('should not create new conversation while streaming', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
 
       await controller.createNew();
 
@@ -273,7 +279,7 @@ describe('ConversationController - Queue Management', () => {
     });
 
     it('should not switch while streaming', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
       deps.state.currentConversationId = 'old-conv';
 
       await controller.switchTo('new-conv');

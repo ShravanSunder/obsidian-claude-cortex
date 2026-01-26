@@ -5,7 +5,7 @@
  * within React components, handling the Component lifecycle properly.
  */
 
-import type { App, Component } from 'obsidian';
+import type { Component } from 'obsidian';
 import { useCallback, useEffect, useRef } from 'react';
 import { useApp } from './useApp';
 
@@ -41,7 +41,7 @@ export interface UseObsidianRenderResult {
  * ```
  */
 export function useObsidianRender(sourcePath: string = ''): UseObsidianRenderResult {
-  const app = useApp();
+  const ctx = useApp();
   const containerRef = useRef<HTMLDivElement | null>(null);
   const componentRef = useRef<Component | null>(null);
 
@@ -65,29 +65,28 @@ export function useObsidianRender(sourcePath: string = ''): UseObsidianRenderRes
 
   const render = useCallback(
     async (content: string, customSourcePath?: string) => {
-      if (!containerRef.current || !app) {
+      if (!containerRef.current || !ctx) {
         return;
       }
 
       // Clean up previous render
       clear();
 
-      // Create new Component for lifecycle management
-      // Using dynamic import to avoid circular dependencies
-      const { Component: ObsidianComponent, MarkdownRenderer } = await import('obsidian');
+      // Use Component and MarkdownRenderer from context (avoids dynamic import)
+      const { app, Component: ObsidianComponent, MarkdownRenderer } = ctx;
       componentRef.current = new ObsidianComponent();
       componentRef.current.load();
 
       // Render markdown
       await MarkdownRenderer.render(
-        app as App,
+        app,
         content,
         containerRef.current,
         customSourcePath ?? sourcePath,
         componentRef.current,
       );
     },
-    [app, sourcePath, clear],
+    [ctx, sourcePath, clear],
   );
 
   return {

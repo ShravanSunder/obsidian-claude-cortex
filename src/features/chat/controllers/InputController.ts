@@ -35,6 +35,7 @@ import type { InstructionRefineService } from '../services/InstructionRefineServ
 import type { TitleGenerationService } from '../services/TitleGenerationService';
 import type { ChatState } from '../state/ChatState';
 import type { QueryOptions } from '../state/types';
+import { useChatStore } from '../store';
 import type { ConversationController } from './ConversationController';
 import type { SelectionController } from './SelectionController';
 import type { StreamController } from './StreamController';
@@ -121,32 +122,43 @@ export class InputController {
     const hasImages = imageContextManager?.hasImages() ?? false;
     if (!content && !hasImages) return;
 
+    const store = useChatStore.getState();
+
     // If agent is working, queue the message instead of dropping it
-    if (state.isStreaming) {
+    if (store.isStreaming) {
       const images = hasImages ? [...(imageContextManager?.getAttachedImages() || [])] : undefined;
       const editorContext = selectionController.getContext();
       const promptPrefix = options?.promptPrefix;
 
       // Append to existing queued message if any
-      if (state.queuedMessage) {
-        state.queuedMessage.content += '\n\n' + content;
-        if (images && images.length > 0) {
-          state.queuedMessage.images = [...(state.queuedMessage.images || []), ...images];
-        }
-        state.queuedMessage.editorContext = editorContext;
-        // Preserve hidden flag (once hidden, always hidden)
-        state.queuedMessage.hidden = state.queuedMessage.hidden || options?.hidden;
-        if (promptPrefix) {
-          state.queuedMessage.promptPrefix = state.queuedMessage.promptPrefix ?? promptPrefix;
-        }
+      const existingQueued = store.queuedMessage;
+      if (existingQueued) {
+        const updated = {
+          ...existingQueued,
+          content: existingQueued.content + '\n\n' + content,
+          images:
+            images && images.length > 0
+              ? [...(existingQueued.images || []), ...images]
+              : existingQueued.images,
+          editorContext,
+          // Preserve hidden flag (once hidden, always hidden)
+          hidden: existingQueued.hidden || options?.hidden,
+          promptPrefix: existingQueued.promptPrefix ?? promptPrefix,
+        };
+        store.setQueuedMessage(updated);
+        // Keep ChatState in sync for legacy code
+        state.queuedMessage = updated;
       } else {
-        state.queuedMessage = {
+        const newQueued = {
           content,
           images,
           editorContext,
           hidden: options?.hidden,
           promptPrefix,
         };
+        store.setQueuedMessage(newQueued);
+        // Keep ChatState in sync for legacy code
+        state.queuedMessage = newQueued;
       }
 
       if (shouldUseInput) {
@@ -160,6 +172,7 @@ export class InputController {
     if (shouldUseInput) {
       inputEl.value = '';
     }
+    // Keep ChatState in sync for legacy code that may still read it
     state.isStreaming = true;
     state.cancelRequested = false;
     state.ignoreUsageUpdates = false; // Allow usage updates for new query
@@ -264,6 +277,10 @@ export class InputController {
       hidden: options?.hidden,
     };
     state.addMessage(userMsg);
+    // Sync user message to Zustand store for React
+    if (!options?.hidden) {
+      store.addMessage(userMsg);
+    }
     if (!options?.hidden) {
       renderer.addMessage(userMsg);
     }
@@ -279,6 +296,9 @@ export class InputController {
     state.addMessage(assistantMsg);
     const msgEl = renderer.addMessage(assistantMsg);
     const contentEl = msgEl.querySelector('.cortex-message-content') as HTMLElement;
+
+    // Start streaming in Zustand store
+    store.startStreaming(assistantMsg);
 
     state.toolCallElements.clear();
     state.currentContentEl = contentEl;
@@ -311,7 +331,7 @@ export class InputController {
         state.messages,
         queryOptions,
       )) {
-        if (state.cancelRequested) {
+        if (useChatStore.getState().cancelRequested) {
           wasInterrupted = true;
           break;
         }
@@ -327,18 +347,14 @@ export class InputController {
         );
       }
       streamController.hideThinkingIndicator();
+      useChatStore.getState().endStreaming();
       state.isStreaming = false;
       state.cancelRequested = false;
 
       await this.finalizeStreamWithMermaid(assistantMsg);
-
       await conversationController.save(true);
-
       await this.activatePendingPlanMode();
-
-      // Generate AI title after first complete exchange (user + assistant)
       await this.triggerTitleGeneration();
-
       this.processQueuedMessage();
     }
   }
@@ -418,8 +434,7 @@ export class InputController {
     const content = inputEl.value.trim();
     if (!content) return;
 
-    // Cannot enter plan mode while streaming
-    if (state.isStreaming) {
+    if (useChatStore.getState().isStreaming) {
       new Notice('Cannot request plan mode while agent is working');
       return;
     }
@@ -488,14 +503,16 @@ export class InputController {
     const content = (options?.content ?? inputEl.value).trim();
     if (!content) return;
 
+    const store = useChatStore.getState();
     const skipUserMessage = options?.skipUserMessage ?? false;
     if (options?.content === undefined) {
       inputEl.value = '';
     }
+    // Keep ChatState in sync for legacy code
     state.isStreaming = true;
     state.cancelRequested = false;
-    state.ignoreUsageUpdates = false; // Allow usage updates for new query
-    state.subagentsSpawnedThisStream = 0; // Reset subagent counter for new query
+    state.ignoreUsageUpdates = false;
+    state.subagentsSpawnedThisStream = 0;
 
     // Hide welcome message
     const welcomeEl = this.deps.getWelcomeEl();
@@ -561,6 +578,7 @@ ${content}
       };
       state.addMessage(userMsg);
       if (!options?.hidden) {
+        store.addMessage(userMsg);
         renderer.addMessage(userMsg);
       }
     }
@@ -575,6 +593,9 @@ ${content}
     state.addMessage(assistantMsg);
     const msgEl = renderer.addMessage(assistantMsg);
     const contentEl = msgEl.querySelector('.cortex-message-content') as HTMLElement;
+
+    // Start streaming in Zustand store
+    store.startStreaming(assistantMsg);
 
     state.toolCallElements.clear();
     state.currentContentEl = contentEl;
@@ -606,7 +627,7 @@ ${content}
         state.messages,
         queryOptions,
       )) {
-        if (state.cancelRequested) {
+        if (useChatStore.getState().cancelRequested) {
           wasInterrupted = true;
           break;
         }
@@ -623,6 +644,11 @@ ${content}
         plugin.agentService.setCurrentPlanFilePath(null);
       }
       streamController.hideThinkingIndicator();
+
+      // End streaming in Zustand store
+      useChatStore.getState().endStreaming();
+
+      // Keep ChatState in sync for legacy code
       state.isStreaming = false;
       state.cancelRequested = false;
 
@@ -647,10 +673,11 @@ ${content}
     const { state } = this.deps;
     if (!state.queueIndicatorEl) return;
 
-    if (state.queuedMessage) {
-      const rawContent = state.queuedMessage.content.trim();
+    const queuedMessage = useChatStore.getState().queuedMessage;
+    if (queuedMessage) {
+      const rawContent = queuedMessage.content.trim();
       const preview = rawContent.length > 40 ? rawContent.slice(0, 40) + '...' : rawContent;
-      const hasImages = (state.queuedMessage.images?.length ?? 0) > 0;
+      const hasImages = (queuedMessage.images?.length ?? 0) > 0;
       let display = preview;
 
       if (hasImages) {
@@ -667,6 +694,7 @@ ${content}
   /** Clears the queued message. */
   clearQueuedMessage(): void {
     const { state } = this.deps;
+    useChatStore.getState().setQueuedMessage(null);
     state.queuedMessage = null;
     this.updateQueueIndicator();
   }
@@ -674,9 +702,12 @@ ${content}
   /** Processes the queued message. */
   private processQueuedMessage(): void {
     const { state } = this.deps;
-    if (!state.queuedMessage) return;
+    const store = useChatStore.getState();
+    const queuedMessage = store.queuedMessage;
+    if (!queuedMessage) return;
 
-    const { content, images, editorContext, hidden, promptPrefix } = state.queuedMessage;
+    const { content, images, editorContext, hidden, promptPrefix } = queuedMessage;
+    store.setQueuedMessage(null);
     state.queuedMessage = null;
     this.updateQueueIndicator();
 
@@ -795,9 +826,10 @@ ${content}
 
   /** Cancels the current streaming operation. */
   cancelStreaming(): void {
-    const { plugin, state, streamController } = this.deps;
-    if (!state.isStreaming) return;
-    state.cancelRequested = true;
+    const { plugin, streamController } = this.deps;
+    const store = useChatStore.getState();
+    if (!store.isStreaming) return;
+    store.setCancelRequested(true);
     this.clearQueuedMessage();
     plugin.agentService.cancel();
     streamController.hideThinkingIndicator();

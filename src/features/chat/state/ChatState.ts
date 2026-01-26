@@ -3,9 +3,14 @@
  *
  * Manages all mutable state for the chat view, following the callback-based
  * pattern established by AsyncSubagentManager.
+ *
+ * Note: As of the Zustand migration, controllers should use useChatStore directly
+ * for state like isStreaming, cancelRequested, queuedMessage. ChatState is retained
+ * for DOM element refs and legacy compatibility.
  */
 
 import type { UsageInfo } from '../../../core/types';
+import { useChatStore } from '../store';
 import type {
   AskUserQuestionState,
   AsyncSubagentState,
@@ -104,6 +109,15 @@ export class ChatState {
 
   set isStreaming(value: boolean) {
     this.state.isStreaming = value;
+    // Sync to Zustand store for React components
+    const store = useChatStore.getState();
+    if (value && !store.isStreaming) {
+      // Starting streaming - only set if not already started by controller
+      // This is a safety net; controllers should call store.startStreaming() directly
+    } else if (!value && store.isStreaming) {
+      // Ending streaming - reset store state
+      store.resetStreamingState();
+    }
     this.callbacks.onStreamingStateChanged?.(value);
   }
 
@@ -113,6 +127,8 @@ export class ChatState {
 
   set cancelRequested(value: boolean) {
     this.state.cancelRequested = value;
+    // Sync to Zustand store for React components
+    useChatStore.getState().setCancelRequested(value);
   }
 
   // ============================================
@@ -138,6 +154,8 @@ export class ChatState {
 
   set queuedMessage(value: QueuedMessage | null) {
     this.state.queuedMessage = value;
+    // Sync to Zustand store for React components
+    useChatStore.getState().setQueuedMessage(value);
   }
 
   // ============================================

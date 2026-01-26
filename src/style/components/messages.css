@@ -123,7 +123,7 @@
 }
 
 .cortex-message-user {
-  background: rgba(0, 0, 0, 0.3);
+  background: var(--interactive-accent);
   color: var(--text-on-accent);
   align-self: flex-end;
   border-bottom-right-radius: 4px;

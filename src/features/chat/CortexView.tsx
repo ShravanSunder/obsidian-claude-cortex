@@ -6,7 +6,7 @@
  */
 
 import type { WorkspaceLeaf } from 'obsidian';
-import { ItemView, setIcon } from 'obsidian';
+import { Component, ItemView, MarkdownRenderer, setIcon } from 'obsidian';
 import { StrictMode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 
@@ -31,7 +31,7 @@ import {
   type ThinkingBudgetSelector,
   TodoPanel,
 } from '../../ui';
-import { AppContext, ChatBridge, ChatContainer, ChatProvider } from '../../ui/react';
+import { AppContext, ChatContainer } from '../../ui/react';
 import { getVaultPath } from '../../utils/path';
 import { LOGO_SVG } from './constants';
 import {
@@ -54,8 +54,6 @@ export class CortexView extends ItemView {
   // React root for the new rendering engine
   private reactRoot: Root | null = null;
   private reactContainerEl: HTMLElement | null = null;
-  /** Bridge between imperative ChatState and React context */
-  public chatBridge: ChatBridge;
 
   // State - public for test access
   public readonly state: ChatState;
@@ -101,8 +99,8 @@ export class CortexView extends ItemView {
   constructor(leaf: WorkspaceLeaf, plugin: CortexPlugin) {
     super(leaf);
     this.plugin = plugin;
-    this.chatBridge = new ChatBridge();
     this.state = new ChatState({
+      // Note: Zustand store now handles React syncing
       onUsageChanged: (usage) => this.contextUsageMeter?.update(usage),
       onTodosChanged: (todos) => this.todoPanel?.updateTodos(todos),
     });
@@ -132,16 +130,14 @@ export class CortexView extends ItemView {
     const header = container.createDiv({ cls: 'cortex-header' });
     this.buildHeader(header);
 
-    // Mount React rendering engine
+    // Mount React rendering engine (Zustand store is global, no provider needed)
     this.reactContainerEl = container.createDiv({ cls: 'cortex-react-container' });
     try {
       this.reactRoot = createRoot(this.reactContainerEl);
       this.reactRoot.render(
         <StrictMode>
-          <AppContext.Provider value={this.app}>
-            <ChatProvider>
-              <ChatContainer chatBridge={this.chatBridge} />
-            </ChatProvider>
+          <AppContext.Provider value={{ app: this.app, Component, MarkdownRenderer }}>
+            <ChatContainer />
           </AppContext.Provider>
         </StrictMode>,
       );
@@ -444,7 +440,7 @@ export class CortexView extends ItemView {
       setPlanModeActive: (_active) => {
         this.updatePlanModeUiState();
       },
-      getChatBridge: () => this.chatBridge,
+      // Note: Zustand store replaces ChatBridge, getChatBridge no longer needed
     });
 
     // Conversation controller
@@ -479,7 +475,7 @@ export class CortexView extends ItemView {
           this.updatePlanModeUiState();
         },
         getTodoPanel: () => this.todoPanel,
-        getChatBridge: () => this.chatBridge,
+        // Note: Zustand store replaces ChatBridge, getChatBridge no longer needed
       },
       {},
     );

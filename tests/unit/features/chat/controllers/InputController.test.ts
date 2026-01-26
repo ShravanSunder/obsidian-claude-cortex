@@ -7,6 +7,12 @@ import {
   type InputControllerDeps,
 } from '@/features/chat/controllers/InputController';
 import { ChatState } from '@/features/chat/state/ChatState';
+import { useChatStore } from '@/features/chat/store';
+
+// Reset Zustand store before each test
+beforeEach(() => {
+  useChatStore.getState().resetForNewConversation();
+});
 
 // Helper to create mock DOM element
 function createMockElement() {
@@ -142,12 +148,14 @@ describe('InputController - Message Queue', () => {
 
   describe('Queuing messages while streaming', () => {
     it('should queue message when isStreaming is true', async () => {
-      deps.state.isStreaming = true;
+      // Set Zustand store state (what the controller checks)
+      useChatStore.setState({ isStreaming: true });
       inputEl.value = 'queued message';
 
       await controller.sendMessage();
 
-      expect(deps.state.queuedMessage).toEqual({
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage).toEqual({
         content: 'queued message',
         images: undefined,
         editorContext: null,
@@ -158,7 +166,7 @@ describe('InputController - Message Queue', () => {
     });
 
     it('should queue message with images when streaming', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
       inputEl.value = 'queued with images';
       const mockImages = [{ id: 'img1', name: 'test.png' }];
       const imageContextManager = deps.getImageContextManager()!;
@@ -167,7 +175,8 @@ describe('InputController - Message Queue', () => {
 
       await controller.sendMessage();
 
-      expect(deps.state.queuedMessage).toEqual({
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage).toEqual({
         content: 'queued with images',
         images: mockImages,
         editorContext: null,
@@ -178,27 +187,29 @@ describe('InputController - Message Queue', () => {
     });
 
     it('should append new message to existing queued message', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
       inputEl.value = 'first message';
       await controller.sendMessage();
 
       inputEl.value = 'second message';
       await controller.sendMessage();
 
-      expect(deps.state.queuedMessage!.content).toBe('first message\n\nsecond message');
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage!.content).toBe('first message\n\nsecond message');
     });
 
     it('should preserve prompt prefix when queuing', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
       inputEl.value = 'queued plan';
 
       await controller.sendMessage({ promptPrefix: 'Plan prefix' });
 
-      expect(deps.state.queuedMessage?.promptPrefix).toBe('Plan prefix');
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage?.promptPrefix).toBe('Plan prefix');
     });
 
     it('should merge images when appending to queue', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
       const imageContextManager = deps.getImageContextManager()!;
 
       // First message with image
@@ -216,20 +227,22 @@ describe('InputController - Message Queue', () => {
       ]);
       await controller.sendMessage();
 
-      expect(deps.state.queuedMessage!.images).toHaveLength(2);
-      expect(deps.state.queuedMessage!.images![0].id).toBe('img1');
-      expect(deps.state.queuedMessage!.images![1].id).toBe('img2');
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage!.images).toHaveLength(2);
+      expect(storeState.queuedMessage!.images![0].id).toBe('img1');
+      expect(storeState.queuedMessage!.images![1].id).toBe('img2');
     });
 
     it('should not queue empty message', async () => {
-      deps.state.isStreaming = true;
+      useChatStore.setState({ isStreaming: true });
       inputEl.value = '';
       const imageContextManager = deps.getImageContextManager()!;
       (imageContextManager.hasImages as import('vitest').Mock).mockReturnValue(false);
 
       await controller.sendMessage();
 
-      expect(deps.state.queuedMessage).toBeNull();
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage).toBeNull();
     });
   });
 
@@ -263,11 +276,9 @@ describe('InputController - Message Queue', () => {
 
   describe('Queue indicator UI', () => {
     it('should show queue indicator when message is queued', () => {
-      deps.state.queuedMessage = {
-        content: 'test message',
-        images: undefined,
-        editorContext: null,
-      };
+      useChatStore.setState({
+        queuedMessage: { content: 'test message', images: undefined, editorContext: null },
+      });
 
       controller.updateQueueIndicator();
 
@@ -277,7 +288,7 @@ describe('InputController - Message Queue', () => {
     });
 
     it('should hide queue indicator when no message is queued', () => {
-      deps.state.queuedMessage = null;
+      useChatStore.setState({ queuedMessage: null });
 
       controller.updateQueueIndicator();
 
@@ -287,7 +298,9 @@ describe('InputController - Message Queue', () => {
 
     it('should truncate long message preview in indicator', () => {
       const longMessage = 'a'.repeat(100);
-      deps.state.queuedMessage = { content: longMessage, images: undefined, editorContext: null };
+      useChatStore.setState({
+        queuedMessage: { content: longMessage, images: undefined, editorContext: null },
+      });
 
       controller.updateQueueIndicator();
 
@@ -298,11 +311,13 @@ describe('InputController - Message Queue', () => {
 
     it('should include [images] when queue message has images', () => {
       const mockImages = [{ id: 'img1', name: 'test.png' }];
-      deps.state.queuedMessage = {
-        content: 'queued content',
-        images: mockImages as any,
-        editorContext: null,
-      };
+      useChatStore.setState({
+        queuedMessage: {
+          content: 'queued content',
+          images: mockImages as any,
+          editorContext: null,
+        },
+      });
 
       controller.updateQueueIndicator();
 
@@ -314,7 +329,9 @@ describe('InputController - Message Queue', () => {
 
     it('should show [images] when queue message has only images', () => {
       const mockImages = [{ id: 'img1', name: 'test.png' }];
-      deps.state.queuedMessage = { content: '', images: mockImages as any, editorContext: null };
+      useChatStore.setState({
+        queuedMessage: { content: '', images: mockImages as any, editorContext: null },
+      });
 
       controller.updateQueueIndicator();
 
@@ -325,11 +342,13 @@ describe('InputController - Message Queue', () => {
 
   describe('Clearing queued message', () => {
     it('should clear queued message and update indicator', () => {
-      deps.state.queuedMessage = { content: 'test', images: undefined, editorContext: null };
+      useChatStore.setState({
+        queuedMessage: { content: 'test', images: undefined, editorContext: null },
+      });
 
       controller.clearQueuedMessage();
 
-      expect(deps.state.queuedMessage).toBeNull();
+      expect(useChatStore.getState().queuedMessage).toBeNull();
       const queueIndicatorEl = deps.state.queueIndicatorEl as any;
       expect(queueIndicatorEl.style.display).toBe('none');
     });
@@ -337,18 +356,21 @@ describe('InputController - Message Queue', () => {
 
   describe('Cancel streaming', () => {
     it('should clear queue on cancel', () => {
-      deps.state.queuedMessage = { content: 'test', images: undefined, editorContext: null };
-      deps.state.isStreaming = true;
+      useChatStore.setState({
+        queuedMessage: { content: 'test', images: undefined, editorContext: null },
+        isStreaming: true,
+      });
 
       controller.cancelStreaming();
 
-      expect(deps.state.queuedMessage).toBeNull();
-      expect(deps.state.cancelRequested).toBe(true);
+      const storeState = useChatStore.getState();
+      expect(storeState.queuedMessage).toBeNull();
+      expect(storeState.cancelRequested).toBe(true);
       expect(deps.plugin.agentService.cancel).toHaveBeenCalled();
     });
 
     it('should not cancel if not streaming', () => {
-      deps.state.isStreaming = false;
+      useChatStore.setState({ isStreaming: false });
 
       controller.cancelStreaming();
 

@@ -31,16 +31,18 @@ export const ProseBlock = ({
   sourcePath = '',
   className,
 }: ProseBlockProps) => {
-  const app = useApp();
+  const ctx = useApp();
   const containerRef = useRef<HTMLDivElement>(null);
   const componentRef = useRef<{ unload: () => void } | null>(null);
   const [isRendered, setIsRendered] = useState(false);
 
   // Render with Obsidian when streaming completes
   useEffect(() => {
-    if (isStreaming || !content || !containerRef.current || !app) {
+    if (isStreaming || !content || !containerRef.current || !ctx) {
       return;
     }
+
+    const { app, Component, MarkdownRenderer } = ctx;
 
     const renderAsync = async () => {
       if (!containerRef.current) return;
@@ -57,8 +59,7 @@ export const ProseBlock = ({
       }
 
       try {
-        // Dynamic import to avoid circular deps
-        const { Component, MarkdownRenderer } = await import('obsidian');
+        // Use Component and MarkdownRenderer from context (avoids dynamic import)
         const component = new Component();
         component.load();
         componentRef.current = component;
@@ -80,7 +81,7 @@ export const ProseBlock = ({
       componentRef.current?.unload();
       componentRef.current = null;
     };
-  }, [app, content, isStreaming, sourcePath]);
+  }, [ctx, content, isStreaming, sourcePath]);
 
   // Reset rendered state when content changes
   useEffect(() => {
