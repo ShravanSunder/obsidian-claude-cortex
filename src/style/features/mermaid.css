@@ -36,6 +36,59 @@
   color: var(--text-faint);
 }
 
+/* Unsupported type badge */
+.cortex-mermaid-unsupported-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-on-accent);
+  background: var(--color-orange, #e67e22);
+  padding: 2px 8px;
+  border-radius: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+/* Unsupported message container */
+.cortex-mermaid-unsupported-message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: rgba(230, 126, 34, 0.1);
+  border-bottom: 1px solid var(--background-modifier-border);
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.cortex-mermaid-unsupported-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-orange, #e67e22);
+  flex-shrink: 0;
+}
+
+.cortex-mermaid-unsupported-message strong {
+  color: var(--text-normal);
+}
+
+/* Fixing status indicator */
+.cortex-mermaid-fixing-status {
+  color: var(--interactive-accent);
+  font-weight: 500;
+  animation: cortex-mermaid-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes cortex-mermaid-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
 /* Raw code during streaming */
 .cortex-mermaid-code {
   margin: 0;
@@ -87,8 +140,23 @@
 }
 
 .cortex-mermaid-pending,
-.cortex-mermaid-loading {
+.cortex-mermaid-loading,
+.cortex-mermaid-fixing {
   min-height: 200px;
+}
+
+/* Unsupported state styling */
+.cortex-mermaid-unsupported {
+  border-color: var(--color-orange, #e67e22);
+}
+
+.cortex-mermaid-unsupported .cortex-mermaid-header {
+  background: rgba(230, 126, 34, 0.05);
+}
+
+/* Fixing state styling */
+.cortex-mermaid-fixing .cortex-mermaid-header {
+  background: rgba(var(--interactive-accent-rgb, 99, 102, 241), 0.05);
 }
 
 /* Streaming cursor */

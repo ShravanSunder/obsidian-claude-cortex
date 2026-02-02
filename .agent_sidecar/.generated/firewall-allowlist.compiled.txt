@@ -1,0 +1,163 @@
+# --- Python Ecosystem (pip, uv, poetry) ---
+pypi.org
+pythonhosted.org
+files.pythonhosted.org
+
+# --- Node.js & TypeScript (npm, pnpm, yarn) ---
+npmjs.org
+registry.npmjs.org
+pnpm.io
+get.pnpm.io
+yarnpkg.com
+registry.yarnpkg.com
+typescriptlang.org
+
+# --- Docker Hub & Container Registries ---
+docker.io
+hub.docker.com
+auth.docker.io
+registry-1.docker.io
+production.cloudflare.docker.com
+
+# --- VS Code Marketplace & Services ---
+marketplace.visualstudio.com
+gallery.vsassets.io
+update.code.visualstudio.com
+vscode-sync.trafficmanager.net
+login.microsoftonline.com
+
+# --- Cloudflare Workers & Dev Platform ---
+cloudflare.com
+api.cloudflare.com
+workers.dev
+wrangler.devel.cloudflare.com
+dash.cloudflare.com
+
+# --- AWS (Core Services & CLI) ---
+amazonaws.com
+# Covers s3.amazonaws.com, lambda.us-east-1.amazonaws.com, etc.
+aws.amazon.com
+anysphere-binaries.s3.us-east-1.amazonaws.com
+
+# --- GitHub Ecosystem (API, Copilot, Programming) ---
+github.com
+api.github.com
+codeload.github.com
+objects.githubusercontent.com
+pkg.github.com
+copilot-proxy.githubusercontent.com
+vscode-auth.github.co
+@github_meta
+
+# --- Cursor AI Editor (Telemetry, APIs, Updates) ---
+cursor.com
+api.cursor.sh
+api2.cursor.sh
+api3.cursor.sh
+api4.cursor.sh
+repo42.cursor.sh
+us-asia.gcpp.cursor.sh
+us-eu.gcpp.cursor.sh
+us-only.gcpp.cursor.sh
+marketplace.cursorapi.com
+cursor-cdn.com
+downloads.cursor.com
+t1.cursor.sh
+
+# --- AI Agents & MCP Servers ---
+# Anthropic
+anthropic.com
+api.anthropic.com
+console.anthropic.com
+cdn.anthropic.com
+claude.ai
+# OpenAI & Codex API/CLI
+openai.com
+api.openai.com
+auth.openai.com
+developers.openai.com
+codex.openai.com
+chatgpt.com
+# Cursor CLI Agent (cursor.com/install)
+api.cursor.com
+# Perplexity AI
+perplexity.ai
+api.perplexity.ai
+www.perplexity.ai
+cdn.perplexity.ai
+# Google & Gemini
+google.com
+accounts.google.com
+oauth2.googleapis.com
+generativelanguage.googleapis.com
+cloudassist.google.com
+googleapis.com
+# OpenCode
+opencode.ai
+api.opencode.ai
+opencode.io
+models.dev
+# MCP Core & Tools
+modelcontextprotocol.io
+mcp.tavily.com
+mcp.deepwiki.com
+# Search tools for agents
+www.bing.com
+
+# --- Deployment Platforms ---
+vercel.com
+api.vercel.com
+netlify.com
+api.netlify.com
+
+# --- Common CDNs & Frontend Assets ---
+unpkg.com
+cdn.jsdelivr.net
+cdnjs.cloudflare.com
+fonts.googleapis.com
+fonts.gstatic.com
+
+# --- TypeScript/JavaScript Docs ---
+hono.dev
+zod.dev
+react.dev
+nextjs.org
+vitejs.dev
+tailwindcss.com
+tanstack.com
+trpc.io
+drizzle.team
+orm.drizzle.team
+prisma.io
+eslint.org
+prettier.io
+bun.sh
+deno.land
+deno.com
+docs.deno.com
+jsr.io
+
+# --- Python Docs ---
+docs.pydantic.dev
+pydantic.dev
+fastapi.tiangolo.com
+sqlalchemy.org
+docs.sqlalchemy.org
+docs.python.org
+pytest.org
+docs.pytest.org
+ruff.rs
+docs.astral.sh
+astral.sh
+uvicorn.org
+httpx.dev
+polars.rs
+docs.polars.rs
+
+# --- Infrastructure & Observability ---
+sentry.io
+statsig.com
+dc.services.visualstudio.com
+
+# ---
+youtube.com
