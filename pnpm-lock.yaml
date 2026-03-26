@@ -38,7 +38,7 @@ importers:
         version: 0.27.2
       obsidian:
         specifier: latest
-        version: 1.11.0(@codemirror/state@6.5.3)(@codemirror/view@6.39.8)
+        version: 1.12.3(@codemirror/state@6.5.3)(@codemirror/view@6.39.8)
       typescript:
         specifier: ^5.0.0
         version: 5.9.3
@@ -960,8 +960,8 @@ packages:
     engines: {node: ^10 || ^12 || ^13.7 || ^14 || >=15.0.1}
     hasBin: true
 
-  obsidian@1.11.0:
-    resolution: {integrity: sha512-lVqN9AmDWHzhNATi2tDnjqVgI6WUYKeT+lIsAycAyLt4XCC6zRsWzb+tFCiB7Rn3PpttefjoovilhYwvS4Iqxw==}
+  obsidian@1.12.3:
+    resolution: {integrity: sha512-HxWqe763dOqzXjnNiHmAJTRERN8KILBSqxDSEqbeSr7W8R8Jxezzbca+nz1LiiqXnMpM8lV2jzAezw3CZ4xNUw==}
     peerDependencies:
       '@codemirror/state': 6.5.0
       '@codemirror/view': 6.38.6
@@ -2021,7 +2021,7 @@ snapshots:
 
   nanoid@3.3.11: {}
 
-  obsidian@1.11.0(@codemirror/state@6.5.3)(@codemirror/view@6.39.8):
+  obsidian@1.12.3(@codemirror/state@6.5.3)(@codemirror/view@6.39.8):
     dependencies:
       '@codemirror/state': 6.5.3
       '@codemirror/view': 6.39.8
